@@ -50,7 +50,77 @@ export class DashboardComponent implements OnInit {
   chartDonutArcs = signal<any[]>([]);
 
   showReportModal = signal<boolean>(false);
-  reportTab = signal<'daily' | 'monthly'>('daily');
+  reportTab = signal<'daily' | 'monthly' | 'food_sales'>('daily');
+
+  activeRestaurantName = computed(() => {
+    const id = this.apiService.selectedRestaurantId();
+    if (!id) return 'All Outlets';
+    const rest = this.restaurants().find(r => r.id === id);
+    return rest ? rest.name : 'Unknown Outlet';
+  });
+
+  foodSales = computed(() => {
+    const tStr = this.todayStr();
+    const mStr = this.currentMonthStr();
+    const salesMap = new Map<string, { price: number; dailyQty: number; dailyRevenue: number; monthlyQty: number; monthlyRevenue: number }>();
+    
+    this.foodItems().forEach(item => {
+      salesMap.set(item.name, {
+        price: item.price,
+        dailyQty: 0,
+        dailyRevenue: 0,
+        monthlyQty: 0,
+        monthlyRevenue: 0
+      });
+    });
+
+    this.bills().forEach(bill => {
+      const isToday = bill.date === tStr;
+      const isThisMonth = bill.date && bill.date.startsWith(mStr);
+      
+      if (bill.foodItems) {
+        bill.foodItems.forEach(item => {
+          let entry = salesMap.get(item.name);
+          if (!entry) {
+            entry = {
+              price: item.price,
+              dailyQty: 0,
+              dailyRevenue: 0,
+              monthlyQty: 0,
+              monthlyRevenue: 0
+            };
+            salesMap.set(item.name, entry);
+          }
+          
+          if (isToday) {
+            entry.dailyQty += item.quantity;
+            entry.dailyRevenue += item.quantity * item.price;
+          }
+          if (isThisMonth) {
+            entry.monthlyQty += item.quantity;
+            entry.monthlyRevenue += item.quantity * item.price;
+          }
+        });
+      }
+    });
+
+    return Array.from(salesMap.entries()).map(([name, data]) => ({
+      name,
+      ...data
+    })).sort((a, b) => b.monthlyQty - a.monthlyQty);
+  });
+
+  totalDailyFoodItemsSold = computed(() => {
+    return this.foodSales().reduce((sum, item) => sum + item.dailyQty, 0);
+  });
+
+  totalMonthlyFoodItemsSold = computed(() => {
+    return this.foodSales().reduce((sum, item) => sum + item.monthlyQty, 0);
+  });
+
+  totalMonthlyFoodRevenue = computed(() => {
+    return this.foodSales().reduce((sum, item) => sum + item.monthlyRevenue, 0);
+  });
 
   todayStr = computed(() => {
     const d = new Date();
@@ -109,9 +179,52 @@ export class DashboardComponent implements OnInit {
     this.showReportModal.set(false);
   }
 
-  setReportTab(tab: 'daily' | 'monthly') {
+  setReportTab(tab: 'daily' | 'monthly' | 'food_sales') {
     console.log('setReportTab called with:', tab);
     this.reportTab.set(tab);
+  }
+
+  downloadFoodSalesExcel() {
+    const list = this.foodSales();
+    const outletName = this.activeRestaurantName();
+    const headers = [
+      'Food Item Name',
+      'Price (INR)',
+      'Daily Quantity Sold',
+      'Daily Revenue (INR)',
+      'Monthly Quantity Sold',
+      'Monthly Revenue (INR)'
+    ];
+
+    const rows = list.map(item => [
+      item.name,
+      item.price,
+      item.dailyQty,
+      item.dailyRevenue,
+      item.monthlyQty,
+      item.monthlyRevenue
+    ]);
+
+    const csvRows = [
+      `Food Sales Report - ${outletName}`,
+      `Generated on: ${this.todayStr()}`,
+      '',
+      headers.join(','),
+      ...rows.map(row => row.map(cell => this.escapeCSV(cell)).join(','))
+    ];
+    
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const filename = `food_sales_report_${outletName.toLowerCase().replace(/\s+/g, '_')}_${this.todayStr()}.csv`;
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   private escapeCSV(val: any): string {
@@ -126,6 +239,7 @@ export class DashboardComponent implements OnInit {
 
   downloadBillsExcel(type: 'daily' | 'monthly') {
     const list = type === 'daily' ? this.todayBills() : this.currentMonthBills();
+    const outletName = this.activeRestaurantName();
     const headers = [
       'Bill ID',
       'Date',
@@ -161,6 +275,9 @@ export class DashboardComponent implements OnInit {
     });
 
     const csvRows = [
+      `Bills Report (${type === 'daily' ? 'Daily' : 'Monthly'}) - ${outletName}`,
+      `Generated on: ${this.todayStr()}`,
+      '',
       headers.join(','),
       ...rows.map(row => row.map(cell => this.escapeCSV(cell)).join(','))
     ];
@@ -169,8 +286,8 @@ export class DashboardComponent implements OnInit {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     const filename = type === 'daily' 
-      ? `bills_report_daily_${this.todayStr()}.csv` 
-      : `bills_report_monthly_${this.currentMonthStr()}.csv`;
+      ? `bills_report_daily_${outletName.toLowerCase().replace(/\s+/g, '_')}_${this.todayStr()}.csv` 
+      : `bills_report_monthly_${outletName.toLowerCase().replace(/\s+/g, '_')}_${this.currentMonthStr()}.csv`;
     
     link.setAttribute('href', url);
     link.setAttribute('download', filename);

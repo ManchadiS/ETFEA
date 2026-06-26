@@ -265,11 +265,18 @@
         <button class="tab-btn" [class.active]="reportTab() === 'monthly'" (click)="setReportTab('monthly')">
           Monthly Report
         </button>
+        <button class="tab-btn" [class.active]="reportTab() === 'food_sales'" (click)="setReportTab('food_sales')">
+          Food Sales Report
+        </button>
       </div>
 
       <!-- Daily Report Tab -->
       <div *ngIf="reportTab() === 'daily'" class="tab-content animate-fade-in">
         <div class="report-summary-box">
+          <div class="summary-item">
+            <span class="summary-label">Outlet</span>
+            <span class="summary-val">{{ activeRestaurantName() }}</span>
+          </div>
           <div class="summary-item">
             <span class="summary-label">Date</span>
             <span class="summary-val">{{ todayStr() }}</span>
@@ -277,10 +284,6 @@
           <div class="summary-item">
             <span class="summary-label">Invoices</span>
             <span class="summary-val">{{ todaySummary().count }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">Subtotal</span>
-            <span class="summary-val">₹{{ todaySummary().subtotal | number:'1.2-2' }}</span>
           </div>
           <div class="summary-item">
             <span class="summary-label">Tax (GST)</span>
@@ -343,16 +346,16 @@
       <div *ngIf="reportTab() === 'monthly'" class="tab-content animate-fade-in">
         <div class="report-summary-box">
           <div class="summary-item">
+            <span class="summary-label">Outlet</span>
+            <span class="summary-val">{{ activeRestaurantName() }}</span>
+          </div>
+          <div class="summary-item">
             <span class="summary-label">Month</span>
             <span class="summary-val">{{ currentMonthName() }}</span>
           </div>
           <div class="summary-item">
             <span class="summary-label">Invoices</span>
             <span class="summary-val">{{ currentMonthSummary().count }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">Subtotal</span>
-            <span class="summary-val">₹{{ currentMonthSummary().subtotal | number:'1.2-2' }}</span>
           </div>
           <div class="summary-item">
             <span class="summary-label">Tax (GST)</span>
@@ -408,6 +411,70 @@
             </table>
             <ng-template #noMonthlyBills>
               <p class="no-bills-msg">No bills generated this month.</p>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+
+      <!-- Food Sales Report Tab -->
+      <div *ngIf="reportTab() === 'food_sales'" class="tab-content animate-fade-in">
+        <div class="report-summary-box">
+          <div class="summary-item">
+            <span class="summary-label">Outlet</span>
+            <span class="summary-val">{{ activeRestaurantName() }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Daily Items Sold</span>
+            <span class="summary-val">{{ totalDailyFoodItemsSold() }} qty</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Monthly Items Sold</span>
+            <span class="summary-val">{{ totalMonthlyFoodItemsSold() }} qty</span>
+          </div>
+          <div class="summary-item highlight">
+            <span class="summary-label">Monthly Revenue</span>
+            <span class="summary-val">₹{{ totalMonthlyFoodRevenue() | number:'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn btn-success w-full" (click)="downloadFoodSalesExcel()" [disabled]="foodSales().length === 0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" style="width:16px; height:16px;">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download Food Sales (Excel/CSV)
+          </button>
+        </div>
+
+        <div class="report-preview-section">
+          <h3>Food Item Sales Summary</h3>
+          <div class="table-container preview-table-container">
+            <table *ngIf="foodSales().length > 0; else noFoodSales">
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>Price</th>
+                  <th>Daily Qty</th>
+                  <th>Daily Rev</th>
+                  <th>Monthly Qty</th>
+                  <th>Monthly Rev</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of foodSales()">
+                  <td class="desc-cell">{{ item.name }}</td>
+                  <td>₹{{ item.price | number:'1.2-2' }}</td>
+                  <td>{{ item.dailyQty }}</td>
+                  <td>₹{{ item.dailyRevenue | number:'1.2-2' }}</td>
+                  <td style="font-weight: 600; color: var(--primary-hover);">{{ item.monthlyQty }}</td>
+                  <td style="font-weight: 600; color: var(--success);">₹{{ item.monthlyRevenue | number:'1.2-2' }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <ng-template #noFoodSales>
+              <p class="no-bills-msg">No menu items found for this outlet.</p>
             </ng-template>
           </div>
         </div>
