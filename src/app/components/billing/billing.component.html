@@ -1,0 +1,428 @@
+<div class="billing-container animate-fade-in">
+  <!-- Notifications -->
+  <div *ngIf="successMessage()" class="alert alert-success">
+    <span>{{ successMessage() }}</span>
+  </div>
+  <div *ngIf="errorMessage()" class="alert alert-error">
+    <span>{{ errorMessage() }}</span>
+  </div>
+
+  <div class="billing-header">
+    <div>
+      <h1>Billing & Invoices</h1>
+      <p class="subtitle">Generate custom tax bills, send email receipts, and manage transactional history.</p>
+    </div>
+    
+    <!-- Tab Controls -->
+    <div class="header-tabs">
+      <button class="tab-btn-pill" [class.active]="activeTab() === 'create'" (click)="selectTab('create')">
+        New Invoice
+      </button>
+      <button class="tab-btn-pill" [class.active]="activeTab() === 'records'" (click)="selectTab('records')">
+        Invoices Hub ({{ bills().length }})
+      </button>
+    </div>
+  </div>
+
+  <!-- CREATE INVOICE VIEW -->
+  <div *ngIf="activeTab() === 'create'" class="invoice-split-layout">
+    <!-- Left Panel: Form & Items Selector -->
+    <div class="builder-panel glass-panel">
+      <div class="panel-section-title">
+        <h3>1. Select Branch & Add Dishes</h3>
+      </div>
+      
+      <div class="form-row" *ngIf="!activeRestaurantId">
+        <!-- Restaurant Outlet Selector -->
+        <div class="form-group half-width">
+          <label for="billOutlet">Restaurant Outlet</label>
+          <select id="billOutlet" [(ngModel)]="selectedRestaurantId" (change)="onRestaurantChange()">
+            <option value="" disabled selected>-- Choose an Outlet --</option>
+            <option *ngFor="let rest of restaurants()" [value]="rest.id">{{ rest.name }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Add Dish to Order Grid -->
+      <div class="add-item-bar">
+        <div class="form-group flex-3">
+          <label for="foodSelector">Select Dish</label>
+          <select id="foodSelector" [(ngModel)]="selectedFoodItemId">
+            <option value="" disabled selected>-- Choose a Dish --</option>
+            <option *ngFor="let item of getFilteredFoodItems()" [value]="item.id">
+              {{ item.name }} (₹{{ item.price }})
+            </option>
+          </select>
+        </div>
+        <div class="form-group flex-1">
+          <label for="qtyInput">Quantity</label>
+          <input type="number" id="qtyInput" [(ngModel)]="selectedQuantity" min="1" />
+        </div>
+        <div class="form-group add-btn-group">
+          <button class="btn btn-secondary add-item-btn" (click)="addOrderItem()" [disabled]="!selectedFoodItemId">
+            Add
+          </button>
+        </div>
+      </div>
+
+      <!-- Order Items List Table -->
+      <div class="order-items-table">
+        <div class="table-container">
+          <table *ngIf="orderItems().length > 0; else noOrderItems">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Price</th>
+                <th>Qty</th>
+                <th>Total</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of orderItems(); let i = index">
+                <td class="item-name-cell">{{ item.name }} <span class="time-label">{{ item.time }}</span></td>
+                <td>₹{{ item.price | number:'1.2-2' }}</td>
+                <td>
+                  <div class="qty-adjuster">
+                    <button (click)="adjustQuantity(i, -1)" class="qty-btn">-</button>
+                    <span class="qty-val">{{ item.quantity }}</span>
+                    <button (click)="adjustQuantity(i, 1)" class="qty-btn">+</button>
+                  </div>
+                </td>
+                <td class="item-total-cell">₹{{ (item.price * item.quantity) | number:'1.2-2' }}</td>
+                <td>
+                  <div style="text-align: right;">
+                    <button class="btn-delete-item" (click)="removeOrderItem(i)">&times;</button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <ng-template #noOrderItems>
+            <div class="empty-items-state">
+              <p>Your invoice contains no items. Add food items from the menu selector above.</p>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+
+      <!-- Customer Details Form Section -->
+      <div class="panel-section-title separator-top">
+        <h3>2. Customer & Transaction Details</h3>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half-width">
+          <label for="custMobile">Customer Contact Number</label>
+          <input type="tel" id="custMobile" [(ngModel)]="mobile" placeholder="e.g. 9870859624" />
+        </div>
+        <div class="form-group half-width">
+          <label for="custEmail">Customer Email Address (for receipt)</label>
+          <input type="email" id="custEmail" [(ngModel)]="emailId" placeholder="e.g. customer@example.com" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half-width">
+          <label for="billStatus">Payment Status</label>
+          <select id="billStatus" [(ngModel)]="status">
+            <option value="paid">PAID</option>
+            <option value="pending">PENDING</option>
+            <option value="overdue">OVERDUE</option>
+          </select>
+        </div>
+        <div class="form-group half-width">
+          <label for="billDesc">Table / Notes</label>
+          <input type="text" id="billDesc" [(ngModel)]="description" placeholder="e.g. Table 04 Dinner" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Live Receipt Preview -->
+    <div class="receipt-preview-panel">
+      <div class="glass-panel sticky-receipt">
+        <div class="receipt-header-tab">
+          <span>Live Receipt Preview</span>
+        </div>
+        
+        <div class="physical-receipt">
+          <div class="receipt-border-decor"></div>
+          
+          <div class="receipt-brand">
+            <h2>Engineering Tadka</h2>
+            <p class="receipt-tagline">Premium Dining Experience</p>
+            <p class="receipt-outlet" *ngIf="selectedRestaurantId">
+              Branch: {{ selectedRestaurantName }}
+            </p>
+          </div>
+
+          <div class="receipt-meta">
+            <div>Date: {{ currentDateStr }}</div>
+            <div *ngIf="mobile">Mobile: {{ mobile }}</div>
+            <div *ngIf="emailId" class="email-meta">Email: {{ emailId }}</div>
+            <div *ngIf="description">Notes: {{ description }}</div>
+          </div>
+
+          <div class="receipt-divider"></div>
+
+          <div class="receipt-items">
+            <div *ngFor="let item of orderItems()" class="receipt-item-row">
+              <span class="item-desc">{{ item.name }} x{{ item.quantity }}</span>
+              <span class="item-amount">₹{{ (item.price * item.quantity) | number:'1.2-2' }}</span>
+            </div>
+            <div *ngIf="orderItems().length === 0" class="empty-receipt-msg">
+              No items added yet
+            </div>
+          </div>
+
+          <div class="receipt-divider"></div>
+
+          <div class="receipt-totals">
+            <div class="total-row">
+              <span>Subtotal:</span>
+              <span>₹{{ subtotal | number:'1.2-2' }}</span>
+            </div>
+            <div class="total-row tax-row">
+              <span>CGST (9%):</span>
+              <span>₹{{ cgstAmount | number:'1.2-2' }}</span>
+            </div>
+            <div class="total-row tax-row">
+              <span>SGST (9%):</span>
+              <span>₹{{ sgstAmount | number:'1.2-2' }}</span>
+            </div>
+            <div class="receipt-divider dot-divider"></div>
+            <div class="total-row grand-total-row">
+              <span>GRAND TOTAL:</span>
+              <span>₹{{ grandTotal | number:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <div class="receipt-divider"></div>
+          
+          <div class="receipt-footer">
+            <span class="badge status-tag" [ngClass]="{
+              'badge-success': status === 'paid',
+              'badge-warning': status === 'pending',
+              'badge-danger': status === 'overdue'
+            }">
+              {{ status }}
+            </span>
+            <p class="footer-msg">Thank you for dining with us!</p>
+          </div>
+        </div>
+
+        <button class="btn btn-primary submit-invoice-btn" (click)="submitInvoice()" [disabled]="isSubmitting() || orderItems().length === 0">
+          <svg *ngIf="isSubmitting()" class="spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="10" />
+          </svg>
+          {{ isSubmitting() ? 'Generating Bill...' : 'Create & Send Invoice' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVOICES HUB VIEW -->
+  <div *ngIf="activeTab() === 'records'" class="invoices-hub-panel">
+    <!-- Filter bar -->
+    <div class="records-filter-bar glass-panel">
+      <div class="search-box">
+        <span class="search-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </span>
+        <input type="text" [(ngModel)]="searchQuery" (input)="onSearch()" placeholder="Search by mobile, email, notes or bill ID..." />
+      </div>
+
+      <div class="filter-dropdowns">
+        <label for="statusSelect" style="display:none;"></label>
+        <select id="statusSelect" [(ngModel)]="statusFilter" (change)="onSearch()">
+          <option value="All">All Statuses</option>
+          <option value="paid">Paid</option>
+          <option value="pending">Pending</option>
+          <option value="overdue">Overdue</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading()" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading invoices...</p>
+    </div>
+
+    <!-- Table of past invoices -->
+    <div *ngIf="!isLoading() && filteredBills().length > 0" class="glass-panel table-panel">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Invoice ID</th>
+              <th>Date</th>
+              <th>Customer</th>
+              <th>Table/Notes</th>
+              <th>Amount</th>
+              <th>Tax</th>
+              <th>Status</th>
+              <th style="text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let bill of filteredBills()" class="invoice-row">
+              <td class="bill-id-cell" (click)="viewBillDetails(bill)">
+                {{ bill.id?.substring(0, 8) }}...
+              </td>
+              <td class="date-cell">{{ bill.date }}</td>
+              <td class="customer-cell">
+                <div class="cust-info">
+                  <span class="cust-phone" *ngIf="bill.mobile">{{ bill.mobile }}</span>
+                  <span class="cust-email" *ngIf="bill.emailId">{{ bill.emailId }}</span>
+                  <span class="cust-anonymous" *ngIf="!bill.mobile && !bill.emailId">Walk-in</span>
+                </div>
+              </td>
+              <td class="desc-cell">{{ bill.description || 'General' }}</td>
+              <td class="amount-cell text-success">
+                ₹{{ (bill.amount + (bill.cgst || 0) + (bill.sgst || 0)) | number:'1.2-2' }}
+              </td>
+              <td class="tax-cell">
+                ₹{{ ((bill.cgst || 0) + (bill.sgst || 0)) | number:'1.1-2' }}
+              </td>
+              <td>
+                <select [ngModel]="bill.status" (ngModelChange)="updateBillStatus(bill, $event)" class="table-status-select" [ngClass]="{
+                  'paid': bill.status === 'paid',
+                  'pending': bill.status === 'pending',
+                  'overdue': bill.status === 'overdue'
+                }">
+                  <option value="paid">PAID</option>
+                  <option value="pending">PENDING</option>
+                  <option value="overdue">OVERDUE</option>
+                </select>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <button class="btn btn-secondary btn-icon-only" (click)="viewBillDetails(bill)" title="View Receipt">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                      <line x1="16" y1="13" x2="8" y2="13"/>
+                      <line x1="16" y1="17" x2="8" y2="17"/>
+                      <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                  </button>
+                  <button class="btn btn-danger btn-icon-only" (click)="deleteBill(bill.id)" title="Delete Bill">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!isLoading() && filteredBills().length === 0" class="glass-panel empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
+        <line x1="12" y1="4" x2="12" y2="20"/>
+      </svg>
+      <p>No invoices matching active filters found. Generate a new bill or search another term.</p>
+    </div>
+  </div>
+
+  <!-- INVOICE DETAILS MODAL -->
+  <div *ngIf="showDetailsModal()" class="modal-backdrop" (click)="closeDetailsModal()">
+    <div class="modal-content receipt-modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Bill Invoice Info</h3>
+        <button class="modal-close" (click)="closeDetailsModal()">&times;</button>
+      </div>
+      
+      <div class="modal-body print-wrapper">
+        <div class="receipt-actions-top no-print">
+          <button class="btn btn-secondary btn-sm" (click)="printReceipt()">
+            Print Receipt / PDF
+          </button>
+        </div>
+        
+        <!-- Physical Receipt Print Area -->
+        <div class="physical-receipt modal-receipt" id="receipt-print-area">
+          <div class="receipt-border-decor"></div>
+          
+          <div class="receipt-brand">
+            <h2>Engineering Tadka</h2>
+            <p class="receipt-tagline">TAX INVOICE RECEIPT</p>
+            <p class="receipt-outlet" *ngIf="selectedBillRestaurant()">
+              Branch: {{ selectedBillRestaurant()?.name }}<br>
+              <span class="small-address">{{ selectedBillRestaurant()?.address }}</span>
+            </p>
+          </div>
+
+          <div class="receipt-meta">
+            <div>Invoice ID: <span class="code-font">{{ selectedBill()?.id }}</span></div>
+            <div>Date: {{ selectedBill()?.date }}</div>
+            <div *ngIf="selectedBill()?.mobile">Contact: {{ selectedBill()?.mobile }}</div>
+            <div *ngIf="selectedBill()?.emailId">Email: {{ selectedBill()?.emailId }}</div>
+            <div *ngIf="selectedBill()?.description">Table/Notes: {{ selectedBill()?.description }}</div>
+          </div>
+
+          <div class="receipt-divider"></div>
+
+          <div class="receipt-items">
+            <div class="receipt-table-header">
+              <span>Item Detail</span>
+              <span>Total</span>
+            </div>
+            <div *ngFor="let item of selectedBill()?.foodItems" class="receipt-item-row">
+              <span class="item-desc">{{ item.name }} x{{ item.quantity }} @ ₹{{ item.price }}</span>
+              <span class="item-amount">₹{{ (item.price * item.quantity) | number:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <div class="receipt-divider"></div>
+
+          <div class="receipt-totals">
+            <div class="total-row">
+              <span>Subtotal:</span>
+              <span>₹{{ selectedBill()?.amount | number:'1.2-2' }}</span>
+            </div>
+            <div class="total-row tax-row">
+              <span>CGST (9%):</span>
+              <span>₹{{ selectedBill()?.cgst | number:'1.2-2' }}</span>
+            </div>
+            <div class="total-row tax-row">
+              <span>SGST (9%):</span>
+              <span>₹{{ selectedBill()?.sgst | number:'1.2-2' }}</span>
+            </div>
+            <div class="receipt-divider dot-divider"></div>
+            <div class="total-row grand-total-row">
+              <span>GRAND TOTAL:</span>
+              <span>₹{{ (selectedBill()!.amount + (selectedBill()!.cgst || 0) + (selectedBill()!.sgst || 0)) | number:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <div class="receipt-divider"></div>
+          
+          <div class="receipt-footer">
+            <span class="badge status-tag-big" [ngClass]="{
+              'badge-success': selectedBill()?.status === 'paid',
+              'badge-warning': selectedBill()?.status === 'pending',
+              'badge-danger': selectedBill()?.status === 'overdue'
+            }">
+              {{ selectedBill()?.status?.toUpperCase() }}
+            </span>
+            <p class="footer-msg">Thank you for dining with us! Come back soon!</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer no-print">
+        <button class="btn btn-secondary" (click)="closeDetailsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,123 @@
+<div class="register-card">
+  <div class="card-header">
+    <div class="brand-logo">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h2>Create Account</h2>
+    <p>Sign up to start configuring outlets</p>
+  </div>
+
+  <div *ngIf="errorMessage()" class="error-banner animate-slide-in">
+    <span class="error-icon">⚠️</span>
+    <span class="error-text">{{ errorMessage() }}</span>
+  </div>
+
+  <form (ngSubmit)="onSubmit()" #registerForm="ngForm" class="auth-form">
+    <div class="form-row">
+      <div class="form-group col">
+        <label for="firstName">First Name</label>
+        <div class="input-wrapper">
+          <input 
+            type="text" 
+            id="firstName" 
+            name="firstName" 
+            [(ngModel)]="firstName" 
+            placeholder="John"
+            required
+          />
+        </div>
+      </div>
+      
+      <div class="form-group col">
+        <label for="lastName">Last Name</label>
+        <div class="input-wrapper">
+          <input 
+            type="text" 
+            id="lastName" 
+            name="lastName" 
+            [(ngModel)]="lastName" 
+            placeholder="Doe"
+            required
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="email">Email Address</label>
+      <div class="input-wrapper">
+        <span class="input-icon">✉️</span>
+        <input 
+          type="email" 
+          id="email" 
+          name="email" 
+          [(ngModel)]="email" 
+          placeholder="john.doe@example.com"
+          required
+          autocomplete="email"
+        />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="password">Password</label>
+      <div class="input-wrapper">
+        <span class="input-icon">🔒</span>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          [(ngModel)]="password" 
+          placeholder="Min 6 characters"
+          required
+          minlength="6"
+          autocomplete="new-password"
+        />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group col">
+        <label for="dob">Date of Birth</label>
+        <div class="input-wrapper">
+          <input 
+            type="date" 
+            id="dob" 
+            name="dob" 
+            [(ngModel)]="dob" 
+            (change)="onDobChange()"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="form-group col">
+        <label for="age">Calculated Age</label>
+        <div class="input-wrapper">
+          <input 
+            type="number" 
+            id="age" 
+            name="age" 
+            [ngModel]="age"
+            placeholder="0"
+            disabled
+            style="opacity: 0.8; cursor: not-allowed; background: rgba(255, 255, 255, 0.03);"
+          />
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" [disabled]="loading() || !registerForm.valid" class="btn-submit">
+      <span *ngIf="loading()" class="spinner"></span>
+      <span *ngIf="!loading()">Register & Login</span>
+    </button>
+  </form>
+
+  <div class="card-footer">
+    <p>Already have an account? <a routerLink="/login">Login here</a></p>
+  </div>
+</div>

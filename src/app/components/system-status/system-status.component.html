@@ -1,0 +1,136 @@
+<div class="system-container animate-fade-in">
+  <!-- Notifications -->
+  <div *ngIf="message()" [ngClass]="messageType() === 'success' ? 'alert-success' : 'alert-error'" class="alert">
+    <span>{{ message() }}</span>
+  </div>
+
+  <div class="system-header">
+    <div>
+      <h1>System Diagnostics & Setup</h1>
+      <p class="subtitle">Monitor backend connectivity, SMTP services, and populate mock data.</p>
+    </div>
+  </div>
+
+  <div class="system-grid">
+    <!-- Server Status Panel -->
+    <div class="glass-panel diagnostic-card">
+      <div class="card-header">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+            <line x1="6" y1="6" x2="6.01" y2="6"/>
+            <line x1="6" y1="18" x2="6.01" y2="18"/>
+          </svg>
+        </div>
+        <h3>Backend Diagnostics</h3>
+      </div>
+      <div class="card-body">
+        <div class="diagnostic-item">
+          <span class="label">API Base URL:</span>
+          <span class="value code-val">http://localhost:3001</span>
+        </div>
+        <div class="diagnostic-item">
+          <span class="label">Database Mode:</span>
+          <span class="value highlight-text">In-Memory (USE_DB = false)</span>
+        </div>
+        <div class="diagnostic-item">
+          <span class="label">Email Integration:</span>
+          <span class="value" *ngIf="emailStatus()">{{ emailStatus()?.configured ? 'Active SMTP (' + emailStatus()?.service + ')' : 'Console Logger Mock' }}</span>
+          <span class="value" *ngIf="!emailStatus()">Checking...</span>
+        </div>
+        <div class="diagnostic-item" *ngIf="emailStatus()">
+          <span class="label">Active Sender:</span>
+          <span class="value text-ellipsis">{{ emailStatus()?.emailUser }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Seeding Panel -->
+    <div class="glass-panel seed-card">
+      <div class="card-header">
+        <div class="card-icon seed-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <h3>Database Utilities</h3>
+      </div>
+      <div class="card-body">
+        <p class="description-text">
+          Fill the backend in-memory database instantly with realistic restaurants, categorized food items, operational expenses, and sample paid/pending invoice bills.
+        </p>
+        <button class="btn btn-primary seed-btn" (click)="seedData()" [disabled]="isSeeding()">
+          <svg *ngIf="isSeeding()" class="spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="10" />
+          </svg>
+          {{ isSeeding() ? 'Seeding Database...' : 'Seed Sample Mock Data' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Receipt Logs -->
+  <div class="glass-panel logs-panel">
+    <div class="logs-header">
+      <div class="logs-title-area">
+        <div class="card-icon logs-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
+        <h3>Email Delivery Logs (API /debug/email-logs)</h3>
+      </div>
+      <div class="logs-actions">
+        <button class="btn btn-secondary" (click)="fetchData()" [disabled]="isLoading()">
+          Refresh Logs
+        </button>
+        <button class="btn btn-danger" (click)="clearLogs()" [disabled]="emailLogs().length === 0">
+          Clear Logs
+        </button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table *ngIf="emailLogs().length > 0; else noLogs">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Recipient Email</th>
+            <th>Subject</th>
+            <th>Invoice Amount</th>
+            <th>Delivery Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let log of emailLogs()" class="log-row">
+            <td class="date-cell">{{ log.timestamp | date:'yyyy-MM-dd HH:mm:ss' }}</td>
+            <td class="email-cell">{{ log.to }}</td>
+            <td>{{ log.subject }}</td>
+            <td class="amount-cell">₹{{ log.billData.total | number:'1.2-2' }}</td>
+            <td>
+              <span class="badge" [ngClass]="{
+                'badge-success': log.status === 'sent' || log.status === 'logged',
+                'badge-danger': log.status === 'failed',
+                'badge-warning': log.status === 'pending'
+              }">
+                {{ log.status }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <ng-template #noLogs>
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <p>No email logs recorded yet. Invoices generated with customer emails will appear here.</p>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</div>

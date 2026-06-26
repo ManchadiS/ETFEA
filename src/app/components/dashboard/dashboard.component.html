@@ -1,0 +1,417 @@
+<div class="dashboard-container animate-fade-in">
+  <div class="dashboard-header">
+    <div class="header-titles">
+      <h1>Overview Dashboard</h1>
+      <p class="subtitle">Real-time metrics, financial breakdowns, and branch operations tracker.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openReportModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" style="width:18px; height:18px;">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+        <polyline points="10 9 9 9 8 9"/>
+      </svg>
+      Bills Reports Hub
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="loading-state">
+    <div class="spinner"></div>
+    <p>Crunching analytics data...</p>
+  </div>
+
+  <ng-container *ngIf="!isLoading()">
+    <!-- Financial Metric Cards -->
+    <div class="metrics-grid">
+      <!-- Total Revenue Box -->
+      <div class="glass-panel metric-card revenue-card">
+        <div class="metric-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <div class="metric-info">
+          <span class="label">Total Revenue</span>
+          <h2 class="value">₹{{ totalRevenue() | number:'1.2-2' }}</h2>
+          <span class="subtext">From {{ bills().length }} generated bills</span>
+        </div>
+      </div>
+
+      <!-- Total Expenses Box -->
+      <div class="glass-panel metric-card expense-card">
+        <div class="metric-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
+            <line x1="12" y1="4" x2="12" y2="20"/>
+            <line x1="2" y1="10" x2="22" y2="10"/>
+          </svg>
+        </div>
+        <div class="metric-info">
+          <span class="label">Total Expenses</span>
+          <h2 class="value">₹{{ totalExpenses() | number:'1.2-2' }}</h2>
+          <span class="subtext">Across {{ expenses().length }} operations</span>
+        </div>
+      </div>
+
+      <!-- Net Profit Box -->
+      <div class="glass-panel metric-card profit-card" [ngClass]="netProfit() >= 0 ? 'profit-positive' : 'profit-negative'">
+        <div class="metric-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+            <polyline points="17 6 23 6 23 12"/>
+          </svg>
+        </div>
+        <div class="metric-info">
+          <span class="label">Net Profit</span>
+          <h2 class="value">₹{{ netProfit() | number:'1.2-2' }}</h2>
+          <span class="subtext highlight">Margin: {{ profitMargin() | number:'1.1-1' }}%</span>
+        </div>
+      </div>
+
+      <!-- Outlets & Menu Box -->
+      <div class="glass-panel metric-card outlets-card">
+        <div class="metric-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </div>
+        <div class="metric-info">
+          <span class="label">Operations Overview</span>
+          <h2 class="value">{{ restaurants().length }} Outlets</h2>
+          <span class="subtext">{{ foodItems().length }} Menu Recipe Items</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Grid Section -->
+    <div class="charts-grid">
+      <!-- Revenue vs Expenses SVG Chart -->
+      <div class="glass-panel chart-card">
+        <div class="chart-header">
+          <h3>Finance Over Time (Last 7 Days)</h3>
+          <div class="legend">
+            <span class="legend-item"><span class="legend-dot rev"></span>Revenue</span>
+            <span class="legend-item"><span class="legend-dot exp"></span>Expenses</span>
+          </div>
+        </div>
+        
+        <div class="chart-body">
+          <svg viewBox="0 0 540 200" class="bar-chart-svg">
+            <!-- Grid lines -->
+            <line x1="30" y1="20" x2="520" y2="20" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+            <line x1="30" y1="70" x2="520" y2="70" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+            <line x1="30" y1="120" x2="520" y2="120" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+            <line x1="30" y1="170" x2="520" y2="170" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+
+            <!-- Y Axis helper values -->
+            <text x="24" y="24" class="axis-text" text-anchor="end">Max</text>
+            <text x="24" y="174" class="axis-text" text-anchor="end">0</text>
+
+            <g *ngFor="let bar of chartBars()">
+              <!-- Revenue bar -->
+              <rect 
+                [attr.x]="bar.x" 
+                [attr.y]="bar.yRevenue" 
+                width="20" 
+                [attr.height]="bar.heightRevenue" 
+                rx="3"
+                class="bar-rect rev-bar">
+                <title>Revenue: ₹{{ bar.revenueVal }}</title>
+              </rect>
+
+              <!-- Expense bar -->
+              <rect 
+                [attr.x]="bar.x + 24" 
+                [attr.y]="bar.yExpense" 
+                width="20" 
+                [attr.height]="bar.heightExpense" 
+                rx="3"
+                class="bar-rect exp-bar">
+                <title>Expenses: ₹{{ bar.expenseVal }}</title>
+              </rect>
+
+              <!-- Label text -->
+              <text [attr.x]="bar.x + 22" y="190" class="axis-text" text-anchor="middle">
+                {{ bar.label }}
+              </text>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Expense Categories breakdown -->
+      <div class="glass-panel chart-card donut-card">
+        <div class="chart-header">
+          <h3>Expenses Category Share</h3>
+        </div>
+        <div class="chart-body donut-layout">
+          <!-- SVG Donut -->
+          <div class="donut-svg-wrapper">
+            <svg viewBox="0 0 100 100" class="donut-svg">
+              <circle cx="50" cy="50" r="35" class="donut-bg-ring"/>
+              
+              <!-- Draw arcs -->
+              <path 
+                *ngFor="let arc of chartDonutArcs()" 
+                [attr.d]="arc.path" 
+                [attr.stroke]="arc.color"
+                stroke-width="11"
+                fill="none">
+                <title>{{ arc.name }}: {{ arc.percentage | number:'1.1-1' }}%</title>
+              </path>
+            </svg>
+            
+            <div class="donut-center-text">
+              <span class="donut-total-lbl">Total Costs</span>
+              <span class="donut-total-val">₹{{ totalExpenses() | number:'1.0-0' }}</span>
+            </div>
+          </div>
+
+          <!-- Legend list -->
+          <div class="donut-legend">
+            <div *ngFor="let cat of expenseCategories()" class="legend-row">
+              <span class="legend-indicator" [style.background-color]="cat.color"></span>
+              <span class="legend-name">{{ cat.name }}</span>
+              <span class="legend-val">₹{{ cat.amount | number:'1.0-0' }} ({{ cat.percentage | number:'1.0-0' }}%)</span>
+            </div>
+            <div *ngIf="expenseCategories().length === 0" class="no-data-msg">
+              No operational expenses recorded.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Section: Recent transactions & actions -->
+    <div class="dashboard-bottom">
+      <div class="glass-panel recent-panel">
+        <div class="panel-header">
+          <h3>Recent Transactions & Billing Activity</h3>
+          <button class="btn btn-secondary btn-sm" routerLink="/billing">View Invoices Hub</button>
+        </div>
+
+        <div class="table-container">
+          <table *ngIf="recentTransactions().length > 0; else noTrans">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Category/Status</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let trans of recentTransactions()" class="trans-row">
+                <td class="date-cell">{{ trans.date }}</td>
+                <td>
+                  <span class="type-pill" [ngClass]="trans.type">
+                    <svg *ngIf="trans.type === 'invoice'" class="type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                      <line x1="12" y1="19" x2="12" y2="5"/>
+                      <polyline points="5 12 12 5 19 12"/>
+                    </svg>
+                    <svg *ngIf="trans.type === 'expense'" class="type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                      <line x1="12" y1="5" x2="12" y2="19"/>
+                      <polyline points="19 12 12 19 5 12"/>
+                    </svg>
+                    {{ trans.type === 'invoice' ? 'INCOMING' : 'OUTGOING' }}
+                  </span>
+                </td>
+                <td class="desc-cell">{{ trans.description }}</td>
+                <td>
+                  <span class="badge" [ngClass]="{
+                    'badge-success': trans.categoryOrStatus === 'paid' || trans.categoryOrStatus === 'Inventory',
+                    'badge-warning': trans.categoryOrStatus === 'pending' || trans.categoryOrStatus === 'Utilities' || trans.categoryOrStatus === 'Salary',
+                    'badge-danger': trans.categoryOrStatus === 'overdue' || trans.categoryOrStatus === 'Marketing'
+                  }">
+                    {{ trans.categoryOrStatus }}
+                  </span>
+                </td>
+                <td class="amount-cell" [ngClass]="trans.type === 'invoice' ? 'text-success' : 'text-danger'">
+                  {{ trans.type === 'invoice' ? '+' : '-' }}₹{{ trans.amount | number:'1.2-2' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <ng-template #noTrans>
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              <p>No transactions found. Generate a bill receipt or record an operational expense to populate this feed.</p>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Reports Hub Modal -->
+  <div *ngIf="showReportModal()" class="modal-backdrop" (click)="closeReportModal()">
+    <div class="modal-content report-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">Bills Reports Hub</h2>
+        <button class="modal-close" (click)="closeReportModal()">&times;</button>
+      </div>
+
+      <div class="tabs-container">
+        <button class="tab-btn" [class.active]="reportTab() === 'daily'" (click)="setReportTab('daily')">
+          Daily Report
+        </button>
+        <button class="tab-btn" [class.active]="reportTab() === 'monthly'" (click)="setReportTab('monthly')">
+          Monthly Report
+        </button>
+      </div>
+
+      <!-- Daily Report Tab -->
+      <div *ngIf="reportTab() === 'daily'" class="tab-content animate-fade-in">
+        <div class="report-summary-box">
+          <div class="summary-item">
+            <span class="summary-label">Date</span>
+            <span class="summary-val">{{ todayStr() }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Invoices</span>
+            <span class="summary-val">{{ todaySummary().count }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Subtotal</span>
+            <span class="summary-val">₹{{ todaySummary().subtotal | number:'1.2-2' }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Tax (GST)</span>
+            <span class="summary-val">₹{{ todaySummary().tax | number:'1.2-2' }}</span>
+          </div>
+          <div class="summary-item highlight">
+            <span class="summary-label">Total</span>
+            <span class="summary-val">₹{{ todaySummary().total | number:'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn btn-success w-full" (click)="downloadBillsExcel('daily')" [disabled]="todaySummary().count === 0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" style="width:16px; height:16px;">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download Today's Bills (Excel/CSV)
+          </button>
+        </div>
+
+        <div class="report-preview-section">
+          <h3>Today's Bills Preview</h3>
+          <div class="table-container preview-table-container">
+            <table *ngIf="todayBills().length > 0; else noTodayBills">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Subtotal</th>
+                  <th>GST</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let bill of todayBills()">
+                  <td>{{ bill.id?.substring(0, 6) }}</td>
+                  <td>₹{{ bill.amount | number:'1.2-2' }}</td>
+                  <td>₹{{ (bill.cgst || 0) + (bill.sgst || 0) | number:'1.2-2' }}</td>
+                  <td>₹{{ (bill.amount || 0) + (bill.cgst || 0) + (bill.sgst || 0) | number:'1.2-2' }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'badge-success': bill.status === 'paid',
+                      'badge-warning': bill.status === 'pending',
+                      'badge-danger': bill.status === 'overdue'
+                    }">{{ bill.status }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <ng-template #noTodayBills>
+              <p class="no-bills-msg">No bills generated today.</p>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Report Tab -->
+      <div *ngIf="reportTab() === 'monthly'" class="tab-content animate-fade-in">
+        <div class="report-summary-box">
+          <div class="summary-item">
+            <span class="summary-label">Month</span>
+            <span class="summary-val">{{ currentMonthName() }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Invoices</span>
+            <span class="summary-val">{{ currentMonthSummary().count }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Subtotal</span>
+            <span class="summary-val">₹{{ currentMonthSummary().subtotal | number:'1.2-2' }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Tax (GST)</span>
+            <span class="summary-val">₹{{ currentMonthSummary().tax | number:'1.2-2' }}</span>
+          </div>
+          <div class="summary-item highlight">
+            <span class="summary-label">Total</span>
+            <span class="summary-val">₹{{ currentMonthSummary().total | number:'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn btn-success w-full" (click)="downloadBillsExcel('monthly')" [disabled]="currentMonthSummary().count === 0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" style="width:16px; height:16px;">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download This Month's Bills (Excel/CSV)
+          </button>
+        </div>
+
+        <div class="report-preview-section">
+          <h3>This Month's Bills Preview</h3>
+          <div class="table-container preview-table-container">
+            <table *ngIf="currentMonthBills().length > 0; else noMonthlyBills">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>ID</th>
+                  <th>Subtotal</th>
+                  <th>GST</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let bill of currentMonthBills()">
+                  <td>{{ bill.date }}</td>
+                  <td>{{ bill.id?.substring(0, 6) }}</td>
+                  <td>₹{{ bill.amount | number:'1.2-2' }}</td>
+                  <td>₹{{ (bill.cgst || 0) + (bill.sgst || 0) | number:'1.2-2' }}</td>
+                  <td>₹{{ (bill.amount || 0) + (bill.cgst || 0) + (bill.sgst || 0) | number:'1.2-2' }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'badge-success': bill.status === 'paid',
+                      'badge-warning': bill.status === 'pending',
+                      'badge-danger': bill.status === 'overdue'
+                    }">{{ bill.status }}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <ng-template #noMonthlyBills>
+              <p class="no-bills-msg">No bills generated this month.</p>
+            </ng-template>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

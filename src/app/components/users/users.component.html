@@ -1,0 +1,172 @@
+<div class="users-container">
+  <div class="page-header">
+    <div>
+      <h2>User Administration</h2>
+      <p>Create, update, and manage portal accounts</p>
+    </div>
+    <button (click)="openAddModal()" class="btn-primary">
+      <span class="btn-icon">+</span> Add User
+    </button>
+  </div>
+
+  <div *ngIf="errorMessage()" class="error-banner">
+    <span>⚠️</span> {{ errorMessage() }}
+  </div>
+
+  <!-- Users Grid / Table -->
+  <div class="table-card">
+    <div *ngIf="loading()" class="table-loading">
+      <div class="spinner"></div>
+      <p>Loading portal users...</p>
+    </div>
+
+    <div *ngIf="!loading() && users().length === 0" class="table-empty">
+      <p>No registered users found. Click 'Add User' to register a new account.</p>
+    </div>
+
+    <table *ngIf="!loading() && users().length > 0" class="users-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email Address</th>
+          <th>Date of Birth</th>
+          <th>Age</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let u of users()">
+          <td class="user-name-col">
+            <div class="user-avatar">
+              {{ u.firstName.charAt(0).toUpperCase() }}
+            </div>
+            <span>{{ u.firstName }} {{ u.lastName }}</span>
+          </td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.dob }}</td>
+          <td><span class="age-badge">{{ u.age }} years</span></td>
+          <td class="actions-col" style="text-align: right;">
+            <button (click)="openEditModal(u)" class="btn-action edit" title="Edit User">✏️</button>
+            <button (click)="openDeleteModal(u)" class="btn-action delete" title="Delete User">🗑️</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Add User Modal -->
+  <div *ngIf="showAddModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Create Portal User</h3>
+        <button (click)="closeAddModal()" class="btn-close">&times;</button>
+      </div>
+      
+      <form (ngSubmit)="handleAddUser()" #addForm="ngForm" class="modal-form">
+        <div class="form-row">
+          <div class="form-group col">
+            <label for="addFirstName">First Name</label>
+            <input type="text" id="addFirstName" name="addFirstName" [(ngModel)]="firstName" placeholder="First Name" required />
+          </div>
+          <div class="form-group col">
+            <label for="addLastName">Last Name</label>
+            <input type="text" id="addLastName" name="addLastName" [(ngModel)]="lastName" placeholder="Last Name" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="addEmail">Email Address</label>
+          <input type="email" id="addEmail" name="addEmail" [(ngModel)]="email" placeholder="email@example.com" required />
+        </div>
+
+        <div class="form-group">
+          <label for="addPassword">Password</label>
+          <input type="password" id="addPassword" name="addPassword" [(ngModel)]="password" placeholder="••••••••" required minlength="6" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col">
+            <label for="addDob">Date of Birth</label>
+            <input type="date" id="addDob" name="addDob" [(ngModel)]="dob" (change)="calculateAgeFromDob()" required />
+          </div>
+          <div class="form-group col">
+            <label for="addAge">Calculated Age</label>
+            <input type="number" id="addAge" name="addAge" [ngModel]="age" disabled style="background: rgba(255,255,255,0.03);" />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" (click)="closeAddModal()" class="btn-secondary">Cancel</button>
+          <button type="submit" [disabled]="!addForm.valid" class="btn-primary">Save User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit User Modal -->
+  <div *ngIf="showEditModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Modify Portal User</h3>
+        <button (click)="closeEditModal()" class="btn-close">&times;</button>
+      </div>
+      
+      <form (ngSubmit)="handleEditUser()" #editForm="ngForm" class="modal-form">
+        <div class="form-row">
+          <div class="form-group col">
+            <label for="editFirstName">First Name</label>
+            <input type="text" id="editFirstName" name="editFirstName" [(ngModel)]="firstName" required />
+          </div>
+          <div class="form-group col">
+            <label for="editLastName">Last Name</label>
+            <input type="text" id="editLastName" name="editLastName" [(ngModel)]="lastName" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="editEmail">Email Address</label>
+          <input type="email" id="editEmail" name="editEmail" [(ngModel)]="email" required />
+        </div>
+
+        <div class="form-group">
+          <label for="editPassword">Password (leave blank to keep unchanged)</label>
+          <input type="password" id="editPassword" name="editPassword" [(ngModel)]="password" placeholder="••••••••" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col">
+            <label for="editDob">Date of Birth</label>
+            <input type="date" id="editDob" name="editDob" [(ngModel)]="dob" (change)="calculateAgeFromDob()" required />
+          </div>
+          <div class="form-group col">
+            <label for="editAge">Calculated Age</label>
+            <input type="number" id="editAge" name="editAge" [ngModel]="age" disabled style="background: rgba(255,255,255,0.03);" />
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" (click)="closeEditModal()" class="btn-secondary">Cancel</button>
+          <button type="submit" [disabled]="!editForm.valid" class="btn-primary">Update User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete User Modal -->
+  <div *ngIf="showDeleteModal" class="modal-overlay">
+    <div class="modal-card confirm-modal">
+      <div class="modal-header">
+        <h3>Delete Account</h3>
+        <button (click)="closeDeleteModal()" class="btn-close">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px 0; color: rgba(255, 255, 255, 0.8);">
+        <p>Are you sure you want to permanently delete the user account for <strong>{{ selectedUser?.firstName }} {{ selectedUser?.lastName }}</strong> ({{ selectedUser?.email }})?</p>
+        <p style="color: #fca5a5; font-size: 13px; margin-top: 10px;">⚠️ This action is irreversible and the user will lose portal access immediately.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" (click)="closeDeleteModal()" class="btn-secondary">Cancel</button>
+        <button type="button" (click)="handleDeleteUser()" class="btn-danger">Yes, Delete Account</button>
+      </div>
+    </div>
+  </div>
+</div>
