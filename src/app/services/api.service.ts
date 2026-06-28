@@ -76,6 +76,8 @@ export interface EmailStatus {
   totalSent: number;
   totalFailed: number;
   totalLogs: number;
+  useDb?: boolean;
+  dbConnected?: boolean;
 }
 
 export interface User {
@@ -93,7 +95,7 @@ export interface User {
 })
 export class ApiService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:3001';
+  private baseUrl = 'http://localhost:3001/api/v1';
 
   // Global active restaurant selection state
   selectedRestaurantId = signal<string>('');

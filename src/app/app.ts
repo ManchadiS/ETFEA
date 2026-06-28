@@ -101,11 +101,11 @@ export class App implements OnInit, OnDestroy {
         // Wait, store.js connects to db if useDb is true. 
         // Let's see if we can check if MongoDB is configured. 
         // The API returns email status configured, but let's check what it has.
-        // We can display "In-Memory Mode" if USE_DB was set to false, or look at logs.
-        // Wait, let's look at the emailStatus configured: it just returns email status.
-        // Let's fetch the actual db status or log status.
-        // We can check if configured is true.
-        this.dbMode.set('In-Memory');
+        if (status.useDb) {
+          this.dbMode.set(status.dbConnected ? 'MongoDB' : 'MongoDB (Offline)');
+        } else {
+          this.dbMode.set('In-Memory');
+        }
         this.emailUser.set(status.emailUser || 'Console Mock');
       },
       error: (err) => {

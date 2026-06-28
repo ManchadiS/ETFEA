@@ -28,11 +28,14 @@
       <div class="card-body">
         <div class="diagnostic-item">
           <span class="label">API Base URL:</span>
-          <span class="value code-val">http://localhost:3001</span>
+          <span class="value code-val">http://localhost:3001/api/v1</span>
         </div>
         <div class="diagnostic-item">
           <span class="label">Database Mode:</span>
-          <span class="value highlight-text">In-Memory (USE_DB = false)</span>
+          <span class="value highlight-text" *ngIf="emailStatus()">
+            {{ emailStatus()?.useDb ? (emailStatus()?.dbConnected ? 'MongoDB (Connected)' : 'MongoDB (Disconnected)') : 'In-Memory (USE_DB = false)' }}
+          </span>
+          <span class="value" *ngIf="!emailStatus()">Checking...</span>
         </div>
         <div class="diagnostic-item">
           <span class="label">Email Integration:</span>
@@ -58,7 +61,7 @@
       </div>
       <div class="card-body">
         <p class="description-text">
-          Fill the backend in-memory database instantly with realistic restaurants, categorized food items, operational expenses, and sample paid/pending invoice bills.
+          Fill the backend database instantly with realistic restaurants, categorized food items, operational expenses, and sample paid/pending invoice bills.
         </p>
         <button class="btn btn-primary seed-btn" (click)="seedData()" [disabled]="isSeeding()">
           <svg *ngIf="isSeeding()" class="spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
