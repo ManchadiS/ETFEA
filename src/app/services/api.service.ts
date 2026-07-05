@@ -101,7 +101,7 @@ export interface InventoryItem {
 })
 export class ApiService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://api.engineeringtadka.com';
+  private baseUrl = 'http://api.engineeringtadka.com/api/v1';
 
   // Global active restaurant selection state
   selectedRestaurantId = signal<string>('');
