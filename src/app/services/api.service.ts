@@ -90,12 +90,18 @@ export interface User {
   age: number;
 }
 
+export interface InventoryItem {
+  id?: string;
+  restaurantId: string;
+  name: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://api.engineeringtadka.com/api/v1';
+  private baseUrl = 'http://localhost:3000/api/v1';
 
   // Global active restaurant selection state
   selectedRestaurantId = signal<string>('');
@@ -218,6 +224,25 @@ export class ApiService {
 
   register(user: User): Observable<User> {
     return this.http.post<User>(`${this.baseUrl}/users/register`, user);
+  }
+
+  // INVENTORY
+  getInventoryItems(restaurantId?: string): Observable<InventoryItem[]> {
+    const params: Record<string, string> = {};
+    if (restaurantId) params['restaurantId'] = restaurantId;
+    return this.http.get<InventoryItem[]>(`${this.baseUrl}/inventory`, { params });
+  }
+
+  createInventoryItem(item: InventoryItem): Observable<InventoryItem> {
+    return this.http.post<InventoryItem>(`${this.baseUrl}/inventory`, item);
+  }
+
+  updateInventoryItem(id: string, item: Partial<InventoryItem>): Observable<any> {
+    return this.http.put(`${this.baseUrl}/inventory/${id}`, item);
+  }
+
+  deleteInventoryItem(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/inventory/${id}`, { responseType: 'text' });
   }
 
   // DEBUG & SYSTEM STATUS

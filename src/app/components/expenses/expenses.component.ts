@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, Expense, Restaurant } from '../../services/api.service';
+import { ApiService, Expense, Restaurant, InventoryItem } from '../../services/api.service';
 
 @Component({
   selector: 'app-expenses',
@@ -36,6 +36,10 @@ export class ExpensesComponent implements OnInit {
   description = '';
   restaurantId = '';
 
+  // Inventory Integration fields
+  inventoryItems = signal<InventoryItem[]>([]);
+  selectedInventoryItemId = '';
+
   constructor() {
     // Automatically refetch expenses when active restaurant changes
     effect(() => {
@@ -53,6 +57,22 @@ export class ExpensesComponent implements OnInit {
       next: (list) => this.restaurants.set(list),
       error: (err) => console.error('Error fetching restaurants for expenses:', err)
     });
+  }
+
+  fetchInventoryItems() {
+    if (!this.restaurantId) {
+      this.inventoryItems.set([]);
+      return;
+    }
+    this.apiService.getInventoryItems(this.restaurantId).subscribe({
+      next: (list) => this.inventoryItems.set(list),
+      error: (err) => console.error('Error fetching inventory items for expenses:', err)
+    });
+  }
+
+  onRestaurantChange() {
+    this.selectedInventoryItemId = '';
+    this.fetchInventoryItems();
   }
 
   fetchExpenses() {
@@ -112,8 +132,10 @@ export class ExpensesComponent implements OnInit {
     this.date = new Date().toISOString().split('T')[0];
     this.description = '';
     this.restaurantId = this.apiService.selectedRestaurantId(); // pre-select active restaurant if any
+    this.selectedInventoryItemId = '';
     this.errorMessage.set('');
     this.showModal.set(true);
+    this.fetchInventoryItems();
   }
 
   openEditModal(e: Expense) {
@@ -123,9 +145,28 @@ export class ExpensesComponent implements OnInit {
     this.amount = e.amount;
     this.category = e.category || 'Inventory';
     this.date = e.date || new Date().toISOString().split('T')[0];
-    this.description = e.description || '';
     this.restaurantId = e.restaurantId || '';
     this.errorMessage.set('');
+
+    this.selectedInventoryItemId = '';
+    if (this.category === 'Inventory' && e.description && e.description.startsWith('Inventory: ')) {
+      const parts = e.description.substring(11).split(' - ');
+      const itemName = parts[0];
+      this.description = parts.slice(1).join(' - ');
+      this.apiService.getInventoryItems(this.restaurantId).subscribe({
+        next: (list) => {
+          this.inventoryItems.set(list);
+          const found = list.find(item => item.name === itemName);
+          if (found) {
+            this.selectedInventoryItemId = found.id || '';
+          }
+        }
+      });
+    } else {
+      this.description = e.description || '';
+      this.fetchInventoryItems();
+    }
+
     this.showModal.set(true);
   }
 
@@ -139,11 +180,24 @@ export class ExpensesComponent implements OnInit {
       return;
     }
 
+    if (this.category === 'Inventory' && !this.selectedInventoryItemId) {
+      this.errorMessage.set('Please select an inventory item.');
+      return;
+    }
+
+    let finalDescription = this.description.trim();
+    if (this.category === 'Inventory') {
+      const selectedItem = this.inventoryItems().find(item => item.id === this.selectedInventoryItemId);
+      if (selectedItem) {
+        finalDescription = `Inventory: ${selectedItem.name}` + (finalDescription ? ` - ${finalDescription}` : '');
+      }
+    }
+
     const payload: Expense = {
       amount: this.amount,
       category: this.category,
       date: this.date,
-      description: this.description.trim(),
+      description: finalDescription,
       restaurantId: this.restaurantId
     };
 

@@ -119,7 +119,7 @@
 
         <div class="form-group">
           <label for="expRestaurant">Restaurant Outlet *</label>
-          <select id="expRestaurant" [(ngModel)]="restaurantId" required>
+          <select id="expRestaurant" [(ngModel)]="restaurantId" (change)="onRestaurantChange()" required>
             <option value="" disabled selected>-- Select Restaurant Outlet --</option>
             <option *ngFor="let r of restaurants()" [value]="r.id">{{ r.name }}</option>
           </select>
@@ -136,6 +136,15 @@
               <option *ngFor="let cat of categories.slice(1)" [value]="cat">{{ cat }}</option>
             </select>
           </div>
+        </div>
+
+        <!-- Conditional Inventory Item Dropdown -->
+        <div class="form-group animate-fade-in" *ngIf="category === 'Inventory'">
+          <label for="expInventoryItem">Inventory Item *</label>
+          <select id="expInventoryItem" [(ngModel)]="selectedInventoryItemId" required>
+            <option value="" disabled selected>-- Select Inventory Item --</option>
+            <option *ngFor="let item of inventoryItems()" [value]="item.id">{{ item.name }}</option>
+          </select>
         </div>
 
         <div class="form-group">

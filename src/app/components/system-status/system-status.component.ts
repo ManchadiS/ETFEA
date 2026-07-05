@@ -122,7 +122,24 @@ export class SystemStatusComponent implements OnInit {
             { amount: 1500, category: 'Marketing', description: 'Pamphlet printing for local distribution', date: '2026-06-15', restaurantId: id2 }
           ].map(e => this.apiService.createExpense(e));
 
-          forkJoin([...foods1, ...foods2, ...expenses1, ...expenses2]).subscribe({
+          // 4. Create Inventory Items
+          const inventory1 = [
+            { name: 'Basmati Rice', restaurantId: id1 },
+            { name: 'Chicken Breast', restaurantId: id1 },
+            { name: 'Refined Oil', restaurantId: id1 },
+            { name: 'Potatoes', restaurantId: id1 },
+            { name: 'Onions', restaurantId: id1 }
+          ].map(i => this.apiService.createInventoryItem(i));
+
+          const inventory2 = [
+            { name: 'Coffee Beans', restaurantId: id2 },
+            { name: 'Whole Milk', restaurantId: id2 },
+            { name: 'Pasta Noodles', restaurantId: id2 },
+            { name: 'Mushrooms', restaurantId: id2 },
+            { name: 'Olive Oil', restaurantId: id2 }
+          ].map(i => this.apiService.createInventoryItem(i));
+
+          forkJoin([...foods1, ...foods2, ...expenses1, ...expenses2, ...inventory1, ...inventory2]).subscribe({
             next: () => {
               // 4. Create Billing items once food items and expenses are created
               const b1 = this.apiService.createBill({
