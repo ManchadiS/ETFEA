@@ -38,8 +38,16 @@ export const routes: Routes = [
     loadComponent: () => import('./components/inventory/inventory.component').then(m => m.InventoryComponent)
   },
   {
+    path: 'orders',
+    loadComponent: () => import('./components/orders/orders.component').then(m => m.OrdersComponent)
+  },
+  {
     path: 'system-status',
     loadComponent: () => import('./components/system-status/system-status.component').then(m => m.SystemStatusComponent)
+  },
+  {
+    path: 'customers',
+    loadComponent: () => import('./components/customers/customers.component').then(m => m.CustomersComponent)
   },
   {
     path: '',

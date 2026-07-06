@@ -1,0 +1,339 @@
+<div class="orders-container">
+  <!-- Header Section -->
+  <div class="orders-header">
+    <div class="header-titles">
+      <h2>Live Kitchen Orders</h2>
+      <p class="subtitle">Track, prepare, and manage guest orders in real-time</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="openAddModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        New Order
+      </button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div *ngIf="successMessage()" class="alert alert-success">
+    {{ successMessage() }}
+  </div>
+  <div *ngIf="errorMessage() && !showModal()" class="alert alert-danger">
+    {{ errorMessage() }}
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading live kitchen orders...</p>
+  </div>
+
+  <!-- Orders Content -->
+  <div *ngIf="!isLoading()" class="orders-content">
+    <div *ngIf="orders().length === 0" class="empty-state glass-panel">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="21" r="1" />
+          <circle cx="20" cy="21" r="1" />
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+        </svg>
+      </div>
+      <h3>No orders active right now</h3>
+      <p>There are no live kitchen tickets for this outlet. Click "New Order" above to place one.</p>
+    </div>
+
+    <!-- Active Orders Grid -->
+    <div *ngIf="orders().length > 0" class="orders-grid">
+      <div *ngFor="let order of orders()" class="order-card glass-panel" [ngClass]="'status-' + order.status">
+        <!-- Card Header -->
+        <div class="card-header">
+          <div class="order-id-group">
+            <span class="order-number-badge" *ngIf="order.orderNumber">#{{ order.orderNumber }}</span>
+            <span class="table-badge">{{ order.tableNo }}</span>
+            <span *ngIf="order.discount" class="discount-badge" style="background-color: #ef4444; color: #fff; font-size: 0.72rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">{{ order.discount }}% OFF</span>
+            <span class="order-date">{{ order.date }}</span>
+          </div>
+          <span class="badge status-badge" [ngClass]="'badge-' + order.status">
+            {{ order.status | uppercase }}
+          </span>
+        </div>
+
+        <!-- Card Items List -->
+        <div class="card-body">
+          <!-- Customer contact details if present -->
+          <div *ngIf="order.mobile || order.emailId" class="card-customer-info">
+            <span *ngIf="order.mobile" class="cust-detail" title="Mobile Number">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="detail-icon"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 9.75z"/></svg>
+              {{ order.mobile }}
+            </span>
+            <span *ngIf="order.emailId" class="cust-detail" title="Email Address">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="detail-icon"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              {{ order.emailId }}
+            </span>
+          </div>
+
+          <div class="items-list">
+            <div *ngFor="let item of order.items" class="order-item-row">
+              <span class="item-qty">{{ item.quantity }}x</span>
+              <span class="item-name">{{ item.name }}</span>
+              <span class="item-price">₹{{ (item.price * item.quantity) | number:'1.2-2' }}</span>
+            </div>
+          </div>
+          <div class="order-total-row">
+            <span>Total Value:</span>
+            <span class="total-amount">₹{{ order.totalAmount | number:'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <!-- Card Footer Actions -->
+        <div class="card-footer">
+          <!-- Status workflow shortcuts -->
+          <div class="workflow-actions">
+            <button *ngIf="order.status === 'received'" class="btn btn-sm btn-outline-primary" (click)="updateOrderStatus(order, 'preparing')">
+              Start Cooking
+            </button>
+            <button *ngIf="order.status === 'preparing'" class="btn btn-sm btn-outline-warning" (click)="updateOrderStatus(order, 'ready')">
+              Mark Ready
+            </button>
+            <button *ngIf="order.status === 'ready'" class="btn btn-sm btn-outline-success" (click)="updateOrderStatus(order, 'completed')">
+              Complete
+            </button>
+            <button *ngIf="['received', 'preparing', 'ready'].includes(order.status)" class="btn btn-sm btn-outline-danger" (click)="updateOrderStatus(order, 'cancelled')">
+              Cancel
+            </button>
+            <!-- Create Bill Button -->
+            <button *ngIf="order.status !== 'completed' && order.status !== 'cancelled'" 
+                    class="btn btn-sm btn-success btn-create-bill" 
+                    (click)="openCreateBillModal(order)"
+                    [disabled]="isSubmitting()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-inline">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              Create Bill
+            </button>
+          </div>
+          
+          <div class="crud-actions">
+            <button *ngIf="order.status !== 'completed'" class="btn-icon-only edit-btn" (click)="openEditModal(order)" title="Edit Order">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+            </button>
+            <button *ngIf="order.status !== 'completed'" class="btn-icon-only delete-btn" (click)="deleteOrder(order.id!)" title="Delete Order">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay Form Modal (Add / Edit) -->
+  <div *ngIf="showModal()" class="modal-backdrop">
+    <div class="modal-content glass-panel">
+      <div class="modal-header">
+        <h3>{{ isEditing() ? 'Modify Live Order' : 'Create Live Kitchen Ticket' }}</h3>
+        <button class="btn-close" (click)="closeModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div *ngIf="errorMessage()" class="alert alert-danger">
+          {{ errorMessage() }}
+        </div>
+
+        <form (ngSubmit)="submitOrder()" #orderForm="ngForm">
+          <!-- Table input -->
+          <div class="form-group">
+            <label for="tableNo">Table Reference *</label>
+            <input type="text" id="tableNo" name="tableNo" [ngModel]="tableNo()" (ngModelChange)="tableNo.set($event)" placeholder="e.g. Table 05, Takeaway" required class="form-control">
+          </div>
+
+          <!-- Mobile / Email inputs -->
+          <div class="form-row-contact">
+            <div class="form-group half-width-form" style="position: relative;">
+              <label for="mobile">Customer Mobile</label>
+              <input type="tel" id="mobile" name="mobile" [ngModel]="mobile()" (ngModelChange)="onMobileChange($event)" placeholder="e.g. 9870859624" class="form-control" autocomplete="off" (focus)="showMobileSuggestions.set(true)" (blur)="hideSuggestionsWithDelay('mobile')">
+              <!-- Suggestions Dropdown -->
+              <ul *ngIf="showMobileSuggestions() && mobileSuggestions().length > 0" class="suggestions-list-box" style="position: absolute; top: 100%; left: 0; right: 0; background: rgba(30, 30, 45, 0.98); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; list-style: none; padding: 4px 0; margin: 4px 0 0 0; max-height: 180px; overflow-y: auto; z-index: 1000; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);">
+                <li *ngFor="let sug of mobileSuggestions()" (mousedown)="selectCustomerSuggestion(sug)" style="padding: 8px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #fff;">
+                  <div style="font-weight: 600; font-size: 0.9rem;">{{ sug.mobile }}</div>
+                  <div style="font-size: 0.8rem; opacity: 0.7;" *ngIf="sug.emailId">{{ sug.emailId }}</div>
+                  <div style="font-size: 0.75rem; color: #f59e0b; font-weight: bold;" *ngIf="sug.loyaltyPoints">{{ sug.loyaltyPoints }} pts</div>
+                </li>
+              </ul>
+            </div>
+            <div class="form-group half-width-form" style="position: relative;">
+              <label for="emailId">Customer Email</label>
+              <input type="email" id="emailId" name="emailId" [ngModel]="emailId()" (ngModelChange)="onEmailChange($event)" placeholder="e.g. customer@example.com" class="form-control" autocomplete="off" (focus)="showEmailSuggestions.set(true)" (blur)="hideSuggestionsWithDelay('email')">
+              <!-- Suggestions Dropdown -->
+              <ul *ngIf="showEmailSuggestions() && emailSuggestions().length > 0" class="suggestions-list-box" style="position: absolute; top: 100%; left: 0; right: 0; background: rgba(30, 30, 45, 0.98); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; list-style: none; padding: 4px 0; margin: 4px 0 0 0; max-height: 180px; overflow-y: auto; z-index: 1000; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);">
+                <li *ngFor="let sug of emailSuggestions()" (mousedown)="selectCustomerSuggestion(sug)" style="padding: 8px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #fff;">
+                  <div style="font-weight: 600; font-size: 0.9rem;" *ngIf="sug.mobile">{{ sug.mobile }}</div>
+                  <div style="font-size: 0.8rem; opacity: 0.7;">{{ sug.emailId }}</div>
+                  <div style="font-size: 0.75rem; color: #f59e0b; font-weight: bold;" *ngIf="sug.loyaltyPoints">{{ sug.loyaltyPoints }} pts</div>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Status Dropdown (only when editing) -->
+          <div *ngIf="isEditing()" class="form-group">
+            <label for="orderStatus">Order Status</label>
+            <select id="orderStatus" name="orderStatus" [ngModel]="status()" (ngModelChange)="status.set($event)" class="form-control">
+              <option value="received">Received</option>
+              <option value="preparing">Preparing</option>
+              <option value="ready">Ready to Serve</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          <!-- Add Items Section -->
+          <div class="add-item-section">
+            <h4>Select Food Items</h4>
+            <div class="item-selector-grid">
+              
+              <!-- Searchable Input Dropdown Container -->
+              <div class="form-group select-search-container" style="position: relative;">
+                <label>Find Dish *</label>
+                <input 
+                  type="text" 
+                  [value]="dishSearchQuery()" 
+                  (input)="onDishSearchChange($event)"
+                  (focus)="onDishSearchFocus()"
+                  (blur)="onDishSearchBlur()"
+                  placeholder="Type dish name to search..." 
+                  class="form-control search-input"
+                  autocomplete="off"
+                >
+                
+                <!-- Autocomplete Dropdown List -->
+                <div *ngIf="showSuggestions()" class="suggestions-dropdown-list">
+                  <div 
+                    *ngFor="let dish of getFilteredDishes()" 
+                    (mousedown)="selectDish(dish)"
+                    class="suggestion-item"
+                  >
+                    <span class="suggestion-name">{{ dish.name }}</span>
+                    <span class="suggestion-price">₹{{ dish.price }}</span>
+                  </div>
+                  <div *ngIf="getFilteredDishes().length === 0" class="empty-suggestions">
+                    No dishes found matching search
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quantity Input -->
+              <div class="form-group qty-group">
+                <label for="itemQty">Qty</label>
+                <input type="number" id="itemQty" name="itemQty" [(ngModel)]="selectedQuantity" min="1" class="form-control">
+              </div>
+
+              <!-- Add to Order Button -->
+              <div class="form-group add-btn-group">
+                <button type="button" class="btn btn-secondary btn-add-item" (click)="addOrderItem()">
+                  Add Item
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Order Summary List -->
+          <div class="order-summary-panel">
+            <h4>Items in Ticket</h4>
+            <div *ngIf="orderItems().length === 0" class="no-items-placeholder">
+              No dishes added to this ticket yet. Select items above.
+            </div>
+            
+            <div *ngIf="orderItems().length > 0" class="ticket-items-list">
+              <div *ngFor="let item of orderItems(); let i = index" class="ticket-item-row">
+                <span class="item-name">{{ item.name }}</span>
+                <span class="item-price">₹{{ item.price }}</span>
+                
+                <!-- Qty Adjustment Controls -->
+                <div class="qty-controls">
+                  <button type="button" class="btn-qty" (click)="adjustQuantity(i, -1)">-</button>
+                  <span class="qty-val">{{ item.quantity }}</span>
+                  <button type="button" class="btn-qty" (click)="adjustQuantity(i, 1)">+</button>
+                </div>
+                
+                <span class="item-total">₹{{ (item.price * item.quantity) | number:'1.2-2' }}</span>
+                
+                <button type="button" class="btn-remove-item" (click)="removeOrderItem(i)" title="Remove item">
+                  &times;
+                </button>
+              </div>
+            </div>
+
+            <!-- Grand Total Summary -->
+            <div *ngIf="orderItems().length > 0" class="ticket-grand-total">
+              <span>Estimated Total (Inclusive of GST):</span>
+              <span class="price-val">₹{{ totalAmount | number:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <!-- Modal Action Buttons -->
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+            <button type="submit" class="btn btn-primary" [disabled]="isSubmitting() || orderItems().length === 0">
+              {{ isSubmitting() ? 'Saving Ticket...' : (isEditing() ? 'Update Order' : 'Submit Kitchen Ticket') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Billing Discount Confirmation Modal -->
+  <div *ngIf="showCreateBillModal()" class="modal-backdrop" (click)="closeCreateBillModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()" style="max-width: 420px; background: rgba(30, 30, 45, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);">
+      <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding: 16px; display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="modal-title" style="margin: 0; color: #fff; font-size: 1.25rem;">Create Invoice</h3>
+        <button class="modal-close" (click)="closeCreateBillModal()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px; color: #fff;">
+        <p style="margin-top: 0; font-size: 0.95rem; opacity: 0.85;">Generate invoice bill for Table: <strong>{{ billingOrder()?.tableNo }}</strong> (Order #{{ billingOrder()?.orderNumber }})</p>
+        
+        <div class="form-group" style="margin-top: 15px;">
+          <label for="billDiscountSelect" style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Select Discount Amount</label>
+          <select id="billDiscountSelect" class="form-control" [ngModel]="billingDiscount()" (ngModelChange)="billingDiscount.set(+$event)" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: #fff; outline: none; cursor: pointer; font-size: 1rem; font-family: inherit;">
+            <option [value]="0">0% (No Discount)</option>
+            <option [value]="10">10% Discount</option>
+            <option [value]="15">15% Discount</option>
+            <option [value]="20">20% Discount</option>
+          </select>
+        </div>
+
+        <!-- Dynamic summary of calculations -->
+        <div class="bill-calculation-summary" style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.15); display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.9rem; opacity: 0.8;">
+            <span>Items Total:</span>
+            <span>₹{{ (billingOrder()?.totalAmount || 0) | number:'1.2-2' }}</span>
+          </div>
+          <div *ngIf="billingDiscount() > 0" style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #ef4444; font-weight: 600;">
+            <span>Discount ({{ billingDiscount() }}%):</span>
+            <span>-₹{{ (billingOrder()?.totalAmount || 0) * billingDiscount() / 100 | number:'1.2-2' }}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 700; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 4px;">
+            <span>Total Payable:</span>
+            <span style="color: #10b981;">₹{{ (billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100) | number:'1.2-2' }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.1); padding: 16px; display: flex; justify-content: flex-end; gap: 12px;">
+        <button class="btn btn-secondary" (click)="closeCreateBillModal()" style="padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: #fff;">Cancel</button>
+        <button class="btn btn-primary" (click)="confirmCreateBill()" [disabled]="isSubmitting()" style="padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; background: #10b981; color: #fff;">
+          {{ isSubmitting() ? 'Creating Bill...' : 'Create Bill' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -79,6 +79,9 @@ export class App implements OnInit, OnDestroy {
     this.apiService.getRestaurants().subscribe({
       next: (list) => {
         this.restaurants.set(list);
+        if ((!this.selectedRestaurantId() || this.selectedRestaurantId() === '') && list.length > 0) {
+          this.apiService.selectedRestaurantId.set(list[0].id || '');
+        }
       },
       error: (err) => {
         console.error('Error fetching restaurants in app shell:', err);

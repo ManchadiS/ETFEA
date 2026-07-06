@@ -190,16 +190,49 @@ export class SystemStatusComponent implements OnInit {
                 ]
               });
 
-              forkJoin([b1, b2, b3]).subscribe({
+              const o1 = this.apiService.createOrder({
+                restaurantId: id1,
+                tableNo: 'Table 03',
+                items: [
+                  { name: 'Butter Chicken', price: 380, quantity: 1 },
+                  { name: 'Garlic Naan', price: 60, quantity: 2 }
+                ],
+                status: 'preparing',
+                totalAmount: 500
+              });
+
+              const o2 = this.apiService.createOrder({
+                restaurantId: id1,
+                tableNo: 'Table 08',
+                items: [
+                  { name: 'Chicken Biryani', price: 320, quantity: 2 },
+                  { name: 'Mango Lassi', price: 90, quantity: 2 }
+                ],
+                status: 'received',
+                totalAmount: 820
+              });
+
+              const o3 = this.apiService.createOrder({
+                restaurantId: id2,
+                tableNo: 'Table 01',
+                items: [
+                  { name: 'Mushroom Risotto', price: 310, quantity: 1 },
+                  { name: 'Cappuccino', price: 110, quantity: 1 }
+                ],
+                status: 'ready',
+                totalAmount: 420
+              });
+
+              forkJoin([b1, b2, b3, o1, o2, o3]).subscribe({
                 next: () => {
                   this.isSeeding.set(false);
                   this.showMessage('Database seeded successfully!', 'success');
                   this.fetchData();
                 },
                 error: (err) => {
-                  console.error('Error seeding bills:', err);
+                  console.error('Error seeding bills/orders:', err);
                   this.isSeeding.set(false);
-                  this.showMessage('Error seeding bills.', 'error');
+                  this.showMessage('Error seeding bills and orders.', 'error');
                 }
               });
             },

@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, Restaurant, FoodItem, Billing, FoodOrderItem } from '../../services/api.service';
+import { ApiService, Restaurant, FoodItem, Billing, FoodOrderItem, Customer } from '../../services/api.service';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -30,9 +30,13 @@ export class BillingComponent implements OnInit {
   selectedQuantity = 1;
   orderItems = signal<FoodOrderItem[]>([]);
   
+  // Searchable dish selection state
+  dishSearchQuery = signal<string>('');
+  showSuggestions = signal<boolean>(false);
+  
   // Taxes
-  cgstRate = 9; // 9%
-  sgstRate = 9; // 9%
+  cgstRate = 2.5; // 2.5%
+  sgstRate = 2.5; // 2.5%
   
   // Customer details
   mobile = '';
@@ -48,9 +52,18 @@ export class BillingComponent implements OnInit {
   selectedBill = signal<Billing | null>(null);
   selectedBillRestaurant = signal<Restaurant | null>(null);
   showDetailsModal = signal<boolean>(false);
+  customerLoyaltyPoints = signal<number | null>(null);
 
   errorMessage = signal<string>('');
   successMessage = signal<string>('');
+  discount = signal<number>(0);
+
+  // Customer suggestions signals
+  allCustomers = signal<Customer[]>([]);
+  mobileSuggestions = signal<Customer[]>([]);
+  emailSuggestions = signal<Customer[]>([]);
+  showMobileSuggestions = signal<boolean>(false);
+  showEmailSuggestions = signal<boolean>(false);
 
   currentDateStr = new Date().toISOString().split('T')[0];
 
@@ -70,6 +83,8 @@ export class BillingComponent implements OnInit {
       this.selectedRestaurantId = restId;
       this.orderItems.set([]);
       this.selectedFoodItemId = '';
+      this.dishSearchQuery.set('');
+      this.showSuggestions.set(false);
       this.fetchInitialData();
     });
   }
@@ -84,12 +99,14 @@ export class BillingComponent implements OnInit {
     forkJoin({
       restaurants: this.apiService.getRestaurants(),
       foodItems: this.apiService.getFoodItems(restId),
-      bills: this.apiService.getBills(restId)
+      bills: this.apiService.getBills(restId),
+      customers: this.apiService.getCustomers()
     }).subscribe({
       next: (res) => {
         this.restaurants.set(res.restaurants);
         this.foodItems.set(res.foodItems);
         this.bills.set(res.bills);
+        this.allCustomers.set(res.customers);
         this.filterBills();
         
         if (restId) {
@@ -133,9 +150,108 @@ export class BillingComponent implements OnInit {
     return list.filter(item => item.restaurantId === this.selectedRestaurantId);
   }
 
+  // Dish Search methods
+  getFilteredDishes(): FoodItem[] {
+    const dishes = this.getFilteredFoodItems();
+    const query = this.dishSearchQuery().trim().toLowerCase();
+    if (!query) return dishes;
+    return dishes.filter(item => item.name.toLowerCase().includes(query));
+  }
+
+  onDishSearchChange(query: string) {
+    this.dishSearchQuery.set(query);
+    this.showSuggestions.set(true);
+    
+    const match = this.getFilteredFoodItems().find(
+      item => item.name.toLowerCase() === query.trim().toLowerCase()
+    );
+    if (match) {
+      this.selectedFoodItemId = match.id || '';
+    } else {
+      this.selectedFoodItemId = '';
+    }
+  }
+
+  onDishSearchFocus() {
+    this.showSuggestions.set(true);
+  }
+
+  onDishSearchBlur() {
+    setTimeout(() => {
+      this.showSuggestions.set(false);
+    }, 200);
+  }
+
+  selectDish(item: FoodItem) {
+    this.selectedFoodItemId = item.id || '';
+    this.dishSearchQuery.set(item.name);
+    this.showSuggestions.set(false);
+  }
+
   onRestaurantChange() {
     this.orderItems.set([]);
     this.selectedFoodItemId = '';
+    this.dishSearchQuery.set('');
+    this.showSuggestions.set(false);
+  }
+
+  onMobileChange(val: string) {
+    this.mobile = val;
+    this.showMobileSuggestions.set(true);
+    const cleanMobile = val.trim();
+    if (!cleanMobile) {
+      this.mobileSuggestions.set([]);
+      return;
+    }
+    const filtered = this.allCustomers().filter(c => c.mobile && c.mobile.includes(cleanMobile));
+    this.mobileSuggestions.set(filtered);
+
+    if (cleanMobile.length >= 10) {
+      const match = this.allCustomers().find(c => c.mobile === cleanMobile);
+      if (match && match.emailId && !this.emailId) {
+        this.emailId = match.emailId;
+      }
+    }
+  }
+
+  onEmailChange(val: string) {
+    this.emailId = val;
+    this.showEmailSuggestions.set(true);
+    const cleanEmail = val.trim().toLowerCase();
+    if (!cleanEmail) {
+      this.emailSuggestions.set([]);
+      return;
+    }
+    const filtered = this.allCustomers().filter(c => c.emailId && c.emailId.toLowerCase().includes(cleanEmail));
+    this.emailSuggestions.set(filtered);
+
+    if (cleanEmail.includes('@') && cleanEmail.includes('.') && cleanEmail.length > 5) {
+      const match = this.allCustomers().find(c => c.emailId && c.emailId.toLowerCase() === cleanEmail);
+      if (match && match.mobile && !this.mobile) {
+        this.mobile = match.mobile;
+      }
+    }
+  }
+
+  selectCustomerSuggestion(cust: Customer) {
+    if (cust.mobile) {
+      this.mobile = cust.mobile;
+    }
+    if (cust.emailId) {
+      this.emailId = cust.emailId;
+    }
+    this.showMobileSuggestions.set(false);
+    this.showEmailSuggestions.set(false);
+  }
+
+  hideSuggestionsWithDelay(type: 'mobile' | 'email') {
+    setTimeout(() => {
+      if (type === 'mobile') {
+        this.showMobileSuggestions.set(false);
+      } else {
+        this.showEmailSuggestions.set(false);
+      }
+    }, 250);
   }
 
   filterBills() {
@@ -198,6 +314,9 @@ export class BillingComponent implements OnInit {
 
     this.orderItems.set(currentOrder);
     this.selectedQuantity = 1; // reset quantity input
+    this.selectedFoodItemId = '';
+    this.dishSearchQuery.set('');
+    this.showSuggestions.set(false);
   }
 
   removeOrderItem(index: number) {
@@ -216,20 +335,28 @@ export class BillingComponent implements OnInit {
     this.orderItems.set(currentOrder);
   }
 
-  get subtotal(): number {
+  get itemsTotal(): number {
     return this.orderItems().reduce((sum, item) => sum + (item.price * item.quantity), 0);
   }
 
-  get cgstAmount(): number {
-    return Math.round((this.subtotal * this.cgstRate) / 100 * 100) / 100;
-  }
-
-  get sgstAmount(): number {
-    return Math.round((this.subtotal * this.sgstRate) / 100 * 100) / 100;
+  get discountAmount(): number {
+    return (this.itemsTotal * this.discount()) / 100;
   }
 
   get grandTotal(): number {
-    return this.subtotal + this.cgstAmount + this.sgstAmount;
+    return this.itemsTotal - this.discountAmount;
+  }
+
+  get cgstAmount(): number {
+    return Math.round((this.grandTotal * this.cgstRate) / (100 + this.cgstRate + this.sgstRate) * 100) / 100;
+  }
+
+  get sgstAmount(): number {
+    return Math.round((this.grandTotal * this.sgstRate) / (100 + this.cgstRate + this.sgstRate) * 100) / 100;
+  }
+
+  get subtotal(): number {
+    return this.grandTotal - this.cgstAmount - this.sgstAmount;
   }
 
   submitInvoice() {
@@ -257,12 +384,15 @@ export class BillingComponent implements OnInit {
       emailId: this.emailId.trim() || undefined,
       cgst: this.cgstAmount,
       sgst: this.sgstAmount,
-      foodItems: this.orderItems()
+      foodItems: this.orderItems(),
+      discount: this.discount()
     };
 
     this.apiService.createBill(billPayload).subscribe({
       next: (createdBill) => {
         this.isSubmitting.set(false);
+        
+        this.apiService.getCustomers().subscribe(list => this.allCustomers.set(list));
         
         let successInfo = `Invoice created successfully (ID: ${createdBill.id?.substring(0, 8)}...).`;
         if (createdBill.emailId) {
@@ -295,6 +425,10 @@ export class BillingComponent implements OnInit {
     this.emailId = '';
     this.description = '';
     this.status = 'paid';
+    this.selectedFoodItemId = '';
+    this.dishSearchQuery.set('');
+    this.showSuggestions.set(false);
+    this.discount.set(0);
     const restId = this.apiService.selectedRestaurantId();
     if (restId) {
       this.selectedRestaurantId = restId;
@@ -311,6 +445,19 @@ export class BillingComponent implements OnInit {
     this.selectedBill.set(bill);
     this.selectedBillRestaurant.set(this.restaurants().find(r => r.id === bill.restaurantId) || null);
     this.showDetailsModal.set(true);
+    
+    // Fetch loyalty points balance
+    this.customerLoyaltyPoints.set(null);
+    if (bill.mobile || bill.emailId) {
+      this.apiService.lookupCustomer({ mobile: bill.mobile, emailId: bill.emailId }).subscribe({
+        next: (cust) => {
+          if (cust) {
+            this.customerLoyaltyPoints.set(cust.loyaltyPoints);
+          }
+        },
+        error: () => {}
+      });
+    }
   }
 
   closeDetailsModal() {

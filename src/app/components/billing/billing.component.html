@@ -45,14 +45,34 @@
 
       <!-- Add Dish to Order Grid -->
       <div class="add-item-bar">
-        <div class="form-group flex-3">
-          <label for="foodSelector">Select Dish</label>
-          <select id="foodSelector" [(ngModel)]="selectedFoodItemId">
-            <option value="" disabled selected>-- Choose a Dish --</option>
-            <option *ngFor="let item of getFilteredFoodItems()" [value]="item.id">
-              {{ item.name }} (₹{{ item.price }})
-            </option>
-          </select>
+        <div class="form-group flex-3 searchable-select-container">
+          <label for="foodSearch">Select Dish</label>
+          <div class="searchable-select-wrapper">
+            <input 
+              type="text" 
+              id="foodSearch" 
+              class="searchable-select-input" 
+              [ngModel]="dishSearchQuery()" 
+              (ngModelChange)="onDishSearchChange($event)"
+              (focus)="onDishSearchFocus()"
+              (blur)="onDishSearchBlur()"
+              placeholder="Type to search dish..." 
+              autocomplete="off"
+            />
+            <div *ngIf="showSuggestions() && getFilteredDishes().length > 0" class="suggestions-list">
+              <div 
+                *ngFor="let item of getFilteredDishes()" 
+                class="suggestion-item" 
+                (mousedown)="selectDish(item)"
+              >
+                <span class="suggestion-name">{{ item.name }}</span>
+                <span class="suggestion-price">₹{{ item.price }}</span>
+              </div>
+            </div>
+            <div *ngIf="showSuggestions() && dishSearchQuery() && getFilteredDishes().length === 0" class="suggestions-list empty-suggestions">
+              No dishes found
+            </div>
+          </div>
         </div>
         <div class="form-group flex-1">
           <label for="qtyInput">Quantity</label>
@@ -112,13 +132,29 @@
       </div>
 
       <div class="form-row">
-        <div class="form-group half-width">
+        <div class="form-group half-width" style="position: relative;">
           <label for="custMobile">Customer Contact Number</label>
-          <input type="tel" id="custMobile" [(ngModel)]="mobile" placeholder="e.g. 9870859624" />
+          <input type="tel" id="custMobile" [ngModel]="mobile" (ngModelChange)="onMobileChange($event)" placeholder="e.g. 9870859624" autocomplete="off" (focus)="showMobileSuggestions.set(true)" (blur)="hideSuggestionsWithDelay('mobile')" />
+          <!-- Suggestions Dropdown -->
+          <ul *ngIf="showMobileSuggestions() && mobileSuggestions().length > 0" class="suggestions-list-box" style="position: absolute; top: 100%; left: 0; right: 0; background: rgba(30, 30, 45, 0.98); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; list-style: none; padding: 4px 0; margin: 4px 0 0 0; max-height: 180px; overflow-y: auto; z-index: 1000; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);">
+            <li *ngFor="let sug of mobileSuggestions()" (mousedown)="selectCustomerSuggestion(sug)" style="padding: 8px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #fff;">
+              <div style="font-weight: 600; font-size: 0.9rem;">{{ sug.mobile }}</div>
+              <div style="font-size: 0.8rem; opacity: 0.7;" *ngIf="sug.emailId">{{ sug.emailId }}</div>
+              <div style="font-size: 0.75rem; color: #f59e0b; font-weight: bold;" *ngIf="sug.loyaltyPoints">{{ sug.loyaltyPoints }} pts</div>
+            </li>
+          </ul>
         </div>
-        <div class="form-group half-width">
+        <div class="form-group half-width" style="position: relative;">
           <label for="custEmail">Customer Email Address (for receipt)</label>
-          <input type="email" id="custEmail" [(ngModel)]="emailId" placeholder="e.g. customer@example.com" />
+          <input type="email" id="custEmail" [ngModel]="emailId" (ngModelChange)="onEmailChange($event)" placeholder="e.g. customer@example.com" autocomplete="off" (focus)="showEmailSuggestions.set(true)" (blur)="hideSuggestionsWithDelay('email')" />
+          <!-- Suggestions Dropdown -->
+          <ul *ngIf="showEmailSuggestions() && emailSuggestions().length > 0" class="suggestions-list-box" style="position: absolute; top: 100%; left: 0; right: 0; background: rgba(30, 30, 45, 0.98); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; list-style: none; padding: 4px 0; margin: 4px 0 0 0; max-height: 180px; overflow-y: auto; z-index: 1000; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);">
+            <li *ngFor="let sug of emailSuggestions()" (mousedown)="selectCustomerSuggestion(sug)" style="padding: 8px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #fff;">
+              <div style="font-weight: 600; font-size: 0.9rem;" *ngIf="sug.mobile">{{ sug.mobile }}</div>
+              <div style="font-size: 0.8rem; opacity: 0.7;">{{ sug.emailId }}</div>
+              <div style="font-size: 0.75rem; color: #f59e0b; font-weight: bold;" *ngIf="sug.loyaltyPoints">{{ sug.loyaltyPoints }} pts</div>
+            </li>
+          </ul>
         </div>
       </div>
 
@@ -134,6 +170,19 @@
         <div class="form-group half-width">
           <label for="billDesc">Table / Notes</label>
           <input type="text" id="billDesc" [(ngModel)]="description" placeholder="e.g. Table 04 Dinner" />
+        </div>
+      </div>
+
+      <!-- Discount Buttons Selection -->
+      <div class="form-row" style="margin-top: 10px;">
+        <div class="form-group full-width" style="width: 100%;">
+          <label style="font-weight: 600; font-size: 0.9rem;">Invoice Discount</label>
+          <div class="discount-btn-group" style="display: flex; gap: 8px; margin-top: 6px; width: 100%;">
+            <button type="button" class="btn btn-sm" [style.background-color]="discount() === 10 ? '#10b981' : 'transparent'" [style.color]="discount() === 10 ? '#fff' : '#10b981'" [style.border-color]="'#10b981'" (click)="discount.set(10)" style="flex: 1; padding: 6px; font-weight: bold; border-width: 1px; border-style: solid; border-radius: 4px; cursor: pointer;">10% OFF</button>
+            <button type="button" class="btn btn-sm" [style.background-color]="discount() === 15 ? '#10b981' : 'transparent'" [style.color]="discount() === 15 ? '#fff' : '#10b981'" [style.border-color]="'#10b981'" (click)="discount.set(15)" style="flex: 1; padding: 6px; font-weight: bold; border-width: 1px; border-style: solid; border-radius: 4px; cursor: pointer;">15% OFF</button>
+            <button type="button" class="btn btn-sm" [style.background-color]="discount() === 20 ? '#10b981' : 'transparent'" [style.color]="discount() === 20 ? '#fff' : '#10b981'" [style.border-color]="'#10b981'" (click)="discount.set(20)" style="flex: 1; padding: 6px; font-weight: bold; border-width: 1px; border-style: solid; border-radius: 4px; cursor: pointer;">20% OFF</button>
+            <button type="button" class="btn btn-sm" (click)="discount.set(0)" style="flex: 1; padding: 6px; font-weight: bold; border: 1px solid #ef4444; color: #ef4444; background: transparent; border-radius: 4px; cursor: pointer;">Clear</button>
+          </div>
         </div>
       </div>
     </div>
@@ -179,21 +228,32 @@
 
           <div class="receipt-totals">
             <div class="total-row">
+              <span>Items Total:</span>
+              <span>₹{{ itemsTotal | number:'1.2-2' }}</span>
+            </div>
+            <div *ngIf="discount() > 0" class="total-row discount-row" style="color: #ef4444; font-weight: bold;">
+              <span>Discount ({{ discount() }}%):</span>
+              <span>-₹{{ discountAmount | number:'1.2-2' }}</span>
+            </div>
+            <div class="total-row">
               <span>Subtotal:</span>
               <span>₹{{ subtotal | number:'1.2-2' }}</span>
             </div>
             <div class="total-row tax-row">
-              <span>CGST (9%):</span>
+              <span>CGST (2.5%):</span>
               <span>₹{{ cgstAmount | number:'1.2-2' }}</span>
             </div>
             <div class="total-row tax-row">
-              <span>SGST (9%):</span>
+              <span>SGST (2.5%):</span>
               <span>₹{{ sgstAmount | number:'1.2-2' }}</span>
             </div>
             <div class="receipt-divider dot-divider"></div>
             <div class="total-row grand-total-row">
               <span>GRAND TOTAL:</span>
               <span>₹{{ grandTotal | number:'1.2-2' }}</span>
+            </div>
+            <div class="gst-inclusive-text">
+              * Note: All prices are inclusive of GST (CGST 2.5% + SGST 2.5%)
             </div>
           </div>
 
@@ -271,7 +331,10 @@
           <tbody>
             <tr *ngFor="let bill of filteredBills()" class="invoice-row">
               <td class="bill-id-cell" (click)="viewBillDetails(bill)">
-                {{ bill.id?.substring(0, 8) }}...
+                <div style="font-weight: 650; color: #fff;">{{ bill.id?.substring(0, 8) }}...</div>
+                <div *ngIf="bill.orderNumber" style="font-size: 0.72rem; color: #c084fc; margin-top: 4px; font-weight: 700; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.25); padding: 2px 6px; border-radius: 6px; display: inline-block;">
+                  Order #{{ bill.orderNumber }}
+                </div>
               </td>
               <td class="date-cell">{{ bill.date }}</td>
               <td class="customer-cell">
@@ -356,6 +419,9 @@
           <div class="receipt-brand">
             <h2>Engineering Tadka</h2>
             <p class="receipt-tagline">TAX INVOICE RECEIPT</p>
+            <p class="receipt-order-no" *ngIf="selectedBill()?.orderNumber" style="font-weight: 800; color: #e74c3c; margin: 4px 0 0 0; font-size: 1rem; letter-spacing: 0.5px;">
+              ORDER #{{ selectedBill()?.orderNumber }}
+            </p>
             <p class="receipt-outlet" *ngIf="selectedBillRestaurant()">
               Branch: {{ selectedBillRestaurant()?.name }}<br>
               <span class="small-address">{{ selectedBillRestaurant()?.address }}</span>
@@ -364,10 +430,14 @@
 
           <div class="receipt-meta">
             <div>Invoice ID: <span class="code-font">{{ selectedBill()?.id }}</span></div>
+            <div *ngIf="selectedBill()?.orderNumber" style="font-weight: 850; color: var(--color-accent); font-size: 0.95rem;">Order Number: #{{ selectedBill()?.orderNumber }}</div>
             <div>Date: {{ selectedBill()?.date }}</div>
             <div *ngIf="selectedBill()?.mobile">Contact: {{ selectedBill()?.mobile }}</div>
             <div *ngIf="selectedBill()?.emailId">Email: {{ selectedBill()?.emailId }}</div>
             <div *ngIf="selectedBill()?.description">Table/Notes: {{ selectedBill()?.description }}</div>
+            <div *ngIf="customerLoyaltyPoints() !== null" style="font-weight: 700; color: #10b981; font-size: 0.9rem; margin-top: 4px;">
+              Loyalty Point Balance: {{ customerLoyaltyPoints() }} pts
+            </div>
           </div>
 
           <div class="receipt-divider"></div>
@@ -386,22 +456,33 @@
           <div class="receipt-divider"></div>
 
           <div class="receipt-totals">
+            <div *ngIf="selectedBill()?.discount" class="total-row">
+              <span>Items Total:</span>
+              <span>₹{{ (selectedBill()!.amount + (selectedBill()!.cgst || 0) + (selectedBill()!.sgst || 0)) / (1 - (selectedBill()?.discount || 0) / 100) | number:'1.2-2' }}</span>
+            </div>
+            <div *ngIf="selectedBill()?.discount" class="total-row discount-row" style="color: #ef4444; font-weight: bold;">
+              <span>Discount ({{ selectedBill()?.discount }}%):</span>
+              <span>-₹{{ (((selectedBill()!.amount + (selectedBill()!.cgst || 0) + (selectedBill()!.sgst || 0)) / (1 - (selectedBill()?.discount || 0) / 100)) - (selectedBill()!.amount + (selectedBill()!.cgst || 0) + (selectedBill()!.sgst || 0))) | number:'1.2-2' }}</span>
+            </div>
             <div class="total-row">
               <span>Subtotal:</span>
               <span>₹{{ selectedBill()?.amount | number:'1.2-2' }}</span>
             </div>
             <div class="total-row tax-row">
-              <span>CGST (9%):</span>
+              <span>CGST (2.5%):</span>
               <span>₹{{ selectedBill()?.cgst | number:'1.2-2' }}</span>
             </div>
             <div class="total-row tax-row">
-              <span>SGST (9%):</span>
+              <span>SGST (2.5%):</span>
               <span>₹{{ selectedBill()?.sgst | number:'1.2-2' }}</span>
             </div>
             <div class="receipt-divider dot-divider"></div>
             <div class="total-row grand-total-row">
               <span>GRAND TOTAL:</span>
               <span>₹{{ (selectedBill()!.amount + (selectedBill()!.cgst || 0) + (selectedBill()!.sgst || 0)) | number:'1.2-2' }}</span>
+            </div>
+            <div class="gst-inclusive-text">
+              * Note: All prices are inclusive of GST (CGST 2.5% + SGST 2.5%)
             </div>
           </div>
 

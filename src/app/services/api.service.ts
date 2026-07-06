@@ -39,6 +39,8 @@ export interface Billing {
   emailStatus?: string;
   emailError?: string;
   createdAt?: string;
+  orderNumber?: number;
+  discount?: number;
 }
 
 export interface Expense {
@@ -96,12 +98,41 @@ export interface InventoryItem {
   name: string;
 }
 
+export interface OrderItem {
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export interface Order {
+  id?: string;
+  restaurantId: string;
+  tableNo: string;
+  items: OrderItem[];
+  status: 'received' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+  totalAmount: number;
+  date?: string;
+  createdAt?: string;
+  mobile?: string;
+  emailId?: string;
+  orderNumber?: number;
+  discount?: number;
+}
+
+export interface Customer {
+  id?: string;
+  mobile?: string;
+  emailId?: string;
+  loyaltyPoints?: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://api.engineeringtadka.com/api/v1';
+  private baseUrl = 'http://api.engineeringtadka.com/api/v1'; //prod url
+  // private baseUrl = 'http://localhost:3000/api/v1';
 
   // Global active restaurant selection state
   selectedRestaurantId = signal<string>('');
@@ -245,6 +276,25 @@ export class ApiService {
     return this.http.delete(`${this.baseUrl}/inventory/${id}`, { responseType: 'text' });
   }
 
+  // ORDERS
+  getOrders(restaurantId?: string): Observable<Order[]> {
+    const params: Record<string, string> = {};
+    if (restaurantId) params['restaurantId'] = restaurantId;
+    return this.http.get<Order[]>(`${this.baseUrl}/orders`, { params });
+  }
+
+  createOrder(order: Order): Observable<Order> {
+    return this.http.post<Order>(`${this.baseUrl}/orders`, order);
+  }
+
+  updateOrder(id: string, order: Partial<Order>): Observable<any> {
+    return this.http.put(`${this.baseUrl}/orders/${id}`, order);
+  }
+
+  deleteOrder(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/orders/${id}`, { responseType: 'text' });
+  }
+
   // DEBUG & SYSTEM STATUS
   getEmailLogs(): Observable<{ total: number; emails: EmailLog[] }> {
     return this.http.get<{ total: number; emails: EmailLog[] }>(`${this.baseUrl}/debug/email-logs`);
@@ -256,5 +306,25 @@ export class ApiService {
 
   clearEmailLogs(): Observable<{ message: string; count: number }> {
     return this.http.delete<{ message: string; count: number }>(`${this.baseUrl}/debug/email-logs`);
+  }
+
+  lookupCustomer(params: { mobile?: string; emailId?: string }): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/customers/lookup`, { params });
+  }
+
+  getCustomers(): Observable<Customer[]> {
+    return this.http.get<Customer[]>(`${this.baseUrl}/customers`);
+  }
+
+  createCustomer(cust: Customer): Observable<Customer> {
+    return this.http.post<Customer>(`${this.baseUrl}/customers`, cust);
+  }
+
+  updateCustomer(id: string, cust: Partial<Customer>): Observable<Customer> {
+    return this.http.put<Customer>(`${this.baseUrl}/customers/${id}`, cust);
+  }
+
+  deleteCustomer(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/customers/${id}`, { responseType: 'text' });
   }
 }
