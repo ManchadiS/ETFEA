@@ -13,6 +13,15 @@ import { ApiService, InventoryItem, Restaurant } from '../../services/api.servic
 export class InventoryComponent implements OnInit {
   private apiService = inject(ApiService);
 
+  hasDeleteAccess(): boolean {
+    const user = this.apiService.currentUser();
+    if (!user) return false;
+    if (user.email === 'sagarmanchadi324@gmail.com' || user.role === 'Super Admin') {
+      return true;
+    }
+    return user.rights?.deleteAccess || false;
+  }
+
   // States using Signals
   inventoryItems = signal<InventoryItem[]>([]);
   filteredItems = signal<InventoryItem[]>([]);

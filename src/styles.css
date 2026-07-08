@@ -12,12 +12,12 @@
   
   --border-color: rgba(255, 255, 255, 0.08);
   --border-hover: rgba(255, 255, 255, 0.16);
-  --border-focus: rgba(99, 102, 241, 0.6);
+  --border-focus: rgba(242, 92, 5, 0.6);
   
   /* HSL Tailored Brand Colors */
-  --primary: hsl(250, 89%, 65%);
-  --primary-hover: hsl(250, 89%, 72%);
-  --primary-light: rgba(99, 102, 241, 0.15);
+  --primary: hsl(22, 96%, 48%);
+  --primary-hover: hsl(22, 96%, 56%);
+  --primary-light: rgba(242, 92, 5, 0.15);
   
   --success: hsl(142, 70%, 45%);
   --success-hover: hsl(142, 70%, 55%);
@@ -48,7 +48,7 @@
   
   /* Shadows & Glass effects */
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --glow-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+  --glow-shadow: 0 0 20px rgba(242, 92, 5, 0.15);
   --backdrop-blur: blur(12px);
   
   --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);

@@ -57,7 +57,7 @@
   height: 32px;
   border: 3px solid rgba(255, 255, 255, 0.1);
   border-radius: 50%;
-  border-top-color: #6366f1;
+  border-top-color: #f25c05;
   animation: spin 0.8s linear infinite;
 }
 
@@ -98,14 +98,14 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
+  background: linear-gradient(135deg, #f25c05, #ff9f43);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
   font-size: 14px;
-  box-shadow: 0 4px 8px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 4px 8px rgba(242, 92, 5, 0.2);
 }
 
 .age-badge {
@@ -268,7 +268,7 @@
 
 /* Button variants */
 .btn-primary {
-  background: linear-gradient(135deg, #6366f1, #a855f7);
+  background: linear-gradient(135deg, #f25c05, #ff9f43);
   color: #fff;
   border: none;
   padding: 10px 20px;
@@ -280,7 +280,7 @@
   gap: 6px;
   font-size: 14px;
   transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 4px 12px rgba(242, 92, 5, 0.2);
 }
 
 .btn-primary:hover {

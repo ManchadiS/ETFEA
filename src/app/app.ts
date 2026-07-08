@@ -93,6 +93,15 @@ export class App implements OnInit, OnDestroy {
     this.apiService.selectedRestaurantId.set(id);
   }
 
+  hasSidebarAccess(tab: string): boolean {
+    const user = this.currentUser();
+    if (!user) return false;
+    if (user.email === 'sagarmanchadi324@gmail.com' || user.role === 'Super Admin') {
+      return true;
+    }
+    return user.rights?.sidebarAccess?.includes(tab) || false;
+  }
+
   checkStatus() {
     this.apiService.getEmailStatus().subscribe({
       next: (status: EmailStatus) => {

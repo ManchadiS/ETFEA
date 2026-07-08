@@ -59,6 +59,22 @@ export class SystemStatusComponent implements OnInit {
     }
   }
 
+  cleanDatabase() {
+    if (confirm('Are you sure you want to completely clean the database and reset to default seeds? All custom data will be deleted.')) {
+      this.isLoading.set(true);
+      this.apiService.cleanDatabase().subscribe({
+        next: (res) => {
+          this.showMessage('Database cleaned and reset successfully!', 'success');
+          this.fetchData();
+        },
+        error: (err) => {
+          this.showMessage('Failed to clean database.', 'error');
+          this.isLoading.set(false);
+        }
+      });
+    }
+  }
+
   showMessage(msg: string, type: 'success' | 'error') {
     this.message.set(msg);
     this.messageType.set(type);

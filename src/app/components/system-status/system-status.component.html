@@ -63,12 +63,17 @@
         <p class="description-text">
           Fill the backend database instantly with realistic restaurants, categorized food items, operational expenses, and sample paid/pending invoice bills.
         </p>
-        <button class="btn btn-primary seed-btn" (click)="seedData()" [disabled]="isSeeding()">
-          <svg *ngIf="isSeeding()" class="spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-            <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="10" />
-          </svg>
-          {{ isSeeding() ? 'Seeding Database...' : 'Seed Sample Mock Data' }}
-        </button>
+        <div style="display: flex; flex-direction: column; gap: 10px; width: 100%;">
+          <button class="btn btn-primary seed-btn" (click)="seedData()" [disabled]="isSeeding()" style="width: 100%;">
+            <svg *ngIf="isSeeding()" class="spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+              <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="10" />
+            </svg>
+            {{ isSeeding() ? 'Seeding Database...' : 'Seed Sample Mock Data' }}
+          </button>
+          <button class="btn btn-danger seed-btn" (click)="cleanDatabase()" [disabled]="isLoading() || isSeeding()" style="width: 100%; background: #dc2626;">
+            Wipe & Reset Database
+          </button>
+        </div>
       </div>
     </div>
   </div>

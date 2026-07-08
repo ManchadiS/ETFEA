@@ -2,12 +2,8 @@
   <!-- Sidebar Navigation -->
   <aside class="sidebar" *ngIf="!isAuthPage()">
     <div class="brand">
-      <div class="brand-logo">
-        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+      <div class="brand-logo" style="padding: 0; overflow: hidden;">
+        <img src="/logo.jpg" alt="Engineering Tadka Logo" style="width: 100%; height: 100%; object-fit: cover;">
       </div>
       <div class="brand-info">
         <h1>Engineering Tadka</h1>
@@ -16,7 +12,7 @@
     </div>
 
     <nav class="nav-menu">
-      <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
+      <a routerLink="/dashboard" routerLinkActive="active" class="nav-item" *ngIf="hasSidebarAccess('dashboard')">
         <span class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="9" />
@@ -28,7 +24,7 @@
         <span class="nav-label">Dashboard</span>
       </a>
 
-      <a routerLink="/restaurants" routerLinkActive="active" class="nav-item">
+      <a routerLink="/restaurants" routerLinkActive="active" class="nav-item" *ngIf="hasSidebarAccess('restaurants')">
         <span class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -38,7 +34,7 @@
         <span class="nav-label">Restaurants</span>
       </a>
 
-      <a routerLink="/menu" routerLinkActive="active" class="nav-item">
+      <a routerLink="/menu" routerLinkActive="active" class="nav-item" *ngIf="hasSidebarAccess('menu')">
         <span class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
@@ -47,7 +43,7 @@
         <span class="nav-label">Food Menu</span>
       </a>
 
-      <a routerLink="/orders" routerLinkActive="active" class="nav-item">
+      <a routerLink="/orders" routerLinkActive="active" class="nav-item" *ngIf="hasSidebarAccess('orders')">
         <span class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="9" cy="21" r="1" />
@@ -58,7 +54,7 @@
         <span class="nav-label">Live Orders</span>
       </a>
 
-      <a routerLink="/expenses" routerLinkActive="active" class="nav-item">
+      <a routerLink="/expenses" routerLinkActive="active" class="nav-item" *ngIf="hasSidebarAccess('expenses')">
         <span class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="1" x2="12" y2="23"></line>
@@ -68,7 +64,7 @@
         <span class="nav-label">Expenses</span>
       </a>
 
-      <a routerLink="/billing" routerLinkActive="active" class="nav-item">
+      <a routerLink="/billing" routerLinkActive="active" class="nav-item" *ngIf="hasSidebarAccess('billing')">
         <span class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="4" width="20" height="16" rx="2" ry="2" />
@@ -79,7 +75,7 @@
         <span class="nav-label">Invoices / Billing</span>
       </a>
 
-      <a routerLink="/inventory" routerLinkActive="active" class="nav-item">
+      <a routerLink="/inventory" routerLinkActive="active" class="nav-item" *ngIf="hasSidebarAccess('inventory')">
         <span class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20 7l-8-4-8 4 8 4 8-4z" />
@@ -90,7 +86,7 @@
         <span class="nav-label">Inventory List</span>
       </a>
 
-      <a routerLink="/users" routerLinkActive="active" class="nav-item">
+      <a routerLink="/users" routerLinkActive="active" class="nav-item" *ngIf="hasSidebarAccess('users')">
         <span class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -102,7 +98,7 @@
         <span class="nav-label">User Management</span>
       </a>
 
-      <a routerLink="/customers" routerLinkActive="active" class="nav-item">
+      <a routerLink="/customers" routerLinkActive="active" class="nav-item" *ngIf="hasSidebarAccess('customers')">
         <span class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -114,7 +110,7 @@
         <span class="nav-label">Customer Database</span>
       </a>
 
-      <a routerLink="/system-status" routerLinkActive="active" class="nav-item">
+      <a routerLink="/system-status" routerLinkActive="active" class="nav-item" *ngIf="hasSidebarAccess('system-status')">
         <span class="nav-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3" />
@@ -128,7 +124,7 @@
     <div class="sidebar-footer">
       <div class="user-profile" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <div class="avatar" style="background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 15px;">
+          <div class="avatar" style="background: linear-gradient(135deg, #f25c05, #ff9f43); color: #fff; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 15px;">
             {{ currentUser()?.firstName?.charAt(0)?.toUpperCase() || 'U' }}
           </div>
           <div class="profile-info">

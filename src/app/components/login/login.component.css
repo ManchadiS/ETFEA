@@ -21,13 +21,13 @@
   width: 54px;
   height: 54px;
   margin: 0 auto 16px;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
+  background: linear-gradient(135deg, #f25c05, #ff9f43);
   color: #fff;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 8px 16px rgba(242, 92, 5, 0.3);
 }
 
 .brand-logo svg {
@@ -132,7 +132,7 @@
   width: 100%;
   padding: 12px;
   margin-top: 10px;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
+  background: linear-gradient(135deg, #f25c05, #ff9f43);
   color: #fff;
   border: none;
   border-radius: 10px;

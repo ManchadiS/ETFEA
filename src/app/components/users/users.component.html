@@ -4,8 +4,11 @@
       <h2>User Administration</h2>
       <p>Create, update, and manage portal accounts</p>
     </div>
-    <button (click)="openAddModal()" class="btn-primary">
+    <button (click)="openAddModal()" class="btn-primary" *ngIf="activeTab() === 'users'">
       <span class="btn-icon">+</span> Add User
+    </button>
+    <button (click)="openRoleAddModal()" class="btn-primary" *ngIf="activeTab() === 'roles'">
+      <span class="btn-icon">+</span> Add Role
     </button>
   </div>
 
@@ -13,8 +16,23 @@
     <span>⚠️</span> {{ errorMessage() }}
   </div>
 
+  <div class="tabs-container" *ngIf="isSuperAdmin()" style="margin-bottom: 20px; display: flex; gap: 8px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 8px;">
+    <button class="tab-btn" [class.active]="activeTab() === 'users'" (click)="activeTab.set('users')"
+      style="background: none; border: none; color: rgba(255,255,255,0.6); padding: 8px 16px; cursor: pointer; font-size: 14px; font-weight: 500; outline: none; border-bottom: 2px solid transparent; transition: all 0.2s;"
+      [style.border-bottom-color]="activeTab() === 'users' ? 'var(--primary)' : 'transparent'"
+      [style.color]="activeTab() === 'users' ? '#fff' : 'rgba(255,255,255,0.6)'">
+      Users List
+    </button>
+    <button class="tab-btn" [class.active]="activeTab() === 'roles'" (click)="activeTab.set('roles')"
+      style="background: none; border: none; color: rgba(255,255,255,0.6); padding: 8px 16px; cursor: pointer; font-size: 14px; font-weight: 500; outline: none; border-bottom: 2px solid transparent; transition: all 0.2s;"
+      [style.border-bottom-color]="activeTab() === 'roles' ? 'var(--primary)' : 'transparent'"
+      [style.color]="activeTab() === 'roles' ? '#fff' : 'rgba(255,255,255,0.6)'">
+      Roles & Rights
+    </button>
+  </div>
+
   <!-- Users Grid / Table -->
-  <div class="table-card">
+  <div class="table-card" *ngIf="activeTab() === 'users'">
     <div *ngIf="loading()" class="table-loading">
       <div class="spinner"></div>
       <p>Loading portal users...</p>
@@ -29,6 +47,7 @@
         <tr>
           <th>Name</th>
           <th>Email Address</th>
+          <th>Role</th>
           <th>Date of Birth</th>
           <th>Age</th>
           <th style="text-align: right;">Actions</th>
@@ -43,15 +62,133 @@
             <span>{{ u.firstName }} {{ u.lastName }}</span>
           </td>
           <td>{{ u.email }}</td>
+          <td>
+            <span class="badge" style="text-transform: capitalize; background: rgba(242, 92, 5, 0.1); color: var(--primary);">{{ u.role || 'Admin' }}</span>
+          </td>
           <td>{{ u.dob }}</td>
           <td><span class="age-badge">{{ u.age }} years</span></td>
           <td class="actions-col" style="text-align: right;">
             <button (click)="openEditModal(u)" class="btn-action edit" title="Edit User">✏️</button>
-            <button (click)="openDeleteModal(u)" class="btn-action delete" title="Delete User">🗑️</button>
+            <button (click)="openDeleteModal(u)" class="btn-action delete" title="Delete User" *ngIf="hasDeleteAccess()">🗑️</button>
           </td>
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- Roles & Rights configurator panel -->
+  <div *ngIf="activeTab() === 'roles' && isSuperAdmin()" class="table-card animate-fade-in">
+    <div *ngIf="roles().length === 0" class="table-empty">
+      <p>No custom roles found. Click 'Add Role' to configure one.</p>
+    </div>
+
+    <table *ngIf="roles().length > 0" class="users-table">
+      <thead>
+        <tr>
+          <th>Role Name</th>
+          <th>Sidebar Access Tabs</th>
+          <th>Delete Access</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let role of roles()">
+          <td style="font-weight: 600; color: #fff;">{{ role.name }}</td>
+          <td>
+            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+              <span *ngFor="let tab of role.sidebarAccess" class="badge" style="font-size: 10px; text-transform: capitalize; background: rgba(242, 92, 5, 0.15); color: var(--primary);">
+                {{ tab.replace('-', ' ') }}
+              </span>
+              <span *ngIf="role.sidebarAccess.length === 0" style="color: rgba(255,255,255,0.4); font-size: 12px; font-style: italic;">
+                No access
+              </span>
+            </div>
+          </td>
+          <td>
+            <span class="badge" [class.badge-success]="role.deleteAccess" [class.badge-danger]="!role.deleteAccess" style="background: rgba(255,255,255,0.05); color: #fff;">
+              {{ role.deleteAccess ? 'Enabled' : 'Disabled' }}
+            </span>
+          </td>
+          <td style="text-align: right;">
+            <button *ngIf="role.name !== 'Super Admin' && role.name !== 'Admin'" (click)="openRoleEditModal(role)" class="btn-action edit" title="Edit Role">✏️</button>
+            <button *ngIf="role.name !== 'Super Admin' && role.name !== 'Admin'" (click)="handleDeleteRole(role.id!)" class="btn-action delete" title="Delete Role">🗑️</button>
+            <span *ngIf="role.name === 'Super Admin' || role.name === 'Admin'" style="color: rgba(255,255,255,0.3); font-size: 11px; font-style: italic;">System Locked</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Add Role Modal -->
+  <div *ngIf="showRoleAddModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Create Custom Role</h3>
+        <button (click)="closeRoleAddModal()" class="btn-close">&times;</button>
+      </div>
+      <form (ngSubmit)="handleCreateRole()" #roleAddForm="ngForm" class="modal-form">
+        <div class="form-group">
+          <label for="roleNameInput">Role Name *</label>
+          <input type="text" id="roleNameInput" name="roleNameInput" [(ngModel)]="roleName" placeholder="e.g. Manager, Billing Clerk" required style="width: 100%;" />
+        </div>
+
+        <div class="form-group">
+          <label style="margin-bottom: 12px;">Sidebar Access Rights</label>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; background: rgba(0,0,0,0.15); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+            <div *ngFor="let tab of availableSidebarTabs" style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" [id]="'add-tab-' + tab" [checked]="isTabSelected(tab)" (change)="toggleSidebarAccess(tab)" style="width: auto;" />
+              <label [for]="'add-tab-' + tab" style="margin: 0; cursor: pointer; text-transform: capitalize; font-size: 13px; color: #fff;">{{ tab.replace('-', ' ') }}</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 16px;">
+          <input type="checkbox" id="roleDeleteAccessInput" name="roleDeleteAccessInput" [(ngModel)]="roleDeleteAccess" style="width: auto;" />
+          <label for="roleDeleteAccessInput" style="margin: 0; cursor: pointer; color: #fff; font-size: 13px;">Enable Delete Access (Allow removing records)</label>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" (click)="closeRoleAddModal()" class="btn-secondary">Cancel</button>
+          <button type="submit" [disabled]="!roleAddForm.valid" class="btn-primary">Save Role</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Role Modal -->
+  <div *ngIf="showRoleEditModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Modify Custom Role</h3>
+        <button (click)="closeRoleEditModal()" class="btn-close">&times;</button>
+      </div>
+      <form (ngSubmit)="handleUpdateRole()" #roleEditForm="ngForm" class="modal-form">
+        <div class="form-group">
+          <label for="roleNameEdit">Role Name *</label>
+          <input type="text" id="roleNameEdit" name="roleNameEdit" [(ngModel)]="roleName" required style="width: 100%;" />
+        </div>
+
+        <div class="form-group">
+          <label style="margin-bottom: 12px;">Sidebar Access Rights</label>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; background: rgba(0,0,0,0.15); padding: 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+            <div *ngFor="let tab of availableSidebarTabs" style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" [id]="'edit-tab-' + tab" [checked]="isTabSelected(tab)" (change)="toggleSidebarAccess(tab)" style="width: auto;" />
+              <label [for]="'edit-tab-' + tab" style="margin: 0; cursor: pointer; text-transform: capitalize; font-size: 13px; color: #fff;">{{ tab.replace('-', ' ') }}</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 16px;">
+          <input type="checkbox" id="roleDeleteAccessEdit" name="roleDeleteAccessEdit" [(ngModel)]="roleDeleteAccess" style="width: auto;" />
+          <label for="roleDeleteAccessEdit" style="margin: 0; cursor: pointer; color: #fff; font-size: 13px;">Enable Delete Access (Allow removing records)</label>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" (click)="closeRoleEditModal()" class="btn-secondary">Cancel</button>
+          <button type="submit" [disabled]="!roleEditForm.valid" class="btn-primary">Update Role</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- Add User Modal -->
@@ -77,6 +214,14 @@
         <div class="form-group">
           <label for="addEmail">Email Address</label>
           <input type="email" id="addEmail" name="addEmail" [(ngModel)]="email" placeholder="email@example.com" required />
+        </div>
+
+        <div class="form-group">
+          <label for="addUserRole">Role *</label>
+          <select id="addUserRole" name="addUserRole" [(ngModel)]="selectedRoleName" required
+            style="padding: 10px 14px; border-radius: var(--radius-sm); background: #0f111ab3; border: 1px solid var(--border-color); color: #fff; width: 100%; outline: none; margin-bottom: 12px; font-family: inherit;">
+            <option *ngFor="let role of roles()" [value]="role.name">{{ role.name }}</option>
+          </select>
         </div>
 
         <div class="form-group">
@@ -126,6 +271,14 @@
         <div class="form-group">
           <label for="editEmail">Email Address</label>
           <input type="email" id="editEmail" name="editEmail" [(ngModel)]="email" required />
+        </div>
+
+        <div class="form-group">
+          <label for="editUserRole">Role *</label>
+          <select id="editUserRole" name="editUserRole" [(ngModel)]="selectedRoleName" required
+            style="padding: 10px 14px; border-radius: var(--radius-sm); background: #0f111ab3; border: 1px solid var(--border-color); color: #fff; width: 100%; outline: none; margin-bottom: 12px; font-family: inherit;">
+            <option *ngFor="let role of roles()" [value]="role.name">{{ role.name }}</option>
+          </select>
         </div>
 
         <div class="form-group">

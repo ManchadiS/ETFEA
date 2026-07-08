@@ -82,6 +82,11 @@ export interface EmailStatus {
   dbConnected?: boolean;
 }
 
+export interface UserRights {
+  sidebarAccess: string[];
+  deleteAccess: boolean;
+}
+
 export interface User {
   id?: string;
   firstName: string;
@@ -90,6 +95,15 @@ export interface User {
   password?: string;
   dob: string;
   age: number;
+  role?: string;
+  rights?: UserRights;
+}
+
+export interface Role {
+  id?: string;
+  name: string;
+  sidebarAccess: string[];
+  deleteAccess: boolean;
 }
 
 export interface InventoryItem {
@@ -131,8 +145,8 @@ export interface Customer {
 })
 export class ApiService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://api.engineeringtadka.com/api/v1'; //prod url
-  // private baseUrl = 'http://localhost:3000/api/v1';
+  // private baseUrl = 'http://api.engineeringtadka.com/api/v1'; //prod url
+  private baseUrl = 'http://localhost:3000/api/v1';
 
   // Global active restaurant selection state
   selectedRestaurantId = signal<string>('');
@@ -249,6 +263,23 @@ export class ApiService {
     return this.http.delete(`${this.baseUrl}/users/${id}`, { responseType: 'text' });
   }
 
+  // ROLES & RIGHTS
+  getRoles(): Observable<Role[]> {
+    return this.http.get<Role[]>(`${this.baseUrl}/roles`);
+  }
+
+  createRole(role: Role): Observable<Role> {
+    return this.http.post<Role>(`${this.baseUrl}/roles`, role);
+  }
+
+  updateRole(id: string, role: Partial<Role>): Observable<Role> {
+    return this.http.put<Role>(`${this.baseUrl}/roles/${id}`, role);
+  }
+
+  deleteRole(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/roles/${id}`, { responseType: 'text' });
+  }
+
   login(credentials: { email: string; password?: string }): Observable<User> {
     return this.http.post<User>(`${this.baseUrl}/users/login`, credentials);
   }
@@ -306,6 +337,10 @@ export class ApiService {
 
   clearEmailLogs(): Observable<{ message: string; count: number }> {
     return this.http.delete<{ message: string; count: number }>(`${this.baseUrl}/debug/email-logs`);
+  }
+
+  cleanDatabase(): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/debug/clean-db`, {});
   }
 
   lookupCustomer(params: { mobile?: string; emailId?: string }): Observable<any> {

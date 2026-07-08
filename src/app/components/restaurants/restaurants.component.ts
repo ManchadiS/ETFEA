@@ -13,6 +13,15 @@ import { ApiService, Restaurant } from '../../services/api.service';
 export class RestaurantsComponent implements OnInit {
   private apiService = inject(ApiService);
 
+  hasDeleteAccess(): boolean {
+    const user = this.apiService.currentUser();
+    if (!user) return false;
+    if (user.email === 'sagarmanchadi324@gmail.com' || user.role === 'Super Admin') {
+      return true;
+    }
+    return user.rights?.deleteAccess || false;
+  }
+
   // States using Angular Signals
   restaurants = signal<Restaurant[]>([]);
   isLoading = signal<boolean>(false);
