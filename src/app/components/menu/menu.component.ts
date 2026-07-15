@@ -32,7 +32,7 @@ export class MenuComponent implements OnInit {
   showModal = signal<boolean>(false);
   errorMessage = signal<string>('');
 
-  categories: string[] = ['All', 'Starters', 'Main Course', 'Bread', 'Desserts', 'Beverages'];
+  categories: string[] = ['All', 'Shawarma', 'Sides', 'Beverages', 'Starters', 'Main Course', 'Bread', 'Desserts'];
   
   isEditing = false;
   modalTitle = 'Add Food Item';
@@ -41,7 +41,7 @@ export class MenuComponent implements OnInit {
   currentId = '';
   name = '';
   price: number | null = null;
-  category = 'Main Course';
+  category = 'Shawarma';
   description = '';
   restaurantId = '';
 

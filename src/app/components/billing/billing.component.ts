@@ -37,21 +37,15 @@ export class BillingComponent implements OnInit {
   comboQuantity = signal<number>(1);
 
   shawarmas = computed(() => {
-    return this.foodItems().filter(f => f.name.toLowerCase().includes('shawarma'));
+    return this.foodItems().filter(f => f.category?.toLowerCase() === 'shawarma');
   });
 
   sides = computed(() => {
-    const keywords = ['fries', 'kebab', 'tikka', 'drumstick'];
-    return this.foodItems().filter(f => 
-      keywords.some(k => f.name.toLowerCase().includes(k))
-    );
+    return this.foodItems().filter(f => f.category?.toLowerCase() === 'sides');
   });
 
   beverages = computed(() => {
-    const keywords = ['chai', 'drink', 'pepsi', '7up', 'maggi'];
-    return this.foodItems().filter(f => 
-      keywords.some(k => f.name.toLowerCase().includes(k))
-    );
+    return this.foodItems().filter(f => f.category?.toLowerCase() === 'beverages');
   });
   
   // Searchable dish selection state

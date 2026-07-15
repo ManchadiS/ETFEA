@@ -42,21 +42,15 @@ export class OrdersComponent implements OnInit {
   activePosterTab = signal<string>('meal');
 
   shawarmas = computed(() => {
-    return this.allDishes().filter(f => f.name.toLowerCase().includes('shawarma'));
+    return this.allDishes().filter(f => f.category?.toLowerCase() === 'shawarma');
   });
 
   sides = computed(() => {
-    const keywords = ['fries', 'kebab', 'tikka', 'drumstick'];
-    return this.allDishes().filter(f => 
-      keywords.some(k => f.name.toLowerCase().includes(k))
-    );
+    return this.allDishes().filter(f => f.category?.toLowerCase() === 'sides');
   });
 
   beverages = computed(() => {
-    const keywords = ['chai', 'drink', 'pepsi', '7up', 'maggi'];
-    return this.allDishes().filter(f => 
-      keywords.some(k => f.name.toLowerCase().includes(k))
-    );
+    return this.allDishes().filter(f => f.category?.toLowerCase() === 'beverages');
   });
 
   get selectedShawarmaPrice(): number {
