@@ -32,6 +32,53 @@ export class OrdersComponent implements OnInit {
   mobile = signal<string>('');
   emailId = signal<string>('');
   orderItems = signal<OrderItem[]>([]);
+
+  // Combo builder state
+  selectedShawarmaId = signal<string>('');
+  selectedSideId = signal<string>('');
+  selectedBeverageId = signal<string>('');
+  comboQuantity = signal<number>(1);
+  showMenuPostersModal = signal<boolean>(false);
+  activePosterTab = signal<string>('meal');
+
+  shawarmas = computed(() => {
+    return this.allDishes().filter(f => f.name.toLowerCase().includes('shawarma'));
+  });
+
+  sides = computed(() => {
+    const keywords = ['fries', 'kebab', 'tikka', 'drumstick'];
+    return this.allDishes().filter(f => 
+      keywords.some(k => f.name.toLowerCase().includes(k))
+    );
+  });
+
+  beverages = computed(() => {
+    const keywords = ['chai', 'drink', 'pepsi', '7up', 'maggi'];
+    return this.allDishes().filter(f => 
+      keywords.some(k => f.name.toLowerCase().includes(k))
+    );
+  });
+
+  get selectedShawarmaPrice(): number {
+    const item = this.allDishes().find(f => f.id === this.selectedShawarmaId());
+    return item ? item.price : 0;
+  }
+
+  get selectedSidePrice(): number {
+    const item = this.allDishes().find(f => f.id === this.selectedSideId());
+    return item ? item.price : 0;
+  }
+
+  get selectedBeveragePrice(): number {
+    const item = this.allDishes().find(f => f.id === this.selectedBeverageId());
+    return item ? item.price : 0;
+  }
+
+  get liveComboTotalPrice(): number {
+    const sum = this.selectedShawarmaPrice + this.selectedSidePrice + this.selectedBeveragePrice;
+    if (sum === 0) return 0;
+    return Math.max(0, sum - 20);
+  }
   selectedQuantity = 1;
   status = signal<'received' | 'preparing' | 'ready' | 'completed' | 'cancelled'>('received');
   discount = signal<number>(0);
@@ -168,6 +215,48 @@ export class OrdersComponent implements OnInit {
     this.dishSearchQuery.set('');
     this.showSuggestions.set(false);
     this.errorMessage.set('');
+  }
+
+  addComboItem() {
+    const shId = this.selectedShawarmaId();
+    const sideId = this.selectedSideId();
+    const bevId = this.selectedBeverageId();
+
+    if (!shId || !sideId || !bevId) return;
+
+    const sh = this.allDishes().find(f => f.id === shId);
+    const side = this.allDishes().find(f => f.id === sideId);
+    const bev = this.allDishes().find(f => f.id === bevId);
+
+    if (!sh || !side || !bev) return;
+
+    // Calculate sum of individual items
+    const rawPrice = sh.price + side.price + bev.price;
+    // Subtract ₹20 combo discount
+    const finalPrice = Math.max(0, rawPrice - 20);
+
+    const comboName = `Combo Meal (${sh.name} + ${side.name} + ${bev.name})`;
+
+    const currentOrder = [...this.orderItems()];
+    const existingIndex = currentOrder.findIndex(item => item.name === comboName);
+
+    if (existingIndex > -1) {
+      currentOrder[existingIndex].quantity += this.comboQuantity();
+    } else {
+      currentOrder.push({
+        name: comboName,
+        price: finalPrice,
+        quantity: this.comboQuantity()
+      });
+    }
+
+    this.orderItems.set(currentOrder);
+    
+    // Reset combo selection
+    this.selectedShawarmaId.set('');
+    this.selectedSideId.set('');
+    this.selectedBeverageId.set('');
+    this.comboQuantity.set(1);
   }
 
   removeOrderItem(index: number) {

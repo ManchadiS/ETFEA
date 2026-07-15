@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ApiService, Restaurant, FoodItem, Expense, Billing } from '../../services/api.service';
 import { forkJoin } from 'rxjs';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 
 interface TransactionItem {
   type: 'invoice' | 'expense';
@@ -23,7 +24,7 @@ interface CategoryCost {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
 })
@@ -33,333 +34,66 @@ export class DashboardComponent implements OnInit {
   // States using Signals
   restaurants = signal<Restaurant[]>([]);
   foodItems = signal<FoodItem[]>([]);
-  bills = signal<Billing[]>([]);
-  expenses = signal<Expense[]>([]);
+  rawBills = signal<Billing[]>([]);
+  rawExpenses = signal<Expense[]>([]);
 
   isLoading = signal<boolean>(false);
 
-  totalRevenue = signal<number>(0);
-  totalExpenses = signal<number>(0);
-  netProfit = signal<number>(0);
-  profitMargin = signal<number>(0);
-  
-  recentTransactions = signal<TransactionItem[]>([]);
-  expenseCategories = signal<CategoryCost[]>([]);
+  // Date filters
+  activeQuickFilter = signal<string>('all');
+  startDate = signal<string>('');
+  endDate = signal<string>('');
 
-  chartBars = signal<any[]>([]);
-  chartDonutArcs = signal<any[]>([]);
-
-  showReportModal = signal<boolean>(false);
-  reportTab = signal<'daily' | 'monthly' | 'food_sales'>('daily');
-
-  activeRestaurantName = computed(() => {
-    const id = this.apiService.selectedRestaurantId();
-    if (!id) return 'All Outlets';
-    const rest = this.restaurants().find(r => r.id === id);
-    return rest ? rest.name : 'Unknown Outlet';
-  });
-
-  foodSales = computed(() => {
-    const tStr = this.todayStr();
-    const mStr = this.currentMonthStr();
-    const salesMap = new Map<string, { price: number; dailyQty: number; dailyRevenue: number; monthlyQty: number; monthlyRevenue: number }>();
-    
-    this.foodItems().forEach(item => {
-      salesMap.set(item.name, {
-        price: item.price,
-        dailyQty: 0,
-        dailyRevenue: 0,
-        monthlyQty: 0,
-        monthlyRevenue: 0
-      });
+  bills = computed(() => {
+    const start = this.startDate();
+    const end = this.endDate();
+    const list = this.rawBills();
+    if (!start && !end) return list;
+    return list.filter(b => {
+      const d = b.date;
+      if (!d) return false;
+      if (start && d < start) return false;
+      if (end && d > end) return false;
+      return true;
     });
+  });
 
-    this.bills().forEach(bill => {
-      const isToday = bill.date === tStr;
-      const isThisMonth = bill.date && bill.date.startsWith(mStr);
-      
-      if (bill.foodItems) {
-        bill.foodItems.forEach(item => {
-          let entry = salesMap.get(item.name);
-          if (!entry) {
-            entry = {
-              price: item.price,
-              dailyQty: 0,
-              dailyRevenue: 0,
-              monthlyQty: 0,
-              monthlyRevenue: 0
-            };
-            salesMap.set(item.name, entry);
-          }
-          
-          if (isToday) {
-            entry.dailyQty += item.quantity;
-            entry.dailyRevenue += item.quantity * item.price;
-          }
-          if (isThisMonth) {
-            entry.monthlyQty += item.quantity;
-            entry.monthlyRevenue += item.quantity * item.price;
-          }
-        });
-      }
+  expenses = computed(() => {
+    const start = this.startDate();
+    const end = this.endDate();
+    const list = this.rawExpenses();
+    if (!start && !end) return list;
+    return list.filter(e => {
+      const d = e.date;
+      if (!d) return false;
+      if (start && d < start) return false;
+      if (end && d > end) return false;
+      return true;
     });
-
-    return Array.from(salesMap.entries()).map(([name, data]) => ({
-      name,
-      ...data
-    })).sort((a, b) => b.monthlyQty - a.monthlyQty);
   });
 
-  totalDailyFoodItemsSold = computed(() => {
-    return this.foodSales().reduce((sum, item) => sum + item.dailyQty, 0);
-  });
-
-  totalMonthlyFoodItemsSold = computed(() => {
-    return this.foodSales().reduce((sum, item) => sum + item.monthlyQty, 0);
-  });
-
-  totalMonthlyFoodRevenue = computed(() => {
-    return this.foodSales().reduce((sum, item) => sum + item.monthlyRevenue, 0);
-  });
-
-  todayStr = computed(() => {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  });
-
-  currentMonthStr = computed(() => {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    return `${year}-${month}`;
-  });
-
-  currentMonthName = computed(() => {
-    const d = new Date();
-    return d.toLocaleString('default', { month: 'long', year: 'numeric' });
-  });
-
-  todayBills = computed(() => {
-    const tStr = this.todayStr();
-    return this.bills().filter(b => b.date === tStr);
-  });
-
-  currentMonthBills = computed(() => {
-    const mStr = this.currentMonthStr();
-    return this.bills().filter(b => b.date && b.date.startsWith(mStr));
-  });
-
-  todaySummary = computed(() => {
-    const list = this.todayBills();
-    const subtotal = list.reduce((sum, b) => sum + (b.amount || 0), 0);
-    const tax = list.reduce((sum, b) => sum + ((b.cgst || 0) + (b.sgst || 0)), 0);
-    const total = subtotal + tax;
-    return { count: list.length, subtotal, tax, total };
-  });
-
-  currentMonthSummary = computed(() => {
-    const list = this.currentMonthBills();
-    const subtotal = list.reduce((sum, b) => sum + (b.amount || 0), 0);
-    const tax = list.reduce((sum, b) => sum + ((b.cgst || 0) + (b.sgst || 0)), 0);
-    const total = subtotal + tax;
-    return { count: list.length, subtotal, tax, total };
-  });
-
-  openReportModal() {
-    console.log('openReportModal called, current value:', this.showReportModal());
-    this.showReportModal.set(true);
-    console.log('openReportModal set to true, new value:', this.showReportModal());
-  }
-
-  closeReportModal() {
-    console.log('closeReportModal called');
-    this.showReportModal.set(false);
-  }
-
-  setReportTab(tab: 'daily' | 'monthly' | 'food_sales') {
-    console.log('setReportTab called with:', tab);
-    this.reportTab.set(tab);
-  }
-
-  downloadFoodSalesExcel() {
-    const list = this.foodSales();
-    const outletName = this.activeRestaurantName();
-    const headers = [
-      'Food Item Name',
-      'Price (INR)',
-      'Daily Quantity Sold',
-      'Daily Revenue (INR)',
-      'Monthly Quantity Sold',
-      'Monthly Revenue (INR)'
-    ];
-
-    const rows = list.map(item => [
-      item.name,
-      item.price,
-      item.dailyQty,
-      item.dailyRevenue,
-      item.monthlyQty,
-      item.monthlyRevenue
-    ]);
-
-    const csvRows = [
-      `Food Sales Report - ${outletName}`,
-      `Generated on: ${this.todayStr()}`,
-      '',
-      headers.join(','),
-      ...rows.map(row => row.map(cell => this.escapeCSV(cell)).join(','))
-    ];
-    
-    const csvContent = csvRows.join('\n');
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const filename = `food_sales_report_${outletName.toLowerCase().replace(/\s+/g, '_')}_${this.todayStr()}.csv`;
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  private escapeCSV(val: any): string {
-    if (val === undefined || val === null) return '';
-    let str = String(val);
-    str = str.replace(/"/g, '""');
-    if (str.includes(',') || str.includes('\n') || str.includes('"')) {
-      return `"${str}"`;
-    }
-    return str;
-  }
-
-  downloadBillsExcel(type: 'daily' | 'monthly') {
-    const list = type === 'daily' ? this.todayBills() : this.currentMonthBills();
-    const outletName = this.activeRestaurantName();
-    const headers = [
-      'Bill ID',
-      'Date',
-      'Restaurant ID',
-      'Subtotal (INR)',
-      'CGST (INR)',
-      'SGST (INR)',
-      'Grand Total (INR)',
-      'Status',
-      'Mobile',
-      'Email ID',
-      'Description',
-      'Food Items Ordered'
-    ];
-
-    const rows = list.map(b => {
-      const grandTotal = (b.amount || 0) + (b.cgst || 0) + (b.sgst || 0);
-      const itemsStr = b.foodItems ? b.foodItems.map(item => `${item.name} (${item.quantity}x @ ₹${item.price})`).join('; ') : '';
-      return [
-        b.id || '',
-        b.date || '',
-        b.restaurantId || '',
-        b.amount || 0,
-        b.cgst || 0,
-        b.sgst || 0,
-        grandTotal,
-        b.status || '',
-        b.mobile || '',
-        b.emailId || '',
-        b.description || '',
-        itemsStr
-      ];
-    });
-
-    const csvRows = [
-      `Bills Report (${type === 'daily' ? 'Daily' : 'Monthly'}) - ${outletName}`,
-      `Generated on: ${this.todayStr()}`,
-      '',
-      headers.join(','),
-      ...rows.map(row => row.map(cell => this.escapeCSV(cell)).join(','))
-    ];
-    const csvContent = csvRows.join('\n');
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const filename = type === 'daily' 
-      ? `bills_report_daily_${outletName.toLowerCase().replace(/\s+/g, '_')}_${this.todayStr()}.csv` 
-      : `bills_report_monthly_${outletName.toLowerCase().replace(/\s+/g, '_')}_${this.currentMonthStr()}.csv`;
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  constructor() {
-    // Automatically refetch dashboard data whenever the active restaurant selection changes
-    effect(() => {
-      this.apiService.selectedRestaurantId();
-      this.fetchDashboardData();
-    });
-  }
-
-  ngOnInit() {
-    // Handled by effect on initialization
-  }
-
-  fetchDashboardData() {
-    this.isLoading.set(true);
-    const restId = this.apiService.selectedRestaurantId();
-    forkJoin({
-      restaurants: this.apiService.getRestaurants(),
-      foodItems: this.apiService.getFoodItems(restId),
-      bills: this.apiService.getBills(restId),
-      expenses: this.apiService.getExpenses(restId)
-    }).subscribe({
-      next: (res) => {
-        this.restaurants.set(res.restaurants);
-        this.foodItems.set(res.foodItems);
-        this.bills.set(res.bills);
-        this.expenses.set(res.expenses);
-
-        this.calculateMetrics();
-        this.compileRecentTransactions();
-        this.compileExpenseCategories();
-        this.generateSvgCharts();
-        
-        this.isLoading.set(false);
-      },
-      error: (err) => {
-        console.error('Error fetching dashboard data:', err);
-        this.isLoading.set(false);
-      }
-    });
-  }
-
-  calculateMetrics() {
-    const billList = this.bills();
-    const expenseList = this.expenses();
-
-    const revenue = billList.reduce((sum, b) => {
+  totalRevenue = computed(() => {
+    return this.bills().reduce((sum, b) => {
       const amt = b.amount || 0;
       const tax = (b.cgst || 0) + (b.sgst || 0);
       return sum + amt + tax;
     }, 0);
-    this.totalRevenue.set(revenue);
+  });
 
-    const expensesSum = expenseList.reduce((sum, e) => sum + (e.amount || 0), 0);
-    this.totalExpenses.set(expensesSum);
+  totalExpenses = computed(() => {
+    return this.expenses().reduce((sum, e) => sum + (e.amount || 0), 0);
+  });
 
-    const profit = revenue - expensesSum;
-    this.netProfit.set(profit);
+  netProfit = computed(() => {
+    return this.totalRevenue() - this.totalExpenses();
+  });
 
-    const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
-    this.profitMargin.set(margin);
-  }
-
-  compileRecentTransactions() {
+  profitMargin = computed(() => {
+    const rev = this.totalRevenue();
+    return rev > 0 ? (this.netProfit() / rev) * 100 : 0;
+  });
+  
+  recentTransactions = computed(() => {
     const list: TransactionItem[] = [];
     const billList = this.bills();
     const expenseList = this.expenses();
@@ -388,10 +122,10 @@ export class DashboardComponent implements OnInit {
     });
 
     list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    this.recentTransactions.set(list.slice(0, 5));
-  }
+    return list.slice(0, 5);
+  });
 
-  compileExpenseCategories() {
+  expenseCategories = computed(() => {
     const map = new Map<string, number>();
     const expenseList = this.expenses();
     const totalExp = this.totalExpenses();
@@ -422,26 +156,37 @@ export class DashboardComponent implements OnInit {
     });
 
     categoryList.sort((a, b) => b.amount - a.amount);
-    this.expenseCategories.set(categoryList);
-  }
+    return categoryList;
+  });
 
-  generateSvgCharts() {
-    this.generateRevenueBarChart();
-    this.generateExpenseDonutChart();
-  }
-
-  generateRevenueBarChart() {
+  chartBars = computed(() => {
     const billList = this.bills();
     const expenseList = this.expenses();
     const dailyData = new Map<string, { revenue: number; expense: number }>();
     
     const dateLabels: string[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      dateLabels.push(dateStr);
-      dailyData.set(dateStr, { revenue: 0, expense: 0 });
+    const start = this.startDate();
+    const end = this.endDate();
+    
+    if (start && end) {
+      let curr = new Date(start);
+      const stop = new Date(end);
+      let count = 0;
+      while (curr <= stop && count < 30) {
+        const dateStr = curr.toISOString().split('T')[0];
+        dateLabels.push(dateStr);
+        dailyData.set(dateStr, { revenue: 0, expense: 0 });
+        curr.setDate(curr.getDate() + 1);
+        count++;
+      }
+    } else {
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        dateLabels.push(dateStr);
+        dailyData.set(dateStr, { revenue: 0, expense: 0 });
+      }
     }
 
     billList.forEach(b => {
@@ -470,7 +215,7 @@ export class DashboardComponent implements OnInit {
     maxVal = maxVal * 1.15;
 
     const chartHeight = 150;
-    const barSpacing = 70;
+    const barSpacing = dateLabels.length > 15 ? 35 : (dateLabels.length > 10 ? 50 : 70);
     const startX = 40;
 
     const bars: any[] = [];
@@ -499,16 +244,15 @@ export class DashboardComponent implements OnInit {
       });
     });
 
-    this.chartBars.set(bars);
-  }
+    return bars;
+  });
 
-  generateExpenseDonutChart() {
+  chartDonutArcs = computed(() => {
     const totalExp = this.totalExpenses();
     const categoriesList = this.expenseCategories();
     
     if (totalExp === 0) {
-      this.chartDonutArcs.set([]);
-      return;
+      return [];
     }
 
     let cumulativePercent = 0;
@@ -551,6 +295,173 @@ export class DashboardComponent implements OnInit {
       });
     });
 
-    this.chartDonutArcs.set(arcs);
+    return arcs;
+  });
+
+
+
+  activeRestaurantName = computed(() => {
+    const id = this.apiService.selectedRestaurantId();
+    if (!id) return 'Select Outlet...';
+    const rest = this.restaurants().find(r => r.id === id);
+    return rest ? rest.name : 'Unknown Outlet';
+  });
+
+  foodSales = computed(() => {
+    const salesMap = new Map<string, { price: number; quantity: number; revenue: number }>();
+    
+    this.foodItems().forEach(item => {
+      salesMap.set(item.name, {
+        price: item.price,
+        quantity: 0,
+        revenue: 0
+      });
+    });
+
+    this.bills().forEach(bill => {
+      if (bill.foodItems) {
+        bill.foodItems.forEach(item => {
+          let entry = salesMap.get(item.name);
+          if (!entry) {
+            entry = {
+              price: item.price,
+              quantity: 0,
+              revenue: 0
+            };
+            salesMap.set(item.name, entry);
+          }
+          
+          entry.quantity += item.quantity;
+          entry.revenue += item.quantity * item.price;
+        });
+      }
+    });
+
+    return Array.from(salesMap.entries()).map(([name, data]) => ({
+      name,
+      ...data
+    })).sort((a, b) => b.quantity - a.quantity);
+  });
+
+  totalFoodItemsSold = computed(() => {
+    return this.foodSales().reduce((sum, item) => sum + item.quantity, 0);
+  });
+
+  totalFoodRevenue = computed(() => {
+    return this.foodSales().reduce((sum, item) => sum + item.revenue, 0);
+  });
+
+  todayStr = computed(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  });
+
+  currentMonthStr = computed(() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+  });
+
+  currentMonthName = computed(() => {
+    const d = new Date();
+    return d.toLocaleString('default', { month: 'long', year: 'numeric' });
+  });
+
+  billsSummary = computed(() => {
+    const list = this.bills();
+    const subtotal = list.reduce((sum, b) => sum + (b.amount || 0), 0);
+    const tax = list.reduce((sum, b) => sum + ((b.cgst || 0) + (b.sgst || 0)), 0);
+    const total = subtotal + tax;
+    return { count: list.length, subtotal, tax, total };
+  });
+
+
+
+  constructor() {
+    // Automatically refetch dashboard data whenever the active restaurant selection changes
+    effect(() => {
+      this.apiService.selectedRestaurantId();
+      this.fetchDashboardData();
+    });
+  }
+
+  ngOnInit() {
+    // Handled by effect on initialization
+  }
+
+  fetchDashboardData() {
+    this.isLoading.set(true);
+    const restId = this.apiService.selectedRestaurantId();
+    forkJoin({
+      restaurants: this.apiService.getRestaurants(),
+      foodItems: this.apiService.getFoodItems(restId),
+      bills: this.apiService.getBills(restId),
+      expenses: this.apiService.getExpenses(restId)
+    }).subscribe({
+      next: (res) => {
+        this.restaurants.set(res.restaurants);
+        this.foodItems.set(res.foodItems);
+        this.rawBills.set(res.bills);
+        this.rawExpenses.set(res.expenses);
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Error fetching dashboard data:', err);
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  setQuickFilter(type: string) {
+    this.activeQuickFilter.set(type);
+    const today = new Date();
+    
+    if (type === 'all') {
+      this.startDate.set('');
+      this.endDate.set('');
+    } else if (type === 'today') {
+      const todayStr = this.formatDate(today);
+      this.startDate.set(todayStr);
+      this.endDate.set(todayStr);
+    } else if (type === '7days') {
+      const start = new Date();
+      start.setDate(today.getDate() - 6);
+      this.startDate.set(this.formatDate(start));
+      this.endDate.set(this.formatDate(today));
+    } else if (type === '30days') {
+      const start = new Date();
+      start.setDate(today.getDate() - 29);
+      this.startDate.set(this.formatDate(start));
+      this.endDate.set(this.formatDate(today));
+    } else if (type === 'thismonth') {
+      const start = new Date(today.getFullYear(), today.getMonth(), 1);
+      this.startDate.set(this.formatDate(start));
+      this.endDate.set(this.formatDate(today));
+    }
+  }
+
+  private formatDate(d: Date): string {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  onStartDateChange(val: string) {
+    this.startDate.set(val);
+    this.activeQuickFilter.set('custom');
+  }
+
+  onEndDateChange(val: string) {
+    this.endDate.set(val);
+    this.activeQuickFilter.set('custom');
+  }
+
+  clearDateFilter() {
+    this.setQuickFilter('all');
   }
 }

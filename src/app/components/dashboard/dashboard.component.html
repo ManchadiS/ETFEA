@@ -4,16 +4,6 @@
       <h1>Overview Dashboard</h1>
       <p class="subtitle">Real-time metrics, financial breakdowns, and branch operations tracker.</p>
     </div>
-    <button class="btn btn-primary" (click)="openReportModal()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" style="width:18px; height:18px;">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-        <line x1="16" y1="13" x2="8" y2="13"/>
-        <line x1="16" y1="17" x2="8" y2="17"/>
-        <polyline points="10 9 9 9 8 9"/>
-      </svg>
-      Bills Reports Hub
-    </button>
   </div>
 
   <!-- Loading State -->
@@ -23,6 +13,32 @@
   </div>
 
   <ng-container *ngIf="!isLoading()">
+    <!-- Date Filter Panel -->
+    <div class="glass-panel date-filter-panel">
+      <div class="date-filter-group">
+        <span class="date-filter-label">Filter Date:</span>
+        <div class="quick-filter-btns">
+          <button class="quick-filter-btn" [class.active]="activeQuickFilter() === 'all'" (click)="setQuickFilter('all')">All Time</button>
+          <button class="quick-filter-btn" [class.active]="activeQuickFilter() === 'today'" (click)="setQuickFilter('today')">Today</button>
+          <button class="quick-filter-btn" [class.active]="activeQuickFilter() === '7days'" (click)="setQuickFilter('7days')">Last 7 Days</button>
+          <button class="quick-filter-btn" [class.active]="activeQuickFilter() === '30days'" (click)="setQuickFilter('30days')">Last 30 Days</button>
+          <button class="quick-filter-btn" [class.active]="activeQuickFilter() === 'thismonth'" (click)="setQuickFilter('thismonth')">This Month</button>
+        </div>
+      </div>
+
+      <div class="custom-date-pickers">
+        <div class="date-picker-item">
+          <label for="startDate">Start:</label>
+          <input type="date" id="startDate" class="date-input" [ngModel]="startDate()" (ngModelChange)="onStartDateChange($event)">
+        </div>
+        <div class="date-picker-item">
+          <label for="endDate">End:</label>
+          <input type="date" id="endDate" class="date-input" [ngModel]="endDate()" (ngModelChange)="onEndDateChange($event)">
+        </div>
+        <button *ngIf="startDate() || endDate()" class="clear-btn" (click)="clearDateFilter()">Clear</button>
+      </div>
+    </div>
+
     <!-- Financial Metric Cards -->
     <div class="metrics-grid">
       <!-- Total Revenue Box -->
@@ -92,7 +108,7 @@
       <!-- Revenue vs Expenses SVG Chart -->
       <div class="glass-panel chart-card">
         <div class="chart-header">
-          <h3>Finance Over Time (Last 7 Days)</h3>
+          <h3>Finance Over Time ({{ startDate() && endDate() ? (startDate() + ' to ' + endDate()) : 'Last 7 Days' }})</h3>
           <div class="legend">
             <span class="legend-item"><span class="legend-dot rev"></span>Revenue</span>
             <span class="legend-item"><span class="legend-dot exp"></span>Expenses</span>
@@ -250,235 +266,4 @@
     </div>
   </ng-container>
 
-  <!-- Reports Hub Modal -->
-  <div *ngIf="showReportModal()" class="modal-backdrop" (click)="closeReportModal()">
-    <div class="modal-content report-modal" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2 class="modal-title">Bills Reports Hub</h2>
-        <button class="modal-close" (click)="closeReportModal()">&times;</button>
-      </div>
-
-      <div class="tabs-container">
-        <button class="tab-btn" [class.active]="reportTab() === 'daily'" (click)="setReportTab('daily')">
-          Daily Report
-        </button>
-        <button class="tab-btn" [class.active]="reportTab() === 'monthly'" (click)="setReportTab('monthly')">
-          Monthly Report
-        </button>
-        <button class="tab-btn" [class.active]="reportTab() === 'food_sales'" (click)="setReportTab('food_sales')">
-          Food Sales Report
-        </button>
-      </div>
-
-      <!-- Daily Report Tab -->
-      <div *ngIf="reportTab() === 'daily'" class="tab-content animate-fade-in">
-        <div class="report-summary-box">
-          <div class="summary-item">
-            <span class="summary-label">Outlet</span>
-            <span class="summary-val">{{ activeRestaurantName() }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">Date</span>
-            <span class="summary-val">{{ todayStr() }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">Invoices</span>
-            <span class="summary-val">{{ todaySummary().count }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">Tax (GST)</span>
-            <span class="summary-val">₹{{ todaySummary().tax | number:'1.2-2' }}</span>
-          </div>
-          <div class="summary-item highlight">
-            <span class="summary-label">Total</span>
-            <span class="summary-val">₹{{ todaySummary().total | number:'1.2-2' }}</span>
-          </div>
-        </div>
-
-        <div class="action-bar">
-          <button class="btn btn-success w-full" (click)="downloadBillsExcel('daily')" [disabled]="todaySummary().count === 0">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" style="width:16px; height:16px;">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Download Today's Bills (Excel/CSV)
-          </button>
-        </div>
-
-        <div class="report-preview-section">
-          <h3>Today's Bills Preview</h3>
-          <div class="table-container preview-table-container">
-            <table *ngIf="todayBills().length > 0; else noTodayBills">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Subtotal</th>
-                  <th>GST</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let bill of todayBills()">
-                  <td>{{ bill.id?.substring(0, 6) }}</td>
-                  <td>₹{{ bill.amount | number:'1.2-2' }}</td>
-                  <td>₹{{ (bill.cgst || 0) + (bill.sgst || 0) | number:'1.2-2' }}</td>
-                  <td>₹{{ (bill.amount || 0) + (bill.cgst || 0) + (bill.sgst || 0) | number:'1.2-2' }}</td>
-                  <td>
-                    <span class="badge" [ngClass]="{
-                      'badge-success': bill.status === 'paid',
-                      'badge-warning': bill.status === 'pending',
-                      'badge-danger': bill.status === 'overdue'
-                    }">{{ bill.status }}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <ng-template #noTodayBills>
-              <p class="no-bills-msg">No bills generated today.</p>
-            </ng-template>
-          </div>
-        </div>
-      </div>
-
-      <!-- Monthly Report Tab -->
-      <div *ngIf="reportTab() === 'monthly'" class="tab-content animate-fade-in">
-        <div class="report-summary-box">
-          <div class="summary-item">
-            <span class="summary-label">Outlet</span>
-            <span class="summary-val">{{ activeRestaurantName() }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">Month</span>
-            <span class="summary-val">{{ currentMonthName() }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">Invoices</span>
-            <span class="summary-val">{{ currentMonthSummary().count }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">Tax (GST)</span>
-            <span class="summary-val">₹{{ currentMonthSummary().tax | number:'1.2-2' }}</span>
-          </div>
-          <div class="summary-item highlight">
-            <span class="summary-label">Total</span>
-            <span class="summary-val">₹{{ currentMonthSummary().total | number:'1.2-2' }}</span>
-          </div>
-        </div>
-
-        <div class="action-bar">
-          <button class="btn btn-success w-full" (click)="downloadBillsExcel('monthly')" [disabled]="currentMonthSummary().count === 0">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" style="width:16px; height:16px;">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Download This Month's Bills (Excel/CSV)
-          </button>
-        </div>
-
-        <div class="report-preview-section">
-          <h3>This Month's Bills Preview</h3>
-          <div class="table-container preview-table-container">
-            <table *ngIf="currentMonthBills().length > 0; else noMonthlyBills">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>ID</th>
-                  <th>Subtotal</th>
-                  <th>GST</th>
-                  <th>Total</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let bill of currentMonthBills()">
-                  <td>{{ bill.date }}</td>
-                  <td>{{ bill.id?.substring(0, 6) }}</td>
-                  <td>₹{{ bill.amount | number:'1.2-2' }}</td>
-                  <td>₹{{ (bill.cgst || 0) + (bill.sgst || 0) | number:'1.2-2' }}</td>
-                  <td>₹{{ (bill.amount || 0) + (bill.cgst || 0) + (bill.sgst || 0) | number:'1.2-2' }}</td>
-                  <td>
-                    <span class="badge" [ngClass]="{
-                      'badge-success': bill.status === 'paid',
-                      'badge-warning': bill.status === 'pending',
-                      'badge-danger': bill.status === 'overdue'
-                    }">{{ bill.status }}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            <ng-template #noMonthlyBills>
-              <p class="no-bills-msg">No bills generated this month.</p>
-            </ng-template>
-          </div>
-        </div>
-      </div>
-
-      <!-- Food Sales Report Tab -->
-      <div *ngIf="reportTab() === 'food_sales'" class="tab-content animate-fade-in">
-        <div class="report-summary-box">
-          <div class="summary-item">
-            <span class="summary-label">Outlet</span>
-            <span class="summary-val">{{ activeRestaurantName() }}</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">Daily Items Sold</span>
-            <span class="summary-val">{{ totalDailyFoodItemsSold() }} qty</span>
-          </div>
-          <div class="summary-item">
-            <span class="summary-label">Monthly Items Sold</span>
-            <span class="summary-val">{{ totalMonthlyFoodItemsSold() }} qty</span>
-          </div>
-          <div class="summary-item highlight">
-            <span class="summary-label">Monthly Revenue</span>
-            <span class="summary-val">₹{{ totalMonthlyFoodRevenue() | number:'1.2-2' }}</span>
-          </div>
-        </div>
-
-        <div class="action-bar">
-          <button class="btn btn-success w-full" (click)="downloadFoodSalesExcel()" [disabled]="foodSales().length === 0">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" style="width:16px; height:16px;">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Download Food Sales (Excel/CSV)
-          </button>
-        </div>
-
-        <div class="report-preview-section">
-          <h3>Food Item Sales Summary</h3>
-          <div class="table-container preview-table-container">
-            <table *ngIf="foodSales().length > 0; else noFoodSales">
-              <thead>
-                <tr>
-                  <th>Item Name</th>
-                  <th>Price</th>
-                  <th>Daily Qty</th>
-                  <th>Daily Rev</th>
-                  <th>Monthly Qty</th>
-                  <th>Monthly Rev</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let item of foodSales()">
-                  <td class="desc-cell">{{ item.name }}</td>
-                  <td>₹{{ item.price | number:'1.2-2' }}</td>
-                  <td>{{ item.dailyQty }}</td>
-                  <td>₹{{ item.dailyRevenue | number:'1.2-2' }}</td>
-                  <td style="font-weight: 600; color: var(--primary-hover);">{{ item.monthlyQty }}</td>
-                  <td style="font-weight: 600; color: var(--success);">₹{{ item.monthlyRevenue | number:'1.2-2' }}</td>
-                </tr>
-              </tbody>
-            </table>
-            <ng-template #noFoodSales>
-              <p class="no-bills-msg">No menu items found for this outlet.</p>
-            </ng-template>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
