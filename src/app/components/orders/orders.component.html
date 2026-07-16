@@ -53,7 +53,7 @@
             <span class="order-number-badge" *ngIf="order.orderNumber">#{{ order.orderNumber }}</span>
             <span class="table-badge">{{ order.tableNo }}</span>
             <span *ngIf="order.discount" class="discount-badge" style="background-color: #ef4444; color: #fff; font-size: 0.72rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">{{ order.discount }}% OFF</span>
-            <span class="order-date">{{ order.date }}</span>
+            <span class="order-date">{{ order.date | date:'dd/MM/yyyy' }}</span>
           </div>
           <span class="badge status-badge" [ngClass]="'badge-' + order.status">
             {{ order.status | uppercase }}

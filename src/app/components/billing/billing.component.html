@@ -212,8 +212,18 @@
           </select>
         </div>
         <div class="form-group half-width">
+          <label for="paymentMode">Payment Mode</label>
+          <select id="paymentMode" [(ngModel)]="paymentMode">
+            <option value="Cash">Cash</option>
+            <option value="Online">Online</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group full-width" style="width: 100%;">
           <label for="billDesc">Table / Notes</label>
-          <input type="text" id="billDesc" [(ngModel)]="description" placeholder="e.g. Table 04 Dinner" />
+          <input type="text" id="billDesc" [(ngModel)]="description" placeholder="e.g. Table 04 Dinner" style="width: 100%; box-sizing: border-box;" />
         </div>
       </div>
 
@@ -250,9 +260,10 @@
           </div>
 
           <div class="receipt-meta">
-            <div>Date: {{ currentDateStr }}</div>
+            <div>Date: {{ currentDateStr | date:'dd/MM/yyyy' }}</div>
             <div *ngIf="mobile">Mobile: {{ mobile }}</div>
             <div *ngIf="emailId" class="email-meta">Email: {{ emailId }}</div>
+            <div>Payment Mode: {{ paymentMode }}</div>
             <div *ngIf="description">Notes: {{ description }}</div>
           </div>
 

@@ -170,13 +170,86 @@ export class ReportsComponent implements OnInit {
     this.reportTab.set(tab);
   }
 
+  getRestaurantName(id?: string): string {
+    if (!id) return '';
+    const rest = this.restaurants().find(r => r.id === id);
+    return rest ? rest.name : id;
+  }
+
+  private generateExcelFile(title: string, headers: string[], rows: any[][], filename: string) {
+    const sheetName = title.substring(0, 30).replace(/[:\\/?*\[\]]/g, '');
+    const html = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8">
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>${sheetName}</x:Name>
+                <x:WorksheetOptions>
+                  <x:DisplayGridlines/>
+                </x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+          h2 { color: #f25c05; margin-bottom: 4px; }
+          p { margin: 2px 0; color: #555; font-size: 13px; }
+          table { border-collapse: collapse; margin-top: 15px; width: 100%; }
+          th { background-color: #f25c05; color: #ffffff; font-weight: bold; border: 1px solid #cccccc; padding: 8px; text-align: left; }
+          td { border: 1px solid #dddddd; padding: 8px; font-size: 13px; }
+          tr:nth-child(even) { background-color: #f9f9f9; }
+          .total-row td { font-weight: bold; background-color: #f3f4f6; border-top: 2px double #888888; border-bottom: 2px double #888888; color: #000; }
+        </style>
+      </head>
+      <body>
+        <h2>${title}</h2>
+        <p><strong>Outlet:</strong> ${this.activeRestaurantName()}</p>
+        <p><strong>Date Period:</strong> ${this.startDate() && this.endDate() ? (this.startDate() + ' to ' + this.endDate()) : 'All Time'}</p>
+        <p><strong>Export Date:</strong> ${this.todayStr()}</p>
+        <table>
+          <thead>
+            <tr>
+              ${headers.map(h => `<th>${h}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(row => {
+              const isTotal = row[0] === 'TOTAL';
+              return `<tr class="${isTotal ? 'total-row' : ''}">
+                ${row.map(cell => `<td>${cell !== undefined && cell !== null ? cell : ''}</td>`).join('')}
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   downloadBillsExcel() {
     const list = this.bills();
     const outletName = this.activeRestaurantName();
     const headers = [
-      'Bill ID',
+      'Bill / Order No.',
+      'Reference ID',
       'Date',
-      'Restaurant ID',
+      'Restaurant Name',
       'Subtotal (INR)',
       'CGST (INR)',
       'SGST (INR)',
@@ -188,13 +261,25 @@ export class ReportsComponent implements OnInit {
       'Food Items Ordered'
     ];
 
+    let totalSubtotal = 0;
+    let totalCgst = 0;
+    let totalSgst = 0;
+    let totalGrand = 0;
+
     const rows = list.map(b => {
       const grandTotal = (b.amount || 0) + (b.cgst || 0) + (b.sgst || 0);
       const itemsStr = b.foodItems ? b.foodItems.map(item => `${item.name} (${item.quantity}x @ ₹${item.price})`).join('; ') : '';
+      
+      totalSubtotal += (b.amount || 0);
+      totalCgst += (b.cgst || 0);
+      totalSgst += (b.sgst || 0);
+      totalGrand += grandTotal;
+
       return [
+        b.orderNumber ? `#${b.orderNumber}` : '',
         b.id || '',
         b.date || '',
-        b.restaurantId || '',
+        this.getRestaurantName(b.restaurantId),
         b.amount || 0,
         b.cgst || 0,
         b.sgst || 0,
@@ -207,27 +292,26 @@ export class ReportsComponent implements OnInit {
       ];
     });
 
-    const csvRows = [
-      `Bills Report - ${outletName}`,
-      `Date Range: ${this.startDate() && this.endDate() ? (this.startDate() + ' to ' + this.endDate()) : 'All Time'}`,
-      `Generated on: ${this.todayStr()}`,
+    // Append Total Row
+    rows.push([
+      'TOTAL',
       '',
-      headers.join(','),
-      ...rows.map(row => row.map(cell => this.escapeCSV(cell)).join(','))
-    ];
-    const csvContent = csvRows.join('\n');
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
+      '',
+      '',
+      totalSubtotal,
+      totalCgst,
+      totalSgst,
+      totalGrand,
+      '',
+      '',
+      '',
+      '',
+      ''
+    ]);
+
     const dateRangeSuffix = this.startDate() && this.endDate() ? `${this.startDate()}_to_${this.endDate()}` : 'all_time';
-    const filename = `bills_report_${outletName.toLowerCase().replace(/\s+/g, '_')}_${dateRangeSuffix}.csv`;
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const filename = `bills_report_${outletName.toLowerCase().replace(/\s+/g, '_')}_${dateRangeSuffix}.xls`;
+    this.generateExcelFile(`Bills Invoice Report`, headers, rows, filename);
   }
 
   downloadFoodSalesExcel() {
@@ -240,35 +324,32 @@ export class ReportsComponent implements OnInit {
       'Revenue (INR)'
     ];
 
-    const rows = list.map(item => [
-      item.name,
-      item.price,
-      item.quantity,
-      item.revenue
+    let totalQty = 0;
+    let totalRev = 0;
+
+    const rows = list.map(item => {
+      totalQty += (item.quantity || 0);
+      totalRev += (item.revenue || 0);
+
+      return [
+        item.name,
+        item.price,
+        item.quantity,
+        item.revenue
+      ];
+    });
+
+    // Append Total Row
+    rows.push([
+      'TOTAL',
+      '',
+      totalQty,
+      totalRev
     ]);
 
-    const csvRows = [
-      `Food Sales Report - ${outletName}`,
-      `Date Range: ${this.startDate() && this.endDate() ? (this.startDate() + ' to ' + this.endDate()) : 'All Time'}`,
-      `Generated on: ${this.todayStr()}`,
-      '',
-      headers.join(','),
-      ...rows.map(row => row.map(cell => this.escapeCSV(cell)).join(','))
-    ];
-    
-    const csvContent = csvRows.join('\n');
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
     const dateRangeSuffix = this.startDate() && this.endDate() ? `${this.startDate()}_to_${this.endDate()}` : 'all_time';
-    const filename = `food_sales_report_${outletName.toLowerCase().replace(/\s+/g, '_')}_${dateRangeSuffix}.csv`;
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const filename = `food_sales_report_${outletName.toLowerCase().replace(/\s+/g, '_')}_${dateRangeSuffix}.xls`;
+    this.generateExcelFile(`Food Sales Report`, headers, rows, filename);
   }
 
   downloadExpensesExcel() {
@@ -277,43 +358,40 @@ export class ReportsComponent implements OnInit {
     const headers = [
       'Expense ID',
       'Date',
-      'Restaurant ID',
+      'Restaurant Name',
       'Category',
       'Description',
       'Amount (INR)'
     ];
 
-    const rows = list.map(e => [
-      e.id || '',
-      e.date || '',
-      e.restaurantId || '',
-      e.category || '',
-      e.description || '',
-      e.amount || 0
+    let totalAmount = 0;
+
+    const rows = list.map(e => {
+      totalAmount += (e.amount || 0);
+
+      return [
+        e.id || '',
+        e.date || '',
+        this.getRestaurantName(e.restaurantId),
+        e.category || '',
+        e.description || '',
+        e.amount || 0
+      ];
+    });
+
+    // Append Total Row
+    rows.push([
+      'TOTAL',
+      '',
+      '',
+      '',
+      '',
+      totalAmount
     ]);
 
-    const csvRows = [
-      `Expense Report - ${outletName}`,
-      `Date Range: ${this.startDate() && this.endDate() ? (this.startDate() + ' to ' + this.endDate()) : 'All Time'}`,
-      `Generated on: ${this.todayStr()}`,
-      '',
-      headers.join(','),
-      ...rows.map(row => row.map(cell => this.escapeCSV(cell)).join(','))
-    ];
-    
-    const csvContent = csvRows.join('\n');
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
     const dateRangeSuffix = this.startDate() && this.endDate() ? `${this.startDate()}_to_${this.endDate()}` : 'all_time';
-    const filename = `expense_report_${outletName.toLowerCase().replace(/\s+/g, '_')}_${dateRangeSuffix}.csv`;
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const filename = `expense_report_${outletName.toLowerCase().replace(/\s+/g, '_')}_${dateRangeSuffix}.xls`;
+    this.generateExcelFile(`Expenses Report`, headers, rows, filename);
   }
 
   private escapeCSV(val: any): string {

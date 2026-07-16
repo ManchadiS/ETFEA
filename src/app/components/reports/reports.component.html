@@ -55,11 +55,19 @@
         <div class="custom-date-pickers">
           <div class="date-picker-item">
             <label for="startDate">Start:</label>
-            <input type="date" id="startDate" class="date-input" [ngModel]="startDate()" (ngModelChange)="onStartDateChange($event)">
+            <div style="position: relative; display: flex; align-items: center; width: 100%;">
+              <input type="text" id="startDateText" [value]="startDate() ? (startDate() | date:'dd/MM/yyyy') : ''" placeholder="dd/mm/yyyy" readonly (click)="startPicker.showPicker()" class="date-input" style="cursor: pointer; padding-right: 32px; width: 100%;" />
+              <span style="position: absolute; right: 10px; pointer-events: none; color: var(--text-secondary); font-size: 0.9rem;">📅</span>
+              <input type="date" #startPicker id="startDate" [ngModel]="startDate()" (ngModelChange)="onStartDateChange($event)" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; z-index: -1;" />
+            </div>
           </div>
           <div class="date-picker-item">
             <label for="endDate">End:</label>
-            <input type="date" id="endDate" class="date-input" [ngModel]="endDate()" (ngModelChange)="onEndDateChange($event)">
+            <div style="position: relative; display: flex; align-items: center; width: 100%;">
+              <input type="text" id="endDateText" [value]="endDate() ? (endDate() | date:'dd/MM/yyyy') : ''" placeholder="dd/mm/yyyy" readonly (click)="endPicker.showPicker()" class="date-input" style="cursor: pointer; padding-right: 32px; width: 100%;" />
+              <span style="position: absolute; right: 10px; pointer-events: none; color: var(--text-secondary); font-size: 0.9rem;">📅</span>
+              <input type="date" #endPicker id="endDate" [ngModel]="endDate()" (ngModelChange)="onEndDateChange($event)" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; z-index: -1;" />
+            </div>
           </div>
           <button *ngIf="startDate() || endDate()" class="clear-btn" (click)="clearDateFilter()">Clear</button>
         </div>
@@ -125,7 +133,7 @@
               </thead>
               <tbody>
                 <tr *ngFor="let bill of bills()">
-                  <td>{{ bill.date }}</td>
+                  <td>{{ bill.date | date:'dd/MM/yyyy' }}</td>
                   <td>{{ bill.id?.substring(0, 6) }}</td>
                   <td>₹{{ bill.amount | number:'1.2-2' }}</td>
                   <td>₹{{ (bill.cgst || 0) + (bill.sgst || 0) | number:'1.2-2' }}</td>
@@ -254,7 +262,7 @@
               </thead>
               <tbody>
                 <tr *ngFor="let exp of expenses()">
-                  <td>{{ exp.date }}</td>
+                  <td>{{ exp.date | date:'dd/MM/yyyy' }}</td>
                   <td>{{ exp.id?.substring(0, 6) }}</td>
                   <td>
                     <span class="badge" style="background: rgba(255,255,255,0.08); color: #fff;">{{ exp.category }}</span>

@@ -44,6 +44,27 @@ export class ExpensesComponent implements OnInit {
   date = '';
   description = '';
   restaurantId = '';
+  imageUrl = '';
+  isUploadingFile = signal<boolean>(false);
+
+  onFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    this.isUploadingFile.set(true);
+    this.errorMessage.set('');
+    this.apiService.uploadExpenseImage(file).subscribe({
+      next: (res) => {
+        this.imageUrl = res.imageUrl;
+        this.isUploadingFile.set(false);
+      },
+      error: (err) => {
+        console.error('File upload error:', err);
+        this.errorMessage.set('Failed to upload receipt image. Please try again.');
+        this.isUploadingFile.set(false);
+      }
+    });
+  }
 
   // Inventory Integration fields
   inventoryItems = signal<InventoryItem[]>([]);
@@ -142,6 +163,7 @@ export class ExpensesComponent implements OnInit {
     this.description = '';
     this.restaurantId = this.apiService.selectedRestaurantId(); // pre-select active restaurant if any
     this.selectedInventoryItemId = '';
+    this.imageUrl = '';
     this.errorMessage.set('');
     this.showModal.set(true);
     this.fetchInventoryItems();
@@ -176,6 +198,7 @@ export class ExpensesComponent implements OnInit {
       this.fetchInventoryItems();
     }
 
+    this.imageUrl = e.imageUrl || '';
     this.showModal.set(true);
   }
 
@@ -207,7 +230,8 @@ export class ExpensesComponent implements OnInit {
       category: this.category,
       date: this.date,
       description: finalDescription,
-      restaurantId: this.restaurantId
+      restaurantId: this.restaurantId,
+      imageUrl: this.imageUrl
     };
 
     this.isLoading.set(true);
@@ -251,5 +275,9 @@ export class ExpensesComponent implements OnInit {
         this.isLoading.set(false);
       }
     });
+  }
+
+  getReceiptUrl(path: string): string {
+    return `http://localhost:3000${path}`;
   }
 }

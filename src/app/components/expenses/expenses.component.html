@@ -69,7 +69,7 @@
         </thead>
         <tbody>
           <tr *ngFor="let exp of filteredExpenses()" class="expense-row">
-            <td class="date-cell">{{ exp.date || 'N/A' }}</td>
+            <td class="date-cell">{{ exp.date ? (exp.date | date:'dd/MM/yyyy') : 'N/A' }}</td>
             <td>
               <span class="badge" [ngClass]="{
                 'badge-info': exp.category === 'Salary' || exp.category === 'Rent',
@@ -81,7 +81,12 @@
                 {{ exp.category || 'Others' }}
               </span>
             </td>
-            <td class="desc-cell">{{ exp.description || 'No description' }}</td>
+            <td class="desc-cell">
+              {{ exp.description || 'No description' }}
+              <a *ngIf="exp.imageUrl" [href]="getReceiptUrl(exp.imageUrl)" target="_blank" style="margin-left: 8px; font-size: 0.75rem; color: var(--primary-hover); display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-weight: bold; background: rgba(242, 92, 5, 0.1); padding: 2px 6px; border-radius: 4px;">
+                <span>📄</span> View Receipt
+              </a>
+            </td>
             <td class="amount-cell">₹{{ exp.amount | number:'1.2-2' }}</td>
             <td>
               <div class="table-actions">
@@ -149,12 +154,38 @@
 
         <div class="form-group">
           <label for="expDate">Date *</label>
-          <input type="date" id="expDate" [(ngModel)]="date" required />
+          <div style="position: relative; display: flex; align-items: center; width: 100%;">
+            <input type="text" id="expDateText" [value]="date ? (date | date:'dd/MM/yyyy') : ''" placeholder="dd/mm/yyyy" readonly (click)="expPicker.showPicker()" style="cursor: pointer; padding-right: 32px; width: 100%;" />
+            <span style="position: absolute; right: 10px; pointer-events: none; color: var(--text-secondary); font-size: 0.9rem;">📅</span>
+            <input type="date" #expPicker id="expDate" [(ngModel)]="date" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; z-index: -1;" required />
+          </div>
         </div>
 
         <div class="form-group">
           <label for="expDesc">Description</label>
           <textarea id="expDesc" [(ngModel)]="description" rows="3" placeholder="e.g. Gas cylinder purchase, staff incentives..."></textarea>
+        </div>
+
+        <div class="form-group" style="margin-top: 15px;">
+          <label style="display: block; margin-bottom: 6px; font-weight: 600;">Receipt Image / Bill Copy</label>
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <!-- File input -->
+            <input type="file" id="expImage" (change)="onFileSelected($event)" accept="image/*" style="display: none;" #fileInput />
+            <button type="button" class="btn btn-secondary btn-sm" (click)="fileInput.click()" [disabled]="isUploadingFile()" style="padding: 6px 12px; font-size: 0.82rem; border-radius: 6px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff;">
+              <span>📁</span> Choose Receipt Image
+            </button>
+            <span *ngIf="isUploadingFile()" style="font-size: 0.8rem; color: var(--primary-hover); display: inline-flex; align-items: center; gap: 6px;">
+              <span class="spinner" style="width: 12px; height: 12px; border-width: 2px; display: inline-block;"></span> Uploading...
+            </span>
+            <span *ngIf="imageUrl" style="font-size: 0.8rem; color: var(--success); font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">
+              <span>✓</span> Receipt Uploaded
+            </span>
+          </div>
+          <!-- Thumbnail preview of uploaded receipt -->
+          <div *ngIf="imageUrl" style="margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; max-width: 150px; background: rgba(0,0,0,0.2); position: relative;">
+            <img [src]="getReceiptUrl(imageUrl)" alt="Receipt Preview" style="width: 100%; height: auto; display: block;" />
+            <button type="button" (click)="imageUrl = ''" style="position: absolute; top: 4px; right: 4px; background: rgba(239, 68, 68, 0.9); border: none; color: #fff; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.8rem; font-weight: bold;">&times;</button>
+          </div>
         </div>
       </div>
       <div class="modal-footer">

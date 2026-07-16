@@ -41,6 +41,7 @@ export interface Billing {
   createdAt?: string;
   orderNumber?: number;
   discount?: number;
+  paymentMode?: string;
 }
 
 export interface Expense {
@@ -50,6 +51,7 @@ export interface Expense {
   description?: string;
   date?: string;
   category?: string;
+  imageUrl?: string;
 }
 
 export interface EmailLog {
@@ -145,8 +147,8 @@ export interface Customer {
 })
 export class ApiService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://api.engineeringtadka.com/api/v1'; //prod url
-  // private baseUrl = 'http://localhost:3000/api/v1';
+  // private baseUrl = 'http://api.engineeringtadka.com/api/v1'; //prod url
+  private baseUrl = 'http://localhost:3000/api/v1';
 
   // Global active restaurant selection state
   selectedRestaurantId = signal<string>('');
@@ -225,6 +227,12 @@ export class ApiService {
 
   deleteExpense(id: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/expenses/${id}`, { responseType: 'text' });
+  }
+
+  uploadExpenseImage(file: File): Observable<{ imageUrl: string }> {
+    const formData = new FormData();
+    formData.append('image', file);
+    return this.http.post<{ imageUrl: string }>(`${this.baseUrl}/expenses/upload`, formData);
   }
 
   // BILLING / INVOICES

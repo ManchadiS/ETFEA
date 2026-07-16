@@ -61,6 +61,7 @@ export class BillingComponent implements OnInit {
   emailId = '';
   description = '';
   status: 'pending' | 'paid' | 'overdue' = 'paid';
+  paymentMode: 'Cash' | 'Online' = 'Cash';
 
   // Search & Filter Records
   searchQuery = '';
@@ -472,7 +473,8 @@ export class BillingComponent implements OnInit {
       cgst: this.cgstAmount,
       sgst: this.sgstAmount,
       foodItems: this.orderItems(),
-      discount: this.discount()
+      discount: this.discount(),
+      paymentMode: this.paymentMode
     };
 
     this.apiService.createBill(billPayload).subscribe({
@@ -512,6 +514,7 @@ export class BillingComponent implements OnInit {
     this.emailId = '';
     this.description = '';
     this.status = 'paid';
+    this.paymentMode = 'Cash';
     this.selectedFoodItemId = '';
     this.dishSearchQuery.set('');
     this.showSuggestions.set(false);
