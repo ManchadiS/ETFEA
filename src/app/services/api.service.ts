@@ -52,6 +52,10 @@ export interface Expense {
   date?: string;
   category?: string;
   imageUrl?: string;
+  createdBy?: string;
+  updatedBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface EmailLog {

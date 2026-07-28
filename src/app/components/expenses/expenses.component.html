@@ -83,7 +83,17 @@
               </span>
             </td>
             <td class="desc-cell">
-              {{ exp.description || 'No description' }}
+              <div class="desc-text" [title]="exp.description || 'No description'">{{ exp.description || 'No description' }}</div>
+              <div class="meta-text" style="font-size: 0.72rem; color: var(--text-muted); opacity: 0.8; margin-top: 4px; display: flex; flex-direction: column; gap: 2px; font-weight: normal;">
+                <span *ngIf="exp.createdBy || exp.createdAt">
+                  Recorded by: <strong style="color: var(--text-secondary);">{{ exp.createdBy || 'System' }}</strong> 
+                  on {{ exp.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                </span>
+                <span *ngIf="exp.updatedBy || (exp.updatedAt && exp.updatedAt !== exp.createdAt)">
+                  Last updated by: <strong style="color: var(--text-secondary);">{{ exp.updatedBy || 'System' }}</strong> 
+                  on {{ exp.updatedAt | date:'dd/MM/yyyy HH:mm' }}
+                </span>
+              </div>
             </td>
             <td>
               <div *ngIf="exp.imageUrl" class="receipt-thumbnail-container">
