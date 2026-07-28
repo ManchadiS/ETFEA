@@ -278,6 +278,7 @@ export class ExpensesComponent implements OnInit {
   }
 
   getReceiptUrl(path: string): string {
-    return `http://localhost:3000${path}`;
+    const host = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'http://api.engineeringtadka.com';
+    return `${host}${path}`;
   }
 }

@@ -63,6 +63,7 @@
             <th>Date</th>
             <th>Category</th>
             <th>Description</th>
+            <th>Receipt</th>
             <th>Amount</th>
             <th style="text-align: right;">Actions</th>
           </tr>
@@ -83,9 +84,14 @@
             </td>
             <td class="desc-cell">
               {{ exp.description || 'No description' }}
-              <a *ngIf="exp.imageUrl" [href]="getReceiptUrl(exp.imageUrl)" target="_blank" style="margin-left: 8px; font-size: 0.75rem; color: var(--primary-hover); display: inline-flex; align-items: center; gap: 4px; text-decoration: none; font-weight: bold; background: rgba(242, 92, 5, 0.1); padding: 2px 6px; border-radius: 4px;">
-                <span>📄</span> View Receipt
-              </a>
+            </td>
+            <td>
+              <div *ngIf="exp.imageUrl" class="receipt-thumbnail-container">
+                <a [href]="getReceiptUrl(exp.imageUrl)" target="_blank" title="View Full Receipt">
+                  <img [src]="getReceiptUrl(exp.imageUrl)" alt="Receipt" class="receipt-thumbnail" />
+                </a>
+              </div>
+              <span *ngIf="!exp.imageUrl" class="no-receipt-text">No Receipt</span>
             </td>
             <td class="amount-cell">₹{{ exp.amount | number:'1.2-2' }}</td>
             <td>
