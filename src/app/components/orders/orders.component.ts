@@ -21,6 +21,11 @@ export class OrdersComponent implements OnInit {
   isSubmitting = signal<boolean>(false);
   errorMessage = signal<string>('');
   successMessage = signal<string>('');
+  activeTab = signal<'kitchen' | 'payments'>('kitchen');
+
+  digitalPayments = computed(() => {
+    return this.orders().filter(order => order.paymentMode === 'Razorpay' || order.paymentMode === 'UPI');
+  });
 
   // Modal signals
   showModal = signal<boolean>(false);
@@ -74,7 +79,7 @@ export class OrdersComponent implements OnInit {
     return Math.max(0, sum - 20);
   }
   selectedQuantity = 1;
-  status = signal<'received' | 'preparing' | 'ready' | 'completed' | 'cancelled'>('received');
+  status = signal<'pending_payment' | 'received' | 'preparing' | 'ready' | 'completed' | 'cancelled'>('received');
   discount = signal<number>(0);
  
   // Billing confirmation modal signals
@@ -504,7 +509,8 @@ export class OrdersComponent implements OnInit {
         quantity: item.quantity
       })),
       orderNumber: order.orderNumber,
-      discount: discount
+      discount: discount,
+      paymentMode: order.paymentMode || 'Cash'
     };
 
     this.isSubmitting.set(true);

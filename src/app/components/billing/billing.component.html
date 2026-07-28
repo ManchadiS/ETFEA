@@ -215,7 +215,8 @@
           <label for="paymentMode">Payment Mode</label>
           <select id="paymentMode" [(ngModel)]="paymentMode">
             <option value="Cash">Cash</option>
-            <option value="Online">Online</option>
+            <option value="UPI">UPI</option>
+            <option value="Razorpay">Razorpay</option>
           </select>
         </div>
       </div>
@@ -485,6 +486,7 @@
 
           <div class="receipt-meta">
             <div>Invoice ID: <span class="code-font">{{ selectedBill()?.id }}</span></div>
+            <div *ngIf="selectedBill()?.paymentMode">Payment Method: <span style="font-weight: 700; color: var(--primary-hover);">{{ selectedBill()?.paymentMode }}</span></div>
             <div *ngIf="selectedBill()?.orderNumber" style="font-weight: 850; color: var(--color-accent); font-size: 0.95rem;">Order Number: #{{ selectedBill()?.orderNumber }}</div>
             <div>Date: {{ selectedBill()?.date }}</div>
             <div *ngIf="selectedBill()?.mobile">Contact: {{ selectedBill()?.mobile }}</div>

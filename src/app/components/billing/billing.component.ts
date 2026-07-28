@@ -61,7 +61,7 @@ export class BillingComponent implements OnInit {
   emailId = '';
   description = '';
   status: 'pending' | 'paid' | 'overdue' = 'paid';
-  paymentMode: 'Cash' | 'Online' = 'Cash';
+  paymentMode: 'Cash' | 'UPI' | 'Razorpay' = 'Cash';
 
   // Search & Filter Records
   searchQuery = '';

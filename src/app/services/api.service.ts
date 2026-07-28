@@ -99,6 +99,7 @@ export interface User {
   age: number;
   role?: string;
   rights?: UserRights;
+  token?: string;
 }
 
 export interface Role {
@@ -125,7 +126,7 @@ export interface Order {
   restaurantId: string;
   tableNo: string;
   items: OrderItem[];
-  status: 'received' | 'preparing' | 'ready' | 'completed' | 'cancelled';
+  status: 'pending_payment' | 'received' | 'preparing' | 'ready' | 'completed' | 'cancelled';
   totalAmount: number;
   date?: string;
   createdAt?: string;
@@ -133,6 +134,11 @@ export interface Order {
   emailId?: string;
   orderNumber?: number;
   discount?: number;
+  paymentMode?: string;
+  paymentStatus?: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
 }
 
 export interface Customer {
