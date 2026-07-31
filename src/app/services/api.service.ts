@@ -15,6 +15,7 @@ export interface FoodItem {
   price: number;
   description?: string;
   category?: string;
+  active?: boolean;
 }
 
 export interface FoodOrderItem {
@@ -212,7 +213,7 @@ export class ApiService {
     return this.http.post<FoodItem>(`${this.baseUrl}/food`, item);
   }
 
-  updateFoodItem(id: string, item: FoodItem): Observable<any> {
+  updateFoodItem(id: string, item: Partial<FoodItem>): Observable<any> {
     return this.http.put(`${this.baseUrl}/food/${id}`, item);
   }
 

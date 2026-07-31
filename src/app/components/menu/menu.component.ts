@@ -44,6 +44,7 @@ export class MenuComponent implements OnInit {
   category = 'Shawarma';
   description = '';
   restaurantId = '';
+  active = true;
 
   constructor() {
     // Automatically refetch food items when active restaurant changes
@@ -114,6 +115,7 @@ export class MenuComponent implements OnInit {
     this.category = this.activeCategory() !== 'All' ? this.activeCategory() : 'Main Course';
     this.description = '';
     this.restaurantId = this.apiService.selectedRestaurantId(); // pre-select active restaurant if any
+    this.active = true;
     this.errorMessage.set('');
     this.showModal.set(true);
   }
@@ -127,6 +129,7 @@ export class MenuComponent implements OnInit {
     this.category = item.category || 'Main Course';
     this.description = item.description || '';
     this.restaurantId = item.restaurantId || '';
+    this.active = item.active !== false;
     this.errorMessage.set('');
     this.showModal.set(true);
   }
@@ -146,7 +149,8 @@ export class MenuComponent implements OnInit {
       price: this.price,
       category: this.category,
       description: this.description.trim(),
-      restaurantId: this.restaurantId
+      restaurantId: this.restaurantId,
+      active: this.active
     };
 
     this.isLoading.set(true);
@@ -187,6 +191,21 @@ export class MenuComponent implements OnInit {
       error: (err) => {
         console.error('Error deleting food item:', err);
         alert('Failed to delete food item.');
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  toggleActiveStatus(item: FoodItem) {
+    if (!item.id) return;
+    this.isLoading.set(true);
+    const nextStatus = item.active === false ? true : false;
+    this.apiService.updateFoodItem(item.id, { active: nextStatus }).subscribe({
+      next: () => {
+        this.fetchFoodItems();
+      },
+      error: (err) => {
+        console.error('Error toggling active status:', err);
         this.isLoading.set(false);
       }
     });
