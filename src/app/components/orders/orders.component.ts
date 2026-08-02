@@ -4,6 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { ApiService, Order, OrderItem, FoodItem, Billing, Customer } from '../../services/api.service';
 import { forkJoin } from 'rxjs';
 
+function getTodayDateString(): string {
+  const d = new Date();
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 @Component({
   selector: 'app-orders',
   standalone: true,
@@ -23,9 +29,51 @@ export class OrdersComponent implements OnInit {
   successMessage = signal<string>('');
   activeTab = signal<'kitchen' | 'payments'>('kitchen');
 
-  digitalPayments = computed(() => {
-    return this.orders().filter(order => order.paymentMode === 'Razorpay' || order.paymentMode === 'UPI');
+  // Date filter state (defaults to today)
+  startDate = signal<string>(getTodayDateString());
+  endDate = signal<string>(getTodayDateString());
+
+  filteredOrders = computed(() => {
+    let list = [...this.orders()];
+    const start = this.startDate();
+    const end = this.endDate();
+
+    if (start) {
+      list = list.filter(order => {
+        const orderDate = order.date || (order.createdAt ? order.createdAt.split('T')[0] : '');
+        return orderDate >= start;
+      });
+    }
+
+    if (end) {
+      list = list.filter(order => {
+        const orderDate = order.date || (order.createdAt ? order.createdAt.split('T')[0] : '');
+        return orderDate <= end;
+      });
+    }
+
+    // Sort in descending order (by orderNumber descending, fallback to createdAt/date descending)
+    list.sort((a, b) => {
+      const aNum = a.orderNumber || 0;
+      const bNum = b.orderNumber || 0;
+      if (aNum !== bNum) return bNum - aNum;
+
+      const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return bTime - aTime;
+    });
+
+    return list;
   });
+
+  digitalPayments = computed(() => {
+    return this.filteredOrders().filter(order => order.paymentMode === 'Razorpay' || order.paymentMode === 'UPI');
+  });
+
+  clearDateFilter() {
+    this.startDate.set('');
+    this.endDate.set('');
+  }
 
   // Modal signals
   showModal = signal<boolean>(false);
@@ -125,6 +173,15 @@ export class OrdersComponent implements OnInit {
       next: (res) => {
         this.orders.set(res.orders);
         this.allCustomers.set(res.customers);
+        
+        // Update shared count of incomplete orders of today
+        const today = getTodayDateString();
+        const count = res.orders.filter(o => {
+          const orderDate = o.date || (o.createdAt ? o.createdAt.split('T')[0] : '');
+          return orderDate === today && o.status !== 'completed' && o.status !== 'cancelled';
+        }).length;
+        this.apiService.todayIncompleteOrdersCount.set(count);
+        
         this.isLoading.set(false);
       },
       error: (err) => {

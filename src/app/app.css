@@ -263,3 +263,18 @@
     padding-bottom: 20px;
   }
 }
+
+/* Sidebar Count Badge */
+.nav-badge-count {
+  background-color: var(--primary);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  min-width: 16px;
+  text-align: center;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(242, 92, 5, 0.45);
+  margin-left: 8px;
+}

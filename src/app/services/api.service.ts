@@ -164,6 +164,9 @@ export class ApiService {
   // Global active restaurant selection state
   selectedRestaurantId = signal<string>('');
 
+  // Count of incomplete orders of today
+  todayIncompleteOrdersCount = signal<number>(0);
+
   // User Authentication State
   currentUser = signal<User | null>(this.loadStoredUser());
 

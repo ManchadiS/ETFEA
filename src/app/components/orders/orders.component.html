@@ -47,9 +47,30 @@
     <p>Loading live kitchen orders...</p>
   </div>
 
+  <!-- Date Range Filter Bar -->
+  <div *ngIf="!isLoading()" class="orders-filters glass-panel">
+    <div class="filter-title">
+      <span class="filter-icon">📅</span>
+      <span>Date Range Filter:</span>
+    </div>
+    <div class="filter-controls-group">
+      <div class="filter-date-group">
+        <label>From:</label>
+        <input type="date" [ngModel]="startDate()" (ngModelChange)="startDate.set($event)" class="filter-date-input">
+      </div>
+      <div class="filter-date-group">
+        <label>To:</label>
+        <input type="date" [ngModel]="endDate()" (ngModelChange)="endDate.set($event)" class="filter-date-input">
+      </div>
+      <button *ngIf="startDate() || endDate()" (click)="clearDateFilter()" class="btn-clear-filter">
+        ✕ Clear
+      </button>
+    </div>
+  </div>
+
   <!-- Orders Content -->
   <div *ngIf="!isLoading() && activeTab() === 'kitchen'" class="orders-content">
-    <div *ngIf="orders().length === 0" class="empty-state glass-panel">
+    <div *ngIf="filteredOrders().length === 0" class="empty-state glass-panel">
       <div class="empty-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="9" cy="21" r="1" />
@@ -62,8 +83,8 @@
     </div>
 
     <!-- Active Orders Grid -->
-    <div *ngIf="orders().length > 0" class="orders-grid">
-      <div *ngFor="let order of orders()" class="order-card glass-panel" [ngClass]="'status-' + order.status">
+    <div *ngIf="filteredOrders().length > 0" class="orders-grid">
+      <div *ngFor="let order of filteredOrders()" class="order-card glass-panel" [ngClass]="'status-' + order.status">
         <!-- Card Header -->
         <div class="card-header">
           <div class="order-id-group">

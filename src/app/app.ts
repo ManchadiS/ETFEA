@@ -1,8 +1,14 @@
-import { Component, signal, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, signal, inject, OnInit, OnDestroy, effect } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
 import { ApiService, EmailStatus, Restaurant } from './services/api.service';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
+
+function getTodayDateString(): string {
+  const d = new Date();
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
 
 @Component({
   selector: 'app-root',
@@ -13,6 +19,14 @@ import { filter } from 'rxjs/operators';
 export class App implements OnInit, OnDestroy {
   private apiService = inject(ApiService);
   private router = inject(Router);
+  
+  constructor() {
+    // Reload today's incomplete count when active restaurant changes
+    effect(() => {
+      this.selectedRestaurantId();
+      this.fetchTodayIncompleteOrdersCount();
+    });
+  }
   
   protected readonly title = signal('Engineering Tadka');
   
@@ -29,6 +43,7 @@ export class App implements OnInit, OnDestroy {
   // Global restaurant selector state
   restaurants = signal<Restaurant[]>([]);
   selectedRestaurantId = this.apiService.selectedRestaurantId;
+  todayIncompleteOrdersCount = this.apiService.todayIncompleteOrdersCount;
 
   ngOnInit() {
     const initialUrl = window.location.pathname;
@@ -37,6 +52,7 @@ export class App implements OnInit, OnDestroy {
     this.checkAuth();
     this.checkStatus();
     this.fetchRestaurants();
+    this.fetchTodayIncompleteOrdersCount();
 
     // Enforce auth checks whenever route changes
     this.router.events.pipe(
@@ -51,6 +67,7 @@ export class App implements OnInit, OnDestroy {
     this.checkIntervalId = setInterval(() => {
       this.checkStatus();
       this.fetchRestaurants();
+      this.fetchTodayIncompleteOrdersCount();
     }, 15000);
   }
 
@@ -85,6 +102,27 @@ export class App implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Error fetching restaurants in app shell:', err);
+      }
+    });
+  }
+
+  fetchTodayIncompleteOrdersCount() {
+    const restId = this.selectedRestaurantId();
+    if (!restId) {
+      this.todayIncompleteOrdersCount.set(0);
+      return;
+    }
+    this.apiService.getOrders(restId).subscribe({
+      next: (orders) => {
+        const today = getTodayDateString();
+        const count = orders.filter(o => {
+          const orderDate = o.date || (o.createdAt ? o.createdAt.split('T')[0] : '');
+          return orderDate === today && o.status !== 'completed' && o.status !== 'cancelled';
+        }).length;
+        this.todayIncompleteOrdersCount.set(count);
+      },
+      error: (err) => {
+        console.error('Error fetching orders count in sidebar:', err);
       }
     });
   }
