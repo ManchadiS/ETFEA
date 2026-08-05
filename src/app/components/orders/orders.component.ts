@@ -134,6 +134,7 @@ export class OrdersComponent implements OnInit {
   showCreateBillModal = signal<boolean>(false);
   billingOrder = signal<Order | null>(null);
   billingDiscount = signal<number>(0);
+  billingPaymentMode = signal<string>('Cash');
 
   // Search autocomplete signals
   dishSearchQuery = signal<string>('');
@@ -529,6 +530,7 @@ export class OrdersComponent implements OnInit {
   openCreateBillModal(order: Order) {
     this.billingOrder.set(order);
     this.billingDiscount.set(0);
+    this.billingPaymentMode.set(order.paymentMode || 'Cash');
     this.showCreateBillModal.set(true);
   }
 
@@ -567,7 +569,7 @@ export class OrdersComponent implements OnInit {
       })),
       orderNumber: order.orderNumber,
       discount: discount,
-      paymentMode: order.paymentMode || 'Cash'
+      paymentMode: this.billingPaymentMode()
     };
 
     this.isSubmitting.set(true);
