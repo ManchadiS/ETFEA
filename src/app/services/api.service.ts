@@ -139,8 +139,9 @@ export interface Order {
   emailId?: string;
   orderNumber?: number;
   discount?: number;
-  paymentMode?: string;
-  paymentStatus?: string;
+  orderType?: 'dinein' | 'takeaway';
+  paymentMode?: 'Cash' | 'UPI' | 'Razorpay';
+  paymentStatus?: 'pending' | 'paid' | 'failed';
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
   razorpaySignature?: string;
@@ -158,8 +159,8 @@ export interface Customer {
 })
 export class ApiService {
   private http = inject(HttpClient);
-  private baseUrl = 'https://api.engineeringtadka.com/api/v1'; //prod url
-  // private baseUrl = 'http://localhost:3000/api/v1';
+  // private baseUrl = 'https://api.engineeringtadka.com/api/v1'; //prod url
+  private baseUrl = 'http://localhost:3000/api/v1';
 
   // Global active restaurant selection state
   selectedRestaurantId = signal<string>('');
@@ -169,6 +170,10 @@ export class ApiService {
 
   // User Authentication State
   currentUser = signal<User | null>(this.loadStoredUser());
+
+  // Global cart visibility and items state
+  orderItems = signal<OrderItem[]>([]);
+  showCartDrawer = signal<boolean>(false);
 
   private loadStoredUser(): User | null {
     try {
@@ -336,8 +341,12 @@ export class ApiService {
     return this.http.get<Order[]>(`${this.baseUrl}/orders`, { params });
   }
 
-  createOrder(order: Order): Observable<Order> {
-    return this.http.post<Order>(`${this.baseUrl}/orders`, order);
+  getOrder(id: string): Observable<Order> {
+    return this.http.get<Order>(`${this.baseUrl}/orders/${id}`);
+  }
+
+  createOrder(order: Order): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/orders`, order);
   }
 
   updateOrder(id: string, order: Partial<Order>): Observable<any> {
@@ -383,5 +392,14 @@ export class ApiService {
 
   deleteCustomer(id: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/customers/${id}`, { responseType: 'text' });
+  }
+
+  verifyPayment(paymentDetails: {
+    orderId: string;
+    razorpayPaymentId: string;
+    razorpayOrderId: string;
+    razorpaySignature: string;
+  }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/orders/verify-payment`, paymentDetails);
   }
 }

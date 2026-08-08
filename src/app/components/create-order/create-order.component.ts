@@ -1,0 +1,791 @@
+import { Component, inject, OnInit, OnDestroy, signal, computed, effect } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ApiService, Order, OrderItem, FoodItem, Customer } from '../../services/api.service';
+
+declare var Razorpay: any;
+
+@Component({
+  selector: 'app-create-order',
+  standalone: true,
+  imports: [CommonModule, FormsModule],
+  templateUrl: './create-order.component.html',
+  styleUrl: './create-order.component.css'
+})
+export class CreateOrderComponent implements OnInit, OnDestroy {
+  private apiService = inject(ApiService);
+
+  // View state: 'menu' (order catalog & cart) or 'tracking' (live order status tracking page)
+  view = signal<'menu' | 'tracking'>('menu');
+
+  // Currently placed order for tracking
+  placedOrder = signal<Order | null>(null);
+
+  // Slider/Banner state
+  activeSlide = signal<number>(0);
+  private slideInterval: any = null;
+  showCartDrawer = this.apiService.showCartDrawer;
+
+  banners = [
+    { image: '/assets/banners/shawarma_banner.png', title: 'Signature Tadka Shawarmas', subtitle: 'Indulge in our freshly rolled paneer and chicken shawarmas wrapped in warm flatbread.' },
+    { image: '/assets/banners/meal_banner.png', title: 'Make Your Own Meal', subtitle: 'Pick a Shawarma + Side + Cooler for a special ₹20 combo discount!' },
+    { image: '/assets/banners/beverage_banner.png', title: 'Chilled Coolers & Beverages', subtitle: 'Refresh yourself with signature coolers, soda cans, and Masala Chai.' }
+  ];
+
+  // Polling reference
+  private statusPollInterval: any = null;
+
+  // Auto-reset timers for order completion redirection
+  private autoResetInterval: any = null;
+  autoResetCountdown = signal<number>(20);
+
+  // Combo builder state
+  selectedShawarmaId = signal<string>('');
+  selectedSideId = signal<string>('');
+  selectedBeverageId = signal<string>('');
+  comboQuantity = signal<number>(1);
+  showMenuPostersModal = signal<boolean>(false);
+  activePosterTab = signal<string>('meal');
+
+  shawarmas = computed(() => {
+    return this.allDishes().filter(f => f.category?.toLowerCase() === 'shawarma');
+  });
+
+  sides = computed(() => {
+    return this.allDishes().filter(f => f.category?.toLowerCase() === 'sides');
+  });
+
+  beverages = computed(() => {
+    return this.allDishes().filter(f => f.category?.toLowerCase() === 'beverages');
+  });
+
+  get selectedShawarmaPrice(): number {
+    const item = this.allDishes().find(f => f.id === this.selectedShawarmaId());
+    return item ? item.price : 0;
+  }
+
+  get selectedSidePrice(): number {
+    const item = this.allDishes().find(f => f.id === this.selectedSideId());
+    return item ? item.price : 0;
+  }
+
+  get selectedBeveragePrice(): number {
+    const item = this.allDishes().find(f => f.id === this.selectedBeverageId());
+    return item ? item.price : 0;
+  }
+
+  get liveComboTotalPrice(): number {
+    const sum = this.selectedShawarmaPrice + this.selectedSidePrice + this.selectedBeveragePrice;
+    if (sum === 0) return 0;
+    return Math.max(0, sum - 20);
+  }
+
+  // Core signals
+  allDishes = signal<FoodItem[]>([]);
+  isLoading = signal<boolean>(false);
+  isSubmitting = signal<boolean>(false);
+  errorMessage = signal<string>('');
+  successMessage = signal<string>('');
+
+  // Selected Category filter for menu
+  selectedCategory = signal<string>('All');
+
+  // Search filter for dishes
+  dishSearchQuery = signal<string>('');
+
+  // Cart Form signals
+  orderType = signal<'dinein' | 'takeaway'>('dinein');
+  tableNo = signal<string>('');
+  mobile = signal<string>('');
+  emailId = signal<string>('');
+  paymentMode = signal<'Cash' | 'UPI' | 'Razorpay'>('Cash');
+  orderItems = this.apiService.orderItems;
+
+  // Customer suggestion signals
+  allCustomers = signal<Customer[]>([]);
+  mobileSuggestions = signal<Customer[]>([]);
+  emailSuggestions = signal<Customer[]>([]);
+  showMobileSuggestions = signal<boolean>(false);
+  showEmailSuggestions = signal<boolean>(false);
+
+  // Track active restaurant change
+  selectedRestaurantId = this.apiService.selectedRestaurantId;
+
+  // Computed: Get distinct categories from menu items
+  categories = computed<string[]>(() => {
+    const list = this.allDishes();
+    const cats = new Set(list.map(d => d.category).filter((c): c is string => !!c));
+    return ['All', ...Array.from(cats)];
+  });
+
+  // Computed: Filtered dishes based on category and search query
+  filteredDishes = computed(() => {
+    const cat = this.selectedCategory();
+    const query = this.dishSearchQuery().toLowerCase().trim();
+    let list = this.allDishes();
+
+    if (cat !== 'All') {
+      list = list.filter(d => d.category === cat);
+    }
+
+    if (query) {
+      list = list.filter(d => 
+        d.name.toLowerCase().includes(query) ||
+        (d.category || '').toLowerCase().includes(query) ||
+        (d.description || '').toLowerCase().includes(query)
+      );
+    }
+    return list;
+  });
+
+  constructor() {
+    // Reload data when the active restaurant changes
+    effect(() => {
+      const restId = this.selectedRestaurantId();
+      this.loadCustomers();
+      this.loadDishes();
+      this.resetToMenu();
+    });
+  }
+
+  ngOnInit() {
+    this.loadCustomers();
+    this.loadDishes();
+    this.restoreTrackedOrder();
+    this.slideInterval = setInterval(() => {
+      this.activeSlide.update(s => (s + 1) % 3);
+    }, 4000);
+  }
+
+  ngOnDestroy() {
+    this.stopStatusPolling();
+    this.stopAutoResetTimer();
+    if (this.slideInterval) {
+      clearInterval(this.slideInterval);
+    }
+  }
+
+  restoreTrackedOrder() {
+    const savedOrderId = localStorage.getItem('trackedOrderId');
+    if (!savedOrderId) return;
+
+    this.isLoading.set(true);
+    this.apiService.getOrder(savedOrderId).subscribe({
+      next: (order: Order) => {
+        this.placedOrder.set(order);
+        this.view.set('tracking');
+        this.isLoading.set(false);
+
+        if (order.status === 'completed') {
+          this.startAutoResetTimer();
+        } else if (order.status !== 'cancelled') {
+          this.startStatusPolling(order.id!);
+        }
+      },
+      error: (err: any) => {
+        console.error('Failed to restore tracked order on reload, clearing storage:', err);
+        localStorage.removeItem('trackedOrderId');
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  loadCustomers() {
+    this.isLoading.set(true);
+    this.apiService.getCustomers().subscribe({
+      next: (res) => {
+        this.allCustomers.set(res);
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Error fetching customers:', err);
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  loadDishes() {
+    this.apiService.getFoodItems(this.selectedRestaurantId()).subscribe({
+      next: (data) => {
+        const activeDishes = (data || []).filter(item => item.active !== false);
+        this.allDishes.set(activeDishes);
+      },
+      error: (err) => {
+        console.error('Error loading menu dishes:', err);
+      }
+    });
+  }
+
+  // CART OPERATIONS
+  addToCart(dish: FoodItem) {
+    const currentItems = [...this.orderItems()];
+    const existingIndex = currentItems.findIndex(item => item.name === dish.name);
+
+    if (existingIndex !== -1) {
+      currentItems[existingIndex].quantity += 1;
+    } else {
+      currentItems.push({
+        name: dish.name,
+        price: dish.price,
+        quantity: 1
+      });
+    }
+
+    this.orderItems.set(currentItems);
+    this.errorMessage.set('');
+  }
+
+  addComboItem() {
+    const shId = this.selectedShawarmaId();
+    const sideId = this.selectedSideId();
+    const bevId = this.selectedBeverageId();
+
+    if (!shId || !sideId || !bevId) return;
+
+    const sh = this.allDishes().find(f => f.id === shId);
+    const side = this.allDishes().find(f => f.id === sideId);
+    const bev = this.allDishes().find(f => f.id === bevId);
+
+    if (!sh || !side || !bev) return;
+
+    // Calculate sum of individual items
+    const rawPrice = sh.price + side.price + bev.price;
+    // Subtract ₹20 combo discount
+    const finalPrice = Math.max(0, rawPrice - 20);
+
+    const comboName = `Combo Meal (${sh.name} + ${side.name} + ${bev.name})`;
+
+    const currentItems = [...this.orderItems()];
+    const existingIndex = currentItems.findIndex(item => item.name === comboName);
+
+    if (existingIndex > -1) {
+      currentItems[existingIndex].quantity += this.comboQuantity();
+    } else {
+      currentItems.push({
+        name: comboName,
+        price: finalPrice,
+        quantity: this.comboQuantity()
+      });
+    }
+
+    this.orderItems.set(currentItems);
+    
+    // Reset combo selection
+    this.selectedShawarmaId.set('');
+    this.selectedSideId.set('');
+    this.selectedBeverageId.set('');
+    this.comboQuantity.set(1);
+  }
+
+  removeFromCart(index: number) {
+    const currentItems = [...this.orderItems()];
+    currentItems.splice(index, 1);
+    this.orderItems.set(currentItems);
+  }
+
+  adjustCartQuantity(index: number, change: number) {
+    const currentItems = [...this.orderItems()];
+    const item = currentItems[index];
+    item.quantity += change;
+    if (item.quantity <= 0) {
+      currentItems.splice(index, 1);
+    }
+    this.orderItems.set(currentItems);
+  }
+
+  get cartTotalAmount(): number {
+    return this.orderItems().reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  }
+
+  clearCart() {
+    this.orderItems.set([]);
+    this.tableNo.set('');
+    this.mobile.set('');
+    this.emailId.set('');
+    this.orderType.set('dinein');
+    this.dishSearchQuery.set('');
+    this.selectedCategory.set('All');
+  }
+
+  // CUSTOMER AUTOCOMPLETE TRIGGERS (CART)
+  onMobileChange(val: string) {
+    this.mobile.set(val);
+    this.showMobileSuggestions.set(true);
+    const cleanMobile = val.trim();
+    if (!cleanMobile) {
+      this.mobileSuggestions.set([]);
+      return;
+    }
+    const filtered = this.allCustomers().filter(c => c.mobile && c.mobile.includes(cleanMobile));
+    this.mobileSuggestions.set(filtered);
+
+    if (cleanMobile.length >= 10) {
+      const match = this.allCustomers().find(c => c.mobile === cleanMobile);
+      if (match && match.emailId && !this.emailId()) {
+        this.emailId.set(match.emailId);
+      }
+    }
+  }
+
+  onEmailChange(val: string) {
+    this.emailId.set(val);
+    this.showEmailSuggestions.set(true);
+    const cleanEmail = val.trim().toLowerCase();
+    if (!cleanEmail) {
+      this.emailSuggestions.set([]);
+      return;
+    }
+    const filtered = this.allCustomers().filter(c => c.emailId && c.emailId.toLowerCase().includes(cleanEmail));
+    this.emailSuggestions.set(filtered);
+
+    if (cleanEmail.includes('@') && cleanEmail.includes('.') && cleanEmail.length > 5) {
+      const match = this.allCustomers().find(c => c.emailId && c.emailId.toLowerCase() === cleanEmail);
+      if (match && match.mobile && !this.mobile()) {
+        this.mobile.set(match.mobile);
+      }
+    }
+  }
+
+  selectCustomerSuggestion(cust: Customer) {
+    if (cust.mobile) {
+      this.mobile.set(cust.mobile);
+    }
+    if (cust.emailId) {
+      this.emailId.set(cust.emailId);
+    }
+    this.showMobileSuggestions.set(false);
+    this.showEmailSuggestions.set(false);
+  }
+
+  hideSuggestionsWithDelay(type: 'mobile' | 'email') {
+    setTimeout(() => {
+      if (type === 'mobile') {
+        this.showMobileSuggestions.set(false);
+      } else {
+        this.showEmailSuggestions.set(false);
+      }
+    }, 250);
+  }
+
+  loadRazorpayScript(): Promise<boolean> {
+    return new Promise((resolve) => {
+      if ((window as any).Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  }
+
+  // ORDER SUBMISSION (PLACE NEW ORDER)
+  async placeOrder() {
+    const restId = this.selectedRestaurantId();
+    if (!restId) {
+      this.errorMessage.set('Please select an active restaurant outlet in the top bar.');
+      return;
+    }
+
+
+
+    if (this.orderItems().length === 0) {
+      this.errorMessage.set('Your cart is empty. Click items in the menu to add them.');
+      return;
+    }
+
+    this.isSubmitting.set(true);
+    this.errorMessage.set('');
+    this.successMessage.set('');
+
+    if (this.paymentMode() === 'Razorpay') {
+      const scriptLoaded = await this.loadRazorpayScript();
+      if (!scriptLoaded) {
+        this.errorMessage.set('Failed to load Razorpay SDK. Please check your internet connection.');
+        this.isSubmitting.set(false);
+        return;
+      }
+    }
+
+    const calculatedTable = this.orderType() === 'takeaway' ? 'Take-Away' : (this.tableNo().trim() || 'Dine-In');
+
+    const orderPayload: Order = {
+      restaurantId: restId,
+      tableNo: calculatedTable,
+      orderType: this.orderType(),
+      mobile: this.mobile().trim() || undefined,
+      emailId: this.emailId().trim() || undefined,
+      items: this.orderItems(),
+      status: 'received',
+      totalAmount: this.cartTotalAmount,
+      date: new Date().toISOString().split('T')[0],
+      discount: 0,
+      paymentMode: this.paymentMode()
+    };
+
+    this.apiService.createOrder(orderPayload).subscribe({
+      next: (response) => {
+        if (this.paymentMode() === 'Razorpay') {
+          const razorpayOrder = response.razorpayOrder;
+          const keyId = response.razorpayKeyId;
+          const orderRecord = response.order;
+
+          if (!razorpayOrder || !orderRecord) {
+            this.errorMessage.set('Invalid checkout response from backend.');
+            this.isSubmitting.set(false);
+            return;
+          }
+
+          // Handle mock bypass flow
+          if (response.isMock) {
+            this.errorMessage.set('Demo Mode: Simulating online payment verification...');
+            const verifyPayload = {
+              orderId: orderRecord.id,
+              razorpayPaymentId: 'pay_mock_' + Math.random().toString(36).substring(2, 10),
+              razorpayOrderId: razorpayOrder.id,
+              razorpaySignature: 'mock_signature'
+            };
+            setTimeout(() => {
+              this.apiService.verifyPayment(verifyPayload).subscribe({
+                next: () => {
+                  this.isSubmitting.set(false);
+                  this.clearCart();
+                  orderRecord.status = 'received';
+                  this.placedOrder.set(orderRecord);
+                  this.view.set('tracking');
+                  if (orderRecord.id) {
+                    localStorage.setItem('trackedOrderId', orderRecord.id);
+                    this.startStatusPolling(orderRecord.id);
+                  }
+                },
+                error: (err) => {
+                  console.error('Error verifying mock payment:', err);
+                  this.errorMessage.set('Mock payment verification failed.');
+                  this.isSubmitting.set(false);
+                }
+              });
+            }, 1500);
+            return;
+          }
+
+          // Real Razorpay checkout flow
+          const options = {
+            key: keyId,
+            amount: razorpayOrder.amount,
+            currency: razorpayOrder.currency || 'INR',
+            name: 'Engineering Tadka',
+            description: 'Food Order Payment',
+            order_id: razorpayOrder.id,
+            handler: (paymentRes: any) => {
+              this.errorMessage.set('Verifying payment signature...');
+              const verifyPayload = {
+                orderId: orderRecord.id,
+                razorpayPaymentId: paymentRes.razorpay_payment_id,
+                razorpayOrderId: paymentRes.razorpay_order_id,
+                razorpaySignature: paymentRes.razorpay_signature
+              };
+              this.apiService.verifyPayment(verifyPayload).subscribe({
+                next: () => {
+                  this.isSubmitting.set(false);
+                  this.clearCart();
+                  orderRecord.status = 'received';
+                  this.placedOrder.set(orderRecord);
+                  this.view.set('tracking');
+                  if (orderRecord.id) {
+                    localStorage.setItem('trackedOrderId', orderRecord.id);
+                    this.startStatusPolling(orderRecord.id);
+                  }
+                },
+                error: (err) => {
+                  console.error('Payment signature verification failed:', err);
+                  this.errorMessage.set('Payment verification failed. Please contact restaurant coordinator.');
+                  this.isSubmitting.set(false);
+                }
+              });
+            },
+            prefill: {
+              email: this.emailId() || '',
+              contact: this.mobile() || ''
+            },
+            theme: {
+              color: '#f25c05'
+            },
+            modal: {
+              ondismiss: () => {
+                this.errorMessage.set('Payment cancelled.');
+                this.isSubmitting.set(false);
+              }
+            }
+          };
+
+          try {
+            const rzp = new Razorpay(options);
+            rzp.on('payment.failed', (failedRes: any) => {
+              console.error('Razorpay payment failed:', failedRes.error);
+              this.errorMessage.set('Payment failed: ' + failedRes.error.description);
+              this.isSubmitting.set(false);
+            });
+            rzp.open();
+          } catch (e: any) {
+            console.error('Error opening Razorpay modal:', e);
+            this.errorMessage.set('Error launching payment popup: ' + e.message);
+            this.isSubmitting.set(false);
+          }
+
+        } else {
+          // Cash flow
+          this.isSubmitting.set(false);
+          this.clearCart();
+          this.placedOrder.set(response);
+          this.view.set('tracking');
+          if (response.id) {
+            localStorage.setItem('trackedOrderId', response.id);
+            this.startStatusPolling(response.id);
+          }
+        }
+      },
+      error: (err) => {
+        console.error('Error placing order:', err);
+        this.errorMessage.set('Failed to place order.');
+        this.isSubmitting.set(false);
+      }
+    });
+  }
+
+  // LIVE STATUS POLLING METHODS
+  startStatusPolling(orderId: string) {
+    this.stopStatusPolling();
+    this.statusPollInterval = setInterval(() => {
+      this.apiService.getOrder(orderId).subscribe({
+        next: (updatedOrder: Order) => {
+          this.placedOrder.set(updatedOrder);
+          if (updatedOrder.status === 'completed') {
+            this.stopStatusPolling();
+            this.startAutoResetTimer();
+          } else if (updatedOrder.status === 'cancelled') {
+            this.stopStatusPolling();
+          }
+        },
+        error: (err: any) => {
+          console.error('Error polling order status:', err);
+        }
+      });
+    }, 5000);
+  }
+
+  stopStatusPolling() {
+    if (this.statusPollInterval) {
+      clearInterval(this.statusPollInterval);
+      this.statusPollInterval = null;
+    }
+  }
+
+  // AUTO-REDIRECT TIMER TO MENU ON ORDER COMPLETED
+  startAutoResetTimer() {
+    this.stopAutoResetTimer();
+    this.autoResetCountdown.set(20);
+    this.autoResetInterval = setInterval(() => {
+      const current = this.autoResetCountdown();
+      if (current > 1) {
+        this.autoResetCountdown.set(current - 1);
+      } else {
+        this.resetToMenu();
+      }
+    }, 1000);
+  }
+
+  stopAutoResetTimer() {
+    if (this.autoResetInterval) {
+      clearInterval(this.autoResetInterval);
+      this.autoResetInterval = null;
+    }
+  }
+
+  // MANUAL REFRESH BUTTON
+  refreshOrderStatus() {
+    const order = this.placedOrder();
+    if (!order || !order.id) return;
+
+    this.isLoading.set(true);
+    this.apiService.getOrder(order.id).subscribe({
+      next: (updatedOrder: Order) => {
+        this.placedOrder.set(updatedOrder);
+        this.isLoading.set(false);
+        if (updatedOrder.status === 'completed') {
+          this.stopStatusPolling();
+          this.startAutoResetTimer();
+        } else if (updatedOrder.status === 'cancelled') {
+          this.stopStatusPolling();
+          this.stopAutoResetTimer();
+        }
+      },
+      error: (err: any) => {
+        console.error('Error updating status manually:', err);
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  resetToMenu() {
+    localStorage.removeItem('trackedOrderId');
+    this.stopStatusPolling();
+    this.stopAutoResetTimer();
+    this.placedOrder.set(null);
+    this.clearCart();
+    this.view.set('menu');
+  }
+
+  getProgressBarWidth(): string {
+    const status = this.placedOrder()?.status || 'received';
+    switch (status) {
+      case 'received': return '0%';
+      case 'preparing': return '33.33%';
+      case 'ready': return '66.66%';
+      case 'completed': return '100%';
+      case 'cancelled': return '0%';
+      default: return '0%';
+    }
+  }
+
+  isStepActive(stepName: string): boolean {
+    return this.placedOrder()?.status === stepName;
+  }
+
+  isStepCompleted(stepName: string): boolean {
+    const status = this.placedOrder()?.status || 'received';
+    const statusOrder = ['received', 'preparing', 'ready', 'completed'];
+    const currentIdx = statusOrder.indexOf(status);
+    const targetIdx = statusOrder.indexOf(stepName);
+    
+    if (status === 'cancelled') return false;
+    return targetIdx < currentIdx;
+  }
+
+  showMessage(msg: string, type: 'success' | 'error') {
+    if (type === 'success') {
+      this.successMessage.set(msg);
+      setTimeout(() => this.successMessage.set(''), 4000);
+    } else {
+      this.errorMessage.set(msg);
+      setTimeout(() => this.errorMessage.set(''), 4000);
+    }
+  }
+
+  isVeg(name: string): boolean {
+    const lower = name.toLowerCase();
+    return !(lower.includes('chicken') || lower.includes('meat') || lower.includes('fish') || lower.includes('egg') || lower.includes('mutton') || lower.includes('alfredo'));
+  }
+
+  getDishImage(name: string, category?: string): string {
+    const key = name.toLowerCase().trim();
+    if (key.includes('peri peri chicken shawarma')) {
+      return '/assets/dishes/peri_peri_chicken_shawarma.png';
+    } else if (key.includes('cheesy chicken shawarma')) {
+      return '/assets/dishes/cheesy_chicken_shawarma.png';
+    } else if (key.includes('hariyali chicken shawarma')) {
+      return '/assets/dishes/hariyali_chicken_shawarma.png';
+    } else if (key.includes('malai chicken shawarma')) {
+      return '/assets/dishes/malai_chicken_shawarma.png';
+    } else if (key.includes('chicken shawarma')) {
+      return '/assets/dishes/chicken_shawarma.png';
+    } else if (key.includes('drumstick')) {
+      return '/assets/dishes/chicken_drumstick_2pc.png';
+    } else if (key.includes('biryani')) {
+      return '/assets/dishes/chicken_dum_biryani.png';
+    } else if (key.includes('sev puri')) {
+      return '/assets/dishes/chicken_sev_puri.png';
+    } else if (key.includes('peri peri paneer shawarma')) {
+      return '/assets/dishes/peri_peri_paneer_shawarma.png';
+    } else if (key.includes('cheesy paneer shawarma')) {
+      return '/assets/dishes/cheesy_paneer_shawarma.png';
+    } else if (key.includes('hariyali paneer shawarma')) {
+      return '/assets/dishes/hariyali_paneer_shawarma.png';
+    } else if (key.includes('malai paneer shawarma')) {
+      return '/assets/dishes/malai_paneer_shawarma.png';
+    } else if (key.includes('paneer shawarma')) {
+      return '/assets/dishes/paneer_shawarma.png';
+    } else if (key.includes('cheese french fries')) {
+      return '/assets/dishes/cheese_french_fries.png';
+    } else if (key.includes('french fries') || key.includes('fries')) {
+      return '/assets/dishes/french_fries.png';
+    } else if (key.includes('dahi kebab') || key.includes('dahi kabab')) {
+      return '/assets/dishes/dahi_kebab_6pc.png';
+    } else if (key.includes('paneer tikka')) {
+      return '/assets/dishes/paneer_tikka_6pc.png';
+    } else if (key.includes('maggie') || key.includes('maggi')) {
+      return '/assets/dishes/masala_maggie.png';
+    } else if (key.includes('chai') || key.includes('tea')) {
+      return '/assets/dishes/masala_chai.png';
+    } else if (key.includes('coke') || key.includes('coca cola')) {
+      return '/assets/dishes/coke.png';
+    } else if (key === 'can' || key.includes('thums up') || key.includes('thump up')) {
+      return '/assets/dishes/thums_up.png';
+    } else if (key.includes('frooti')) {
+      return '/assets/dishes/frooti.png';
+    } else if (key.includes('sprite')) {
+      return '/assets/dishes/sprite.png';
+    } else if (key.includes('water') || key.includes('bisleri')) {
+      return '/assets/dishes/water.png';
+    } else if (key.includes('drink') || key.includes('cold') || key.includes('pepsi') || key.includes('dew') || key.includes('7up') || key.includes('beverage')) {
+      return '/assets/dishes/cold_drinks.png';
+    }
+
+    const cat = category?.toLowerCase();
+    if (cat === 'starters') {
+      return 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=150&h=150&q=80';
+    } else if (cat === 'main course') {
+      return 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=150&h=150&q=80';
+    } else if (cat === 'bread') {
+      return 'https://images.unsplash.com/photo-1601050690597-df056fb4ce78?auto=format&fit=crop&w=150&h=150&q=80';
+    } else if (cat === 'desserts') {
+      return 'https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=150&h=150&q=80';
+    } else if (cat === 'beverages') {
+      return 'https://images.unsplash.com/photo-1548695607-9c734351f26f?auto=format&fit=crop&w=150&h=150&q=80';
+    }
+    return 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=150&h=150&q=80';
+  }
+
+  getDishQuantity(dish: FoodItem): number {
+    const item = this.orderItems().find(i => i.name === dish.name);
+    return item ? item.quantity : 0;
+  }
+
+  decrementCartItem(dish: FoodItem) {
+    const currentItems = [...this.orderItems()];
+    const existingIndex = currentItems.findIndex(item => item.name === dish.name);
+    if (existingIndex !== -1) {
+      currentItems[existingIndex].quantity -= 1;
+      if (currentItems[existingIndex].quantity <= 0) {
+        currentItems.splice(existingIndex, 1);
+      }
+      this.orderItems.set(currentItems);
+      this.errorMessage.set('');
+    }
+  }
+
+  toggleCartDrawer() {
+    this.showCartDrawer.set(!this.showCartDrawer());
+  }
+
+  get cgst(): number {
+    return Math.round((this.cartTotalAmount * 2.5) / 105 * 100) / 100;
+  }
+
+  get sgst(): number {
+    return Math.round((this.cartTotalAmount * 2.5) / 105 * 100) / 100;
+  }
+
+  get grandTotal(): number {
+    return this.cartTotalAmount;
+  }
+
+  get subtotalExclGst(): number {
+    return this.grandTotal - this.cgst - this.sgst;
+  }
+
+  get cartItemsCount(): number {
+    return this.orderItems().reduce((sum, item) => sum + item.quantity, 0);
+  }
+}
