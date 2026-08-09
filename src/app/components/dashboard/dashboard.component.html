@@ -111,6 +111,59 @@
       </div>
     </div>
 
+    <!-- Payment Mode Breakdown Section -->
+    <div class="glass-panel" style="padding: 24px; margin-bottom: 24px;">
+      <div class="chart-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0;">Revenue Breakdown by Payment Method</h3>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+        <!-- UPI Card -->
+        <div style="background: rgba(16, 185, 129, 0.04); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 10px; position: relative; overflow: hidden;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.8rem; font-weight: 600; color: #10b981; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">📱 UPI</span>
+            <span style="font-size: 0.75rem; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 2px 8px; border-radius: 20px; font-weight: 600;">{{ paymentModeStats().upi.count }} bills</span>
+          </div>
+          <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin: 4px 0;">₹{{ paymentModeStats().upi.amount | number:'1.2-2' }}</h2>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="flex: 1; height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; overflow: hidden;">
+              <div [style.width.%]="paymentModeStats().upi.percentage" style="height: 100%; background: #10b981; border-radius: 3px; transition: width 0.3s ease;"></div>
+            </div>
+            <span style="font-size: 0.8rem; font-weight: 700; color: #10b981; min-width: 35px; text-align: right;">{{ paymentModeStats().upi.percentage | number:'1.0-0' }}%</span>
+          </div>
+        </div>
+
+        <!-- Cash Card -->
+        <div style="background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.15); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 10px; position: relative; overflow: hidden;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.8rem; font-weight: 600; color: #f59e0b; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">💵 Cash</span>
+            <span style="font-size: 0.75rem; background: rgba(245, 158, 11, 0.1); color: #f59e0b; padding: 2px 8px; border-radius: 20px; font-weight: 600;">{{ paymentModeStats().cash.count }} bills</span>
+          </div>
+          <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin: 4px 0;">₹{{ paymentModeStats().cash.amount | number:'1.2-2' }}</h2>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="flex: 1; height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; overflow: hidden;">
+              <div [style.width.%]="paymentModeStats().cash.percentage" style="height: 100%; background: #f59e0b; border-radius: 3px; transition: width 0.3s ease;"></div>
+            </div>
+            <span style="font-size: 0.8rem; font-weight: 700; color: #f59e0b; min-width: 35px; text-align: right;">{{ paymentModeStats().cash.percentage | number:'1.0-0' }}%</span>
+          </div>
+        </div>
+
+        <!-- Others Card -->
+        <div style="background: rgba(59, 130, 246, 0.04); border: 1px solid rgba(59, 130, 246, 0.15); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 10px; position: relative; overflow: hidden;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.8rem; font-weight: 600; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">💳 Others</span>
+            <span style="font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); color: #3b82f6; padding: 2px 8px; border-radius: 20px; font-weight: 600;">{{ paymentModeStats().other.count }} bills</span>
+          </div>
+          <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin: 4px 0;">₹{{ paymentModeStats().other.amount | number:'1.2-2' }}</h2>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div style="flex: 1; height: 6px; background: rgba(255, 255, 255, 0.05); border-radius: 3px; overflow: hidden;">
+              <div [style.width.%]="paymentModeStats().other.percentage" style="height: 100%; background: #3b82f6; border-radius: 3px; transition: width 0.3s ease;"></div>
+            </div>
+            <span style="font-size: 0.8rem; font-weight: 700; color: #3b82f6; min-width: 35px; text-align: right;">{{ paymentModeStats().other.percentage | number:'1.0-0' }}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Charts Grid Section -->
     <div class="charts-grid">
       <!-- Revenue vs Expenses SVG Chart -->

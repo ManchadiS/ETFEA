@@ -92,6 +92,50 @@ export class DashboardComponent implements OnInit {
     const rev = this.totalRevenue();
     return rev > 0 ? (this.netProfit() / rev) * 100 : 0;
   });
+
+  paymentModeStats = computed(() => {
+    let upiCount = 0;
+    let upiAmount = 0;
+    let cashCount = 0;
+    let cashAmount = 0;
+    let otherCount = 0;
+    let otherAmount = 0;
+
+    const list = this.bills();
+    list.forEach(b => {
+      const grandTotal = (b.amount || 0) + (b.cgst || 0) + (b.sgst || 0);
+      const mode = (b.paymentMode || 'Cash').toLowerCase();
+      if (mode === 'upi') {
+        upiCount++;
+        upiAmount += grandTotal;
+      } else if (mode === 'cash') {
+        cashCount++;
+        cashAmount += grandTotal;
+      } else {
+        otherCount++;
+        otherAmount += grandTotal;
+      }
+    });
+
+    const totalRev = this.totalRevenue();
+    return {
+      upi: {
+        count: upiCount,
+        amount: upiAmount,
+        percentage: totalRev > 0 ? (upiAmount / totalRev) * 100 : 0
+      },
+      cash: {
+        count: cashCount,
+        amount: cashAmount,
+        percentage: totalRev > 0 ? (cashAmount / totalRev) * 100 : 0
+      },
+      other: {
+        count: otherCount,
+        amount: otherAmount,
+        percentage: totalRev > 0 ? (otherAmount / totalRev) * 100 : 0
+      }
+    };
+  });
   
   recentTransactions = computed(() => {
     const list: TransactionItem[] = [];
