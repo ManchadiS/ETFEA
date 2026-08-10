@@ -87,16 +87,27 @@ export class DashboardComponent implements OnInit {
   totalDiscounts = computed(() => {
     return this.bills().reduce((sum, b) => {
       const discountPercent = b.discount || 0;
-      if (discountPercent <= 0) return sum;
-      const amount = b.amount || 0;
-      const itemsTotal = amount / (1 - discountPercent / 100);
-      const discountAmount = (itemsTotal * discountPercent) / 100;
+      if (discountPercent <= 0 || discountPercent >= 100) return sum;
+      const grandTotal = (b.amount || 0) + (b.cgst || 0) + (b.sgst || 0);
+      const discountAmount = grandTotal * (discountPercent / (100 - discountPercent));
       return sum + discountAmount;
     }, 0);
   });
 
   discountedBillsCount = computed(() => {
     return this.bills().filter(b => (b.discount || 0) > 0).length;
+  });
+
+  totalCgst = computed(() => {
+    return this.bills().reduce((sum, b) => sum + (b.cgst || 0), 0);
+  });
+
+  totalSgst = computed(() => {
+    return this.bills().reduce((sum, b) => sum + (b.sgst || 0), 0);
+  });
+
+  totalGst = computed(() => {
+    return this.totalCgst() + this.totalSgst();
   });
 
   netProfit = computed(() => {
@@ -119,16 +130,45 @@ export class DashboardComponent implements OnInit {
     const list = this.bills();
     list.forEach(b => {
       const grandTotal = (b.amount || 0) + (b.cgst || 0) + (b.sgst || 0);
-      const mode = (b.paymentMode || 'Cash').toLowerCase();
-      if (mode === 'upi') {
-        upiCount++;
-        upiAmount += grandTotal;
-      } else if (mode === 'cash') {
-        cashCount++;
-        cashAmount += grandTotal;
+      const hasSplit = (b.cashAmount !== undefined && b.cashAmount > 0) || (b.upiAmount !== undefined && b.upiAmount > 0);
+
+      if (hasSplit) {
+        const cashVal = b.cashAmount || 0;
+        const upiVal = b.upiAmount || 0;
+
+        if (cashVal > 0) {
+          cashCount++;
+          cashAmount += cashVal;
+        }
+        if (upiVal > 0) {
+          upiCount++;
+          upiAmount += upiVal;
+        }
+
+        const diff = grandTotal - (cashVal + upiVal);
+        if (diff > 0.01) {
+          const mode = (b.paymentMode || 'Cash').toLowerCase();
+          if (mode === 'upi') {
+            upiAmount += diff;
+          } else if (mode === 'cash') {
+            cashAmount += diff;
+          } else {
+            otherAmount += diff;
+            otherCount++;
+          }
+        }
       } else {
-        otherCount++;
-        otherAmount += grandTotal;
+        const mode = (b.paymentMode || 'Cash').toLowerCase();
+        if (mode === 'upi') {
+          upiCount++;
+          upiAmount += grandTotal;
+        } else if (mode === 'cash') {
+          cashCount++;
+          cashAmount += grandTotal;
+        } else {
+          otherCount++;
+          otherAmount += grandTotal;
+        }
       }
     });
 

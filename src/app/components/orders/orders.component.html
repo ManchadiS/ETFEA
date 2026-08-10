@@ -484,6 +484,25 @@
           </div>
         </div>
 
+        <!-- Split Payment Controls -->
+        <div *ngIf="billingPaymentMode() === 'Cash'" class="form-group" style="margin-top: 12px;">
+          <label for="splitUpiAmount" style="display: block; font-weight: 500; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-secondary);">UPI Split Amount (₹)</label>
+          <input type="number" id="splitUpiAmount" [ngModel]="billingUpiAmount()" (ngModelChange)="billingUpiAmount.set($event)" min="0" [max]="(billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)" placeholder="Enter UPI amount paid" class="form-control" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: #fff; outline: none; font-size: 0.95rem;" />
+          <div style="font-size: 0.8rem; margin-top: 6px; color: #10b981; display: flex; justify-content: space-between;">
+            <span>💵 Cash portion:</span>
+            <strong>₹{{ (((billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)) - billingUpiAmount() > 0 ? ((billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)) - billingUpiAmount() : 0) | number:'1.2-2' }}</strong>
+          </div>
+        </div>
+
+        <div *ngIf="billingPaymentMode() === 'UPI'" class="form-group" style="margin-top: 12px;">
+          <label for="splitCashAmount" style="display: block; font-weight: 500; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-secondary);">Cash Split Amount (₹)</label>
+          <input type="number" id="splitCashAmount" [ngModel]="billingCashAmount()" (ngModelChange)="billingCashAmount.set($event)" min="0" [max]="(billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)" placeholder="Enter Cash amount paid" class="form-control" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: #fff; outline: none; font-size: 0.95rem;" />
+          <div style="font-size: 0.8rem; margin-top: 6px; color: #10b981; display: flex; justify-content: space-between;">
+            <span>📱 UPI portion:</span>
+            <strong>₹{{ (((billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)) - billingCashAmount() > 0 ? ((billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)) - billingCashAmount() : 0) | number:'1.2-2' }}</strong>
+          </div>
+        </div>
+
         <!-- Dynamic summary of calculations -->
         <div class="bill-calculation-summary" style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.15); display: flex; flex-direction: column; gap: 8px;">
           <div style="display: flex; justify-content: space-between; font-size: 0.9rem; opacity: 0.8;">

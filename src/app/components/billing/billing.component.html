@@ -221,6 +221,29 @@
         </div>
       </div>
 
+      <!-- Split Payment Inputs -->
+      <div class="form-row" *ngIf="paymentMode === 'Cash'" style="margin-top: 10px;">
+        <div class="form-group full-width" style="width: 100%;">
+          <label for="splitUpiAmount" style="font-weight: 500; font-size: 0.85rem; color: var(--text-secondary);">UPI Split Amount (₹)</label>
+          <input type="number" id="splitUpiAmount" [ngModel]="splitUpiAmount()" (ngModelChange)="splitUpiAmount.set($event)" min="0" [max]="grandTotal" placeholder="Enter UPI portion" style="width: 100%; box-sizing: border-box;" />
+          <div style="font-size: 0.8rem; margin-top: 6px; color: #10b981; display: flex; justify-content: space-between;">
+            <span>💵 Cash portion:</span>
+            <strong>₹{{ (grandTotal - splitUpiAmount() > 0 ? grandTotal - splitUpiAmount() : 0) | number:'1.2-2' }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row" *ngIf="paymentMode === 'UPI'" style="margin-top: 10px;">
+        <div class="form-group full-width" style="width: 100%;">
+          <label for="splitCashAmount" style="font-weight: 500; font-size: 0.85rem; color: var(--text-secondary);">Cash Split Amount (₹)</label>
+          <input type="number" id="splitCashAmount" [ngModel]="splitCashAmount()" (ngModelChange)="splitCashAmount.set($event)" min="0" [max]="grandTotal" placeholder="Enter Cash portion" style="width: 100%; box-sizing: border-box;" />
+          <div style="font-size: 0.8rem; margin-top: 6px; color: #10b981; display: flex; justify-content: space-between;">
+            <span>📱 UPI portion:</span>
+            <strong>₹{{ (grandTotal - splitCashAmount() > 0 ? grandTotal - splitCashAmount() : 0) | number:'1.2-2' }}</strong>
+          </div>
+        </div>
+      </div>
+
       <div class="form-row">
         <div class="form-group full-width" style="width: 100%;">
           <label for="billDesc">Table / Notes</label>

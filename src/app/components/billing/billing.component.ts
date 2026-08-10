@@ -55,14 +55,16 @@ export class BillingComponent implements OnInit {
   // Taxes
   cgstRate = 2.5; // 2.5%
   sgstRate = 2.5; // 2.5%
-  
+
   // Customer details
   mobile = '';
   emailId = '';
   description = '';
   status: 'pending' | 'paid' | 'overdue' = 'paid';
   paymentMode: 'Cash' | 'UPI' | 'Razorpay' = 'Cash';
-
+  splitCashAmount = signal<number>(0);
+  splitUpiAmount = signal<number>(0);
+  
   // Search & Filter Records
   searchQuery = '';
   statusFilter = 'All';
@@ -462,6 +464,20 @@ export class BillingComponent implements OnInit {
     this.errorMessage.set('');
     this.successMessage.set('');
 
+    const total = this.grandTotal;
+    let cashAmt = 0;
+    let upiAmt = 0;
+
+    if (this.paymentMode === 'Cash') {
+      const finalUpi = Math.min(total, Math.max(0, this.splitUpiAmount()));
+      upiAmt = finalUpi;
+      cashAmt = total - finalUpi;
+    } else if (this.paymentMode === 'UPI') {
+      const finalCash = Math.min(total, Math.max(0, this.splitCashAmount()));
+      cashAmt = finalCash;
+      upiAmt = total - finalCash;
+    }
+
     const billPayload: Billing = {
       amount: this.subtotal,
       restaurantId: this.selectedRestaurantId,
@@ -474,7 +490,9 @@ export class BillingComponent implements OnInit {
       sgst: this.sgstAmount,
       foodItems: this.orderItems(),
       discount: this.discount(),
-      paymentMode: this.paymentMode
+      paymentMode: this.paymentMode,
+      cashAmount: cashAmt,
+      upiAmount: upiAmt
     };
 
     this.apiService.createBill(billPayload).subscribe({
@@ -515,6 +533,8 @@ export class BillingComponent implements OnInit {
     this.description = '';
     this.status = 'paid';
     this.paymentMode = 'Cash';
+    this.splitCashAmount.set(0);
+    this.splitUpiAmount.set(0);
     this.selectedFoodItemId = '';
     this.dishSearchQuery.set('');
     this.showSuggestions.set(false);

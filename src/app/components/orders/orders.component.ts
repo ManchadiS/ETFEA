@@ -135,6 +135,8 @@ export class OrdersComponent implements OnInit {
   billingOrder = signal<Order | null>(null);
   billingDiscount = signal<number>(0);
   billingPaymentMode = signal<string>('Cash');
+  billingCashAmount = signal<number>(0);
+  billingUpiAmount = signal<number>(0);
 
   // Search autocomplete signals
   dishSearchQuery = signal<string>('');
@@ -531,6 +533,8 @@ export class OrdersComponent implements OnInit {
     this.billingOrder.set(order);
     this.billingDiscount.set(0);
     this.billingPaymentMode.set(order.paymentMode || 'Cash');
+    this.billingCashAmount.set(0);
+    this.billingUpiAmount.set(0);
     this.showCreateBillModal.set(true);
   }
 
@@ -552,6 +556,20 @@ export class OrdersComponent implements OnInit {
     const sgstAmount = Math.round((grandTotal * sgstRate) / (100 + cgstRate + sgstRate) * 100) / 100;
     const subtotal = grandTotal - cgstAmount - sgstAmount;
 
+    const mode = this.billingPaymentMode();
+    let cashAmt = 0;
+    let upiAmt = 0;
+
+    if (mode === 'Cash') {
+      const finalUpi = Math.min(grandTotal, Math.max(0, this.billingUpiAmount()));
+      upiAmt = finalUpi;
+      cashAmt = grandTotal - finalUpi;
+    } else if (mode === 'UPI') {
+      const finalCash = Math.min(grandTotal, Math.max(0, this.billingCashAmount()));
+      cashAmt = finalCash;
+      upiAmt = grandTotal - finalCash;
+    }
+
     const billPayload: Billing = {
       amount: subtotal,
       restaurantId: order.restaurantId,
@@ -569,7 +587,9 @@ export class OrdersComponent implements OnInit {
       })),
       orderNumber: order.orderNumber,
       discount: discount,
-      paymentMode: this.billingPaymentMode()
+      paymentMode: mode,
+      cashAmount: cashAmt,
+      upiAmount: upiAmt
     };
 
     this.isSubmitting.set(true);
