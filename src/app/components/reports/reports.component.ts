@@ -415,6 +415,12 @@ export class ReportsComponent implements OnInit {
       const todayStr = this.formatDate(today);
       this.startDate.set(todayStr);
       this.endDate.set(todayStr);
+    } else if (type === 'yesterday') {
+      const yesterday = new Date();
+      yesterday.setDate(today.getDate() - 1);
+      const yesterdayStr = this.formatDate(yesterday);
+      this.startDate.set(yesterdayStr);
+      this.endDate.set(yesterdayStr);
     } else if (type === '7days') {
       const start = new Date();
       start.setDate(today.getDate() - 6);

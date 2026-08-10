@@ -46,6 +46,7 @@
           <div class="quick-filter-btns">
             <button class="quick-filter-btn" [class.active]="activeQuickFilter() === 'all'" (click)="setQuickFilter('all')">All Time</button>
             <button class="quick-filter-btn" [class.active]="activeQuickFilter() === 'today'" (click)="setQuickFilter('today')">Today</button>
+            <button class="quick-filter-btn" [class.active]="activeQuickFilter() === 'yesterday'" (click)="setQuickFilter('yesterday')">Yesterday</button>
             <button class="quick-filter-btn" [class.active]="activeQuickFilter() === '7days'" (click)="setQuickFilter('7days')">Last 7 Days</button>
             <button class="quick-filter-btn" [class.active]="activeQuickFilter() === '30days'" (click)="setQuickFilter('30days')">Last 30 Days</button>
             <button class="quick-filter-btn" [class.active]="activeQuickFilter() === 'thismonth'" (click)="setQuickFilter('thismonth')">This Month</button>

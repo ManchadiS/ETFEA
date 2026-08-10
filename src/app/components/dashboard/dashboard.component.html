@@ -20,6 +20,7 @@
         <div class="quick-filter-btns">
           <button class="quick-filter-btn" [class.active]="activeQuickFilter() === 'all'" (click)="setQuickFilter('all')">All Time</button>
           <button class="quick-filter-btn" [class.active]="activeQuickFilter() === 'today'" (click)="setQuickFilter('today')">Today</button>
+          <button class="quick-filter-btn" [class.active]="activeQuickFilter() === 'yesterday'" (click)="setQuickFilter('yesterday')">Yesterday</button>
           <button class="quick-filter-btn" [class.active]="activeQuickFilter() === '7days'" (click)="setQuickFilter('7days')">Last 7 Days</button>
           <button class="quick-filter-btn" [class.active]="activeQuickFilter() === '30days'" (click)="setQuickFilter('30days')">Last 30 Days</button>
           <button class="quick-filter-btn" [class.active]="activeQuickFilter() === 'thismonth'" (click)="setQuickFilter('thismonth')">This Month</button>
@@ -77,6 +78,22 @@
           <span class="label">Total Expenses</span>
           <h2 class="value">₹{{ totalExpenses() | number:'1.2-2' }}</h2>
           <span class="subtext">Across {{ expenses().length }} operations</span>
+        </div>
+      </div>
+
+      <!-- Total Discounts Box -->
+      <div class="glass-panel metric-card discount-card">
+        <div class="metric-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="19" y1="5" x2="5" y2="19"></line>
+            <circle cx="6.5" cy="6.5" r="2.5"></circle>
+            <circle cx="17.5" cy="17.5" r="2.5"></circle>
+          </svg>
+        </div>
+        <div class="metric-info">
+          <span class="label">Discounts Given</span>
+          <h2 class="value" style="color: #f43f5e;">₹{{ totalDiscounts() | number:'1.2-2' }}</h2>
+          <span class="subtext">Across {{ discountedBillsCount() }} discounted bills</span>
         </div>
       </div>
 

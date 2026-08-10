@@ -98,6 +98,11 @@
   color: var(--danger);
 }
 
+.discount-card .metric-icon {
+  background-color: rgba(244, 63, 94, 0.1);
+  color: #f43f5e;
+}
+
 .profit-positive .metric-icon {
   background-color: var(--success-light);
   color: var(--success);

@@ -84,6 +84,21 @@ export class DashboardComponent implements OnInit {
     return this.expenses().reduce((sum, e) => sum + (e.amount || 0), 0);
   });
 
+  totalDiscounts = computed(() => {
+    return this.bills().reduce((sum, b) => {
+      const discountPercent = b.discount || 0;
+      if (discountPercent <= 0) return sum;
+      const amount = b.amount || 0;
+      const itemsTotal = amount / (1 - discountPercent / 100);
+      const discountAmount = (itemsTotal * discountPercent) / 100;
+      return sum + discountAmount;
+    }, 0);
+  });
+
+  discountedBillsCount = computed(() => {
+    return this.bills().filter(b => (b.discount || 0) > 0).length;
+  });
+
   netProfit = computed(() => {
     return this.totalRevenue() - this.totalExpenses();
   });
@@ -471,6 +486,12 @@ export class DashboardComponent implements OnInit {
       const todayStr = this.formatDate(today);
       this.startDate.set(todayStr);
       this.endDate.set(todayStr);
+    } else if (type === 'yesterday') {
+      const yesterday = new Date();
+      yesterday.setDate(today.getDate() - 1);
+      const yesterdayStr = this.formatDate(yesterday);
+      this.startDate.set(yesterdayStr);
+      this.endDate.set(yesterdayStr);
     } else if (type === '7days') {
       const start = new Date();
       start.setDate(today.getDate() - 6);
