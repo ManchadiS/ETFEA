@@ -465,7 +465,7 @@ export class OrdersComponent implements OnInit {
       items: this.orderItems(),
       status: this.status(),
       totalAmount: this.totalAmount,
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('sv'),
       discount: this.discount()
     };
 
@@ -573,7 +573,7 @@ export class OrdersComponent implements OnInit {
     const billPayload: Billing = {
       amount: subtotal,
       restaurantId: order.restaurantId,
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('sv'),
       description: order.tableNo ? `Order from ${order.tableNo}` : 'Live Order',
       status: 'paid',
       mobile: order.mobile || undefined,

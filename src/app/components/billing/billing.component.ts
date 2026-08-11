@@ -88,7 +88,7 @@ export class BillingComponent implements OnInit {
   showMobileSuggestions = signal<boolean>(false);
   showEmailSuggestions = signal<boolean>(false);
 
-  currentDateStr = new Date().toISOString().split('T')[0];
+  currentDateStr = new Date().toLocaleDateString('sv');
 
   get selectedShawarmaPrice(): number {
     const item = this.foodItems().find(f => f.id === this.selectedShawarmaId());
@@ -481,7 +481,7 @@ export class BillingComponent implements OnInit {
     const billPayload: Billing = {
       amount: this.subtotal,
       restaurantId: this.selectedRestaurantId,
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toLocaleDateString('sv'),
       description: this.description.trim(),
       status: this.status,
       mobile: this.mobile.trim() || undefined,

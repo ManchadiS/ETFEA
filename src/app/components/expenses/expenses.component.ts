@@ -159,7 +159,7 @@ export class ExpensesComponent implements OnInit {
     this.currentId = '';
     this.amount = null;
     this.category = this.activeCategory() !== 'All' ? this.activeCategory() : 'Inventory';
-    this.date = new Date().toISOString().split('T')[0];
+    this.date = new Date().toLocaleDateString('sv');
     this.description = '';
     this.restaurantId = this.apiService.selectedRestaurantId(); // pre-select active restaurant if any
     this.selectedInventoryItemId = '';
@@ -175,7 +175,7 @@ export class ExpensesComponent implements OnInit {
     this.currentId = e.id || '';
     this.amount = e.amount;
     this.category = e.category || 'Inventory';
-    this.date = e.date || new Date().toISOString().split('T')[0];
+    this.date = e.date || new Date().toLocaleDateString('sv');
     this.restaurantId = e.restaurantId || '';
     this.errorMessage.set('');
 
