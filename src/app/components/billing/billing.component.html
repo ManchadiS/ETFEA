@@ -515,9 +515,6 @@
             <div *ngIf="selectedBill()?.mobile">Contact: {{ selectedBill()?.mobile }}</div>
             <div *ngIf="selectedBill()?.emailId">Email: {{ selectedBill()?.emailId }}</div>
             <div *ngIf="selectedBill()?.description">Table/Notes: {{ selectedBill()?.description }}</div>
-            <div *ngIf="customerLoyaltyPoints() !== null" style="font-weight: 700; color: #10b981; font-size: 0.9rem; margin-top: 4px;">
-              Loyalty Point Balance: {{ customerLoyaltyPoints() }} pts
-            </div>
           </div>
 
           <div class="receipt-divider"></div>

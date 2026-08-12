@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, Order, OrderItem, FoodItem, Billing, Customer } from '../../services/api.service';
+import { ApiService, Order, OrderItem, FoodItem, Billing, Customer, Restaurant } from '../../services/api.service';
 import { forkJoin } from 'rxjs';
 
 function getTodayDateString(): string {
@@ -138,6 +138,13 @@ export class OrdersComponent implements OnInit {
   billingCashAmount = signal<number>(0);
   billingUpiAmount = signal<number>(0);
 
+  // Bill Details Modal signals
+  showDetailsModal = signal<boolean>(false);
+  selectedBill = signal<Billing | null>(null);
+  selectedBillRestaurant = signal<Restaurant | null>(null);
+  customerLoyaltyPoints = signal<number | null>(null);
+  restaurants = signal<Restaurant[]>([]);
+
   // Search autocomplete signals
   dishSearchQuery = signal<string>('');
   showSuggestions = signal<boolean>(false);
@@ -165,6 +172,18 @@ export class OrdersComponent implements OnInit {
   ngOnInit() {
     this.loadOrders();
     this.loadDishes();
+    this.loadRestaurants();
+  }
+
+  loadRestaurants() {
+    this.apiService.getRestaurants().subscribe({
+      next: (data) => {
+        this.restaurants.set(data);
+      },
+      error: (err) => {
+        console.error('Error loading restaurants:', err);
+      }
+    });
   }
 
   loadOrders() {
@@ -624,6 +643,64 @@ export class OrdersComponent implements OnInit {
         this.errorMessage.set(err.error?.error || 'Failed to create bill from order.');
       }
     });
+  }
+
+  viewBillDetails(order: Order) {
+    if (!order.orderNumber) {
+      this.showMessage('No order number found for this ticket.', 'error');
+      return;
+    }
+    
+    this.isLoading.set(true);
+    const restId = this.selectedRestaurantId();
+    this.apiService.getBills(restId).subscribe({
+      next: (bills) => {
+        const bill = bills.find(b => b.orderNumber === order.orderNumber);
+        this.isLoading.set(false);
+        if (bill) {
+          this.selectedBill.set(bill);
+          this.selectedBillRestaurant.set(this.restaurants().find(r => r.id === bill.restaurantId) || null);
+          this.showDetailsModal.set(true);
+          
+          this.customerLoyaltyPoints.set(null);
+          if (bill.mobile || bill.emailId) {
+            this.apiService.lookupCustomer({ mobile: bill.mobile, emailId: bill.emailId }).subscribe({
+              next: (cust) => {
+                if (cust) {
+                  this.customerLoyaltyPoints.set(cust.loyaltyPoints);
+                }
+              },
+              error: () => {}
+            });
+          }
+        } else {
+          this.showMessage(`No bill generated yet for Order #${order.orderNumber}.`, 'error');
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching bills:', err);
+        this.isLoading.set(false);
+        this.showMessage('Failed to fetch billing details.', 'error');
+      }
+    });
+  }
+
+  closeDetailsModal() {
+    this.showDetailsModal.set(false);
+    this.selectedBill.set(null);
+    this.selectedBillRestaurant.set(null);
+  }
+
+  printReceipt() {
+    const printContent = document.getElementById('receipt-print-area');
+    if (!printContent) return;
+    
+    const originalContent = document.body.innerHTML;
+    document.body.innerHTML = printContent.innerHTML;
+    window.print();
+    document.body.innerHTML = originalContent;
+    
+    window.location.reload();
   }
 
   showMessage(msg: string, type: 'success' | 'error') {
