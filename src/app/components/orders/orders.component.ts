@@ -28,6 +28,7 @@ export class OrdersComponent implements OnInit {
   errorMessage = signal<string>('');
   successMessage = signal<string>('');
   activeTab = signal<'kitchen' | 'payments'>('kitchen');
+  currentUserEmail = computed(() => this.apiService.currentUser()?.email);
 
   // Date filter state (defaults to today)
   startDate = signal<string>(getTodayDateString());

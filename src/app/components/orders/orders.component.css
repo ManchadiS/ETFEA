@@ -153,9 +153,10 @@
 }
 
 .item-qty {
-  font-weight: 600;
-  color: #fff;
-  width: 28px;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #10b981;
+  width: 32px;
 }
 
 .item-name {
@@ -376,6 +377,11 @@
 .form-control:focus {
   border-color: #f25c05;
   box-shadow: 0 0 0 3px rgba(242, 92, 5, 0.2);
+}
+
+select.form-control option {
+  background-color: #1e1e2d;
+  color: #fff;
 }
 
 /* Autocomplete Suggestion List */

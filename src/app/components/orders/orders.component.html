@@ -7,29 +7,31 @@
     </div>
 
     <!-- Tab Navigation -->
-    <div style="display: flex; background: rgba(0, 0, 0, 0.2); padding: 4px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); margin-left: auto; margin-right: auto;">
-      <button type="button" (click)="activeTab.set('kitchen')" 
-              [style.background]="activeTab() === 'kitchen' ? 'var(--primary)' : 'transparent'"
-              [style.color]="activeTab() === 'kitchen' ? '#fff' : 'var(--text-secondary)'"
-              style="border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+    <div
+      style="display: flex; background: rgba(0, 0, 0, 0.2); padding: 4px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.05); margin-left: auto; margin-right: auto;">
+      <button type="button" (click)="activeTab.set('kitchen')"
+        [style.background]="activeTab() === 'kitchen' ? 'var(--primary)' : 'transparent'"
+        [style.color]="activeTab() === 'kitchen' ? '#fff' : 'var(--text-secondary)'"
+        style="border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
         🍳 Live Kitchen
       </button>
-      <button type="button" (click)="activeTab.set('payments')" 
-              [style.background]="activeTab() === 'payments' ? 'var(--primary)' : 'transparent'"
-              [style.color]="activeTab() === 'payments' ? '#fff' : 'var(--text-secondary)'"
-              style="border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+      <button type="button" (click)="activeTab.set('payments')"
+        [style.background]="activeTab() === 'payments' ? 'var(--primary)' : 'transparent'"
+        [style.color]="activeTab() === 'payments' ? '#fff' : 'var(--text-secondary)'"
+        style="border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
         💳 Digital Payments ({{ digitalPayments().length }})
       </button>
     </div>
 
     <div class="header-actions">
-      <button class="btn btn-primary" (click)="openAddModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+      <!-- <button class="btn btn-primary" (click)="openAddModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+          stroke-linejoin="round" class="btn-icon">
           <line x1="12" y1="5" x2="12" y2="19"></line>
           <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
         New Order
-      </button>
+      </button> -->
     </div>
   </div>
 
@@ -72,7 +74,8 @@
   <div *ngIf="!isLoading() && activeTab() === 'kitchen'" class="orders-content">
     <div *ngIf="filteredOrders().length === 0" class="empty-state glass-panel">
       <div class="empty-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+          stroke-linejoin="round">
           <circle cx="9" cy="21" r="1" />
           <circle cx="20" cy="21" r="1" />
           <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
@@ -90,7 +93,9 @@
           <div class="order-id-group">
             <span class="order-number-badge" *ngIf="order.orderNumber">#{{ order.orderNumber }}</span>
             <span class="table-badge">{{ order.tableNo }}</span>
-            <span *ngIf="order.discount" class="discount-badge" style="background-color: #ef4444; color: #fff; font-size: 0.72rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">{{ order.discount }}% OFF</span>
+            <span *ngIf="order.discount" class="discount-badge"
+              style="background-color: #ef4444; color: #fff; font-size: 0.72rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 4px;">{{
+              order.discount }}% OFF</span>
             <span class="order-date">{{ order.date | date:'dd/MM/yyyy' }}</span>
           </div>
           <span class="badge status-badge" [ngClass]="'badge-' + order.status">
@@ -103,11 +108,17 @@
           <!-- Customer contact details if present -->
           <div *ngIf="order.mobile || order.emailId" class="card-customer-info">
             <span *ngIf="order.mobile" class="cust-detail" title="Mobile Number">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="detail-icon"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 9.75z"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="detail-icon">
+                <path
+                  d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 9.75z" />
+              </svg>
               {{ order.mobile }}
             </span>
             <span *ngIf="order.emailId" class="cust-detail" title="Email Address">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="detail-icon"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="detail-icon">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
               {{ order.emailId }}
             </span>
           </div>
@@ -125,19 +136,22 @@
           </div>
 
           <!-- Razorpay Payment Info -->
-          <div *ngIf="order.paymentMode === 'Razorpay'" style="margin-top: 10px; padding: 6px 10px; background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.15); border-radius: 6px; font-size: 0.76rem; display: flex; flex-direction: column; gap: 3px;">
+          <div *ngIf="order.paymentMode === 'Razorpay'"
+            style="margin-top: 10px; padding: 6px 10px; background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.15); border-radius: 6px; font-size: 0.76rem; display: flex; flex-direction: column; gap: 3px;">
             <div style="display: flex; justify-content: space-between; font-weight: bold; color: #0ea5e9;">
               <span>💳 Razorpay Payment</span>
               <span style="color: #10b981; font-weight: bold;">PAID</span>
             </div>
-            <div style="display: flex; justify-content: space-between; color: var(--text-secondary);" *ngIf="order.razorpayPaymentId">
+            <div style="display: flex; justify-content: space-between; color: var(--text-secondary);"
+              *ngIf="order.razorpayPaymentId">
               <span>Txn:</span>
               <span style="color: #fff; font-family: monospace;">{{ order.razorpayPaymentId }}</span>
             </div>
           </div>
 
           <!-- UPI Payment Info -->
-          <div *ngIf="order.paymentMode === 'UPI'" style="margin-top: 10px; padding: 6px 10px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 6px; font-size: 0.76rem; display: flex; flex-direction: column; gap: 3px;">
+          <div *ngIf="order.paymentMode === 'UPI'"
+            style="margin-top: 10px; padding: 6px 10px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.15); border-radius: 6px; font-size: 0.76rem; display: flex; flex-direction: column; gap: 3px;">
             <div style="display: flex; justify-content: space-between; font-weight: bold; color: #10b981;">
               <span>📱 UPI Payment</span>
               <span style="color: #10b981; font-weight: bold;">PAID</span>
@@ -153,23 +167,26 @@
         <div class="card-footer">
           <!-- Status workflow shortcuts -->
           <div class="workflow-actions">
-            <button *ngIf="order.status === 'received'" class="btn btn-sm btn-outline-primary" (click)="updateOrderStatus(order, 'preparing')">
+            <button *ngIf="order.status === 'received'" class="btn btn-sm btn-outline-primary"
+              (click)="updateOrderStatus(order, 'preparing')">
               Start Cooking
             </button>
-            <button *ngIf="order.status === 'preparing'" class="btn btn-sm btn-outline-warning" (click)="updateOrderStatus(order, 'ready')">
+            <button *ngIf="order.status === 'preparing'" class="btn btn-sm btn-outline-warning"
+              (click)="updateOrderStatus(order, 'ready')">
               Mark Ready
             </button>
-            <button *ngIf="order.status === 'ready'" class="btn btn-sm btn-outline-success" (click)="updateOrderStatus(order, 'completed')">
+            <!-- <button *ngIf="order.status === 'ready'" class="btn btn-sm btn-outline-success"
+              (click)="updateOrderStatus(order, 'completed')">
               Complete
-            </button>
-            <button *ngIf="['received', 'preparing', 'ready'].includes(order.status)" class="btn btn-sm btn-outline-danger" (click)="updateOrderStatus(order, 'cancelled')">
+            </button> -->
+            <button *ngIf="['received', 'preparing', 'ready'].includes(order.status)"
+              class="btn btn-sm btn-outline-danger" (click)="updateOrderStatus(order, 'cancelled')">
               Cancel
             </button>
             <!-- Create Bill Button -->
-            <button *ngIf="order.status !== 'completed' && order.status !== 'cancelled'" 
-                    class="btn btn-sm btn-success btn-create-bill" 
-                    (click)="openCreateBillModal(order)"
-                    [disabled]="isSubmitting()">
+            <button *ngIf="order.status !== 'completed' && order.status !== 'cancelled'"
+              class="btn btn-sm btn-success btn-create-bill" (click)="openCreateBillModal(order)"
+              [disabled]="isSubmitting()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-inline">
                 <line x1="12" y1="1" x2="12" y2="23"></line>
                 <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
@@ -177,28 +194,31 @@
               Create Bill
             </button>
             <!-- View Bill Details Button -->
-            <button *ngIf="order.status === 'completed'" 
-                    class="btn btn-sm btn-info btn-view-bill" 
-                    (click)="viewBillDetails(order)">
+            <button *ngIf="order.status === 'completed'" class="btn btn-sm btn-info btn-view-bill"
+              (click)="viewBillDetails(order)">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-inline">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-                <polyline points="10 9 9 9 8 9"/>
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
               </svg>
               View Bill
             </button>
           </div>
-          
+
           <div class="crud-actions">
-            <button *ngIf="order.status !== 'completed'" class="btn-icon-only edit-btn" (click)="openEditModal(order)" title="Edit Order">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            <button *ngIf="order.status !== 'completed' || currentUserEmail() === 'sagarmanchadi324@gmail.com'"
+              class="btn-icon-only edit-btn" (click)="openEditModal(order)" title="Edit Order">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
               </svg>
             </button>
-            <button *ngIf="order.status !== 'completed'" class="btn-icon-only delete-btn" (click)="deleteOrder(order.id!)" title="Delete Order">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <button *ngIf="order.status !== 'completed'" class="btn-icon-only delete-btn"
+              (click)="deleteOrder(order.id!)" title="Delete Order">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                 <line x1="10" y1="11" x2="10" y2="17"></line>
@@ -212,50 +232,69 @@
   </div>
 
   <!-- Razorpay / UPI Payments Tab View -->
-  <div *ngIf="!isLoading() && activeTab() === 'payments'" class="payments-hub-panel animate-fade-in" style="margin-top: 10px;">
-    <div *ngIf="digitalPayments().length === 0" class="empty-state glass-panel" style="padding: 60px; text-align: center; border-radius: 12px; background: rgba(22, 24, 35, 0.5);">
+  <div *ngIf="!isLoading() && activeTab() === 'payments'" class="payments-hub-panel animate-fade-in"
+    style="margin-top: 10px;">
+    <div *ngIf="digitalPayments().length === 0" class="empty-state glass-panel"
+      style="padding: 60px; text-align: center; border-radius: 12px; background: rgba(22, 24, 35, 0.5);">
       <div class="empty-icon" style="font-size: 3rem; margin-bottom: 12px;">💳</div>
       <h3 style="color: #fff; margin-bottom: 8px;">No digital transactions found</h3>
-      <p style="color: var(--text-muted);">There are no online or UPI payment records available for this restaurant outlet.</p>
+      <p style="color: var(--text-muted);">There are no online or UPI payment records available for this restaurant
+        outlet.</p>
     </div>
-    
-    <div *ngIf="digitalPayments().length > 0" class="glass-panel table-panel" style="background: rgba(22, 24, 35, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.37);">
+
+    <div *ngIf="digitalPayments().length > 0" class="glass-panel table-panel"
+      style="background: rgba(22, 24, 35, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.37);">
       <div class="table-container" style="overflow-x: auto; padding: 12px;">
         <table style="width: 100%; border-collapse: collapse; text-align: left; color: #fff;">
           <thead>
-            <tr style="border-bottom: 2px solid rgba(255,255,255,0.08); font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase;">
-               <th style="padding: 12px 16px;">Order No</th>
-               <th style="padding: 12px 16px;">Date</th>
-               <th style="padding: 12px 16px;">Customer Details</th>
-               <th style="padding: 12px 16px;">Table</th>
-               <th style="padding: 12px 16px;">Method</th>
-               <th style="padding: 12px 16px;">Amount</th>
-               <th style="padding: 12px 16px;">Reference / Txn ID</th>
-               <th style="padding: 12px 16px; text-align: right;">Status</th>
+            <tr
+              style="border-bottom: 2px solid rgba(255,255,255,0.08); font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase;">
+              <th style="padding: 12px 16px;">Order No</th>
+              <th style="padding: 12px 16px;">Date</th>
+              <th style="padding: 12px 16px;">Customer Details</th>
+              <th style="padding: 12px 16px;">Table</th>
+              <th style="padding: 12px 16px;">Method</th>
+              <th style="padding: 12px 16px;">Amount</th>
+              <th style="padding: 12px 16px;">Reference / Txn ID</th>
+              <th style="padding: 12px 16px; text-align: right;">Status</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let pay of digitalPayments()" style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.88rem; transition: background 0.2s;">
-              <td style="padding: 12px 16px; font-weight: bold; color: var(--primary-hover);">#{{ pay.orderNumber }}</td>
+            <tr *ngFor="let pay of digitalPayments()"
+              style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.88rem; transition: background 0.2s;">
+              <td style="padding: 12px 16px; font-weight: bold; color: var(--primary-hover);">#{{ pay.orderNumber }}
+              </td>
               <td style="padding: 12px 16px;">{{ pay.date | date:'dd/MM/yyyy' }}</td>
               <td style="padding: 12px 16px;">
                 <div style="display: flex; flex-direction: column; gap: 2px;">
                   <span *ngIf="pay.mobile" style="color: #fff; font-weight: 500;">📞 {{ pay.mobile }}</span>
-                  <span *ngIf="pay.emailId" style="color: var(--text-secondary); font-size: 0.78rem;">✉️ {{ pay.emailId }}</span>
-                  <span *ngIf="!pay.mobile && !pay.emailId" style="color: var(--text-muted); font-style: italic;">Walk-in</span>
+                  <span *ngIf="pay.emailId" style="color: var(--text-secondary); font-size: 0.78rem;">✉️ {{ pay.emailId
+                    }}</span>
+                  <span *ngIf="!pay.mobile && !pay.emailId"
+                    style="color: var(--text-muted); font-style: italic;">Walk-in</span>
                 </div>
               </td>
-              <td style="padding: 12px 16px;"><span class="table-badge" style="font-size: 0.85rem; font-weight: 600; padding: 3px 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">{{ pay.tableNo }}</span></td>
+              <td style="padding: 12px 16px;"><span class="table-badge"
+                  style="font-size: 0.85rem; font-weight: 600; padding: 3px 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">{{
+                  pay.tableNo }}</span></td>
               <td style="padding: 12px 16px;">
-                <span *ngIf="pay.paymentMode === 'Razorpay'" style="color: #0ea5e9; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">💳 Online</span>
-                <span *ngIf="pay.paymentMode === 'UPI'" style="color: #10b981; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">📱 UPI</span>
+                <span *ngIf="pay.paymentMode === 'Razorpay'"
+                  style="color: #0ea5e9; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">💳
+                  Online</span>
+                <span *ngIf="pay.paymentMode === 'UPI'"
+                  style="color: #10b981; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">📱
+                  UPI</span>
               </td>
-              <td style="padding: 12px 16px; font-weight: 800; color: #10b981;">₹{{ pay.totalAmount | number:'1.2-2' }}</td>
+              <td style="padding: 12px 16px; font-weight: 800; color: #10b981;">₹{{ pay.totalAmount | number:'1.2-2' }}
+              </td>
               <td style="padding: 12px 16px; font-family: monospace; font-size: 0.8rem;">
-                <span *ngIf="pay.paymentMode === 'Razorpay'" style="color: #38bdf8;">{{ pay.razorpayPaymentId || pay.razorpayOrderId || 'Razorpay' }}</span>
+                <span *ngIf="pay.paymentMode === 'Razorpay'" style="color: #38bdf8;">{{ pay.razorpayPaymentId ||
+                  pay.razorpayOrderId || 'Razorpay' }}</span>
                 <span *ngIf="pay.paymentMode === 'UPI'" style="color: var(--text-secondary);">Counter QR Code</span>
               </td>
-              <td style="padding: 12px 16px; text-align: right;"><span style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 800;">VERIFIED</span></td>
+              <td style="padding: 12px 16px; text-align: right;"><span
+                  style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 800;">VERIFIED</span>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -266,10 +305,12 @@
   <!-- Overlay Form Modal (Add / Edit) -->
   <div *ngIf="showModal()" class="modal-backdrop">
     <div class="modal-content glass-panel">
-      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+      <div class="modal-header"
+        style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
         <h3>{{ isEditing() ? 'Modify Live Order' : 'Create Live Kitchen Ticket' }}</h3>
         <div style="display: flex; align-items: center; gap: 12px; margin-right: 12px;">
-          <button type="button" class="btn btn-sm btn-outline-info" (click)="showMenuPostersModal.set(true)" style="padding: 4px 10px; font-size: 0.8rem; border: 1px solid var(--primary-hover); color: var(--primary-hover); background: transparent; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s;">
+          <button type="button" class="btn btn-sm btn-outline-info" (click)="showMenuPostersModal.set(true)"
+            style="padding: 4px 10px; font-size: 0.8rem; border: 1px solid var(--primary-hover); color: var(--primary-hover); background: transparent; border-radius: 4px; cursor: pointer; font-weight: bold; transition: all 0.2s;">
             📖 View Menu Posters
           </button>
         </div>
@@ -285,18 +326,24 @@
           <!-- Table input -->
           <div class="form-group">
             <label for="tableNo">Table Reference *</label>
-            <input type="text" id="tableNo" name="tableNo" [ngModel]="tableNo()" (ngModelChange)="tableNo.set($event)" placeholder="e.g. Table 05, Takeaway" required class="form-control">
+            <input type="text" id="tableNo" name="tableNo" [ngModel]="tableNo()" (ngModelChange)="tableNo.set($event)"
+              placeholder="e.g. Table 05, Takeaway" required class="form-control">
           </div>
 
           <!-- Email input -->
           <div class="form-group" style="position: relative;">
             <label for="emailId">Customer Email</label>
-            <input type="email" id="emailId" name="emailId" [ngModel]="emailId()" (ngModelChange)="onEmailChange($event)" placeholder="e.g. customer@example.com" class="form-control" autocomplete="off" (focus)="showEmailSuggestions.set(true)" (blur)="hideSuggestionsWithDelay('email')">
+            <input type="email" id="emailId" name="emailId" [ngModel]="emailId()"
+              (ngModelChange)="onEmailChange($event)" placeholder="e.g. customer@example.com" class="form-control"
+              autocomplete="off" (focus)="showEmailSuggestions.set(true)" (blur)="hideSuggestionsWithDelay('email')">
             <!-- Suggestions Dropdown -->
-            <ul *ngIf="showEmailSuggestions() && emailSuggestions().length > 0" class="suggestions-list-box" style="position: absolute; top: 100%; left: 0; right: 0; background: rgba(30, 30, 45, 0.98); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; list-style: none; padding: 4px 0; margin: 4px 0 0 0; max-height: 180px; overflow-y: auto; z-index: 1000; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);">
-              <li *ngFor="let sug of emailSuggestions()" (mousedown)="selectCustomerSuggestion(sug)" style="padding: 8px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #fff;">
+            <ul *ngIf="showEmailSuggestions() && emailSuggestions().length > 0" class="suggestions-list-box"
+              style="position: absolute; top: 100%; left: 0; right: 0; background: rgba(30, 30, 45, 0.98); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; list-style: none; padding: 4px 0; margin: 4px 0 0 0; max-height: 180px; overflow-y: auto; z-index: 1000; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);">
+              <li *ngFor="let sug of emailSuggestions()" (mousedown)="selectCustomerSuggestion(sug)"
+                style="padding: 8px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); color: #fff;">
                 <div style="font-size: 0.8rem; opacity: 0.7;">{{ sug.emailId }}</div>
-                <div style="font-size: 0.75rem; color: #f59e0b; font-weight: bold;" *ngIf="sug.loyaltyPoints">{{ sug.loyaltyPoints }} pts</div>
+                <div style="font-size: 0.75rem; color: #f59e0b; font-weight: bold;" *ngIf="sug.loyaltyPoints">{{
+                  sug.loyaltyPoints }} pts</div>
               </li>
             </ul>
           </div>
@@ -304,7 +351,8 @@
           <!-- Status Dropdown (only when editing) -->
           <div *ngIf="isEditing()" class="form-group">
             <label for="orderStatus">Order Status</label>
-            <select id="orderStatus" name="orderStatus" [ngModel]="status()" (ngModelChange)="status.set($event)" class="form-control">
+            <select id="orderStatus" name="orderStatus" [ngModel]="status()" (ngModelChange)="status.set($event)"
+              class="form-control">
               <option value="received">Received</option>
               <option value="preparing">Preparing</option>
               <option value="ready">Ready to Serve</option>
@@ -317,28 +365,17 @@
           <div class="add-item-section">
             <h4>Select Food Items</h4>
             <div class="item-selector-grid">
-              
+
               <!-- Searchable Input Dropdown Container -->
               <div class="form-group select-search-container" style="position: relative;">
                 <label>Find Dish *</label>
-                <input 
-                  type="text" 
-                  [value]="dishSearchQuery()" 
-                  (input)="onDishSearchChange($event)"
-                  (focus)="onDishSearchFocus()"
-                  (blur)="onDishSearchBlur()"
-                  placeholder="Type dish name to search..." 
-                  class="form-control search-input"
-                  autocomplete="off"
-                >
-                
+                <input type="text" [value]="dishSearchQuery()" (input)="onDishSearchChange($event)"
+                  (focus)="onDishSearchFocus()" (blur)="onDishSearchBlur()" placeholder="Type dish name to search..."
+                  class="form-control search-input" autocomplete="off">
+
                 <!-- Autocomplete Dropdown List -->
                 <div *ngIf="showSuggestions()" class="suggestions-dropdown-list">
-                  <div 
-                    *ngFor="let dish of getFilteredDishes()" 
-                    (mousedown)="selectDish(dish)"
-                    class="suggestion-item"
-                  >
+                  <div *ngFor="let dish of getFilteredDishes()" (mousedown)="selectDish(dish)" class="suggestion-item">
                     <span class="suggestion-name">{{ dish.name }}</span>
                     <span class="suggestion-price">₹{{ dish.price }}</span>
                   </div>
@@ -351,7 +388,8 @@
               <!-- Quantity Input -->
               <div class="form-group qty-group">
                 <label for="itemQty">Qty</label>
-                <input type="number" id="itemQty" name="itemQty" [(ngModel)]="selectedQuantity" min="1" class="form-control">
+                <input type="number" id="itemQty" name="itemQty" [(ngModel)]="selectedQuantity" min="1"
+                  class="form-control">
               </div>
 
               <!-- Add to Order Button -->
@@ -364,25 +402,35 @@
           </div>
 
           <!-- Make Your Own Meal (Combo) Creator -->
-          <div class="combo-creator-section separator-top" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px;">
-            <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--primary-hover); margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
+          <div class="combo-creator-section separator-top"
+            style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px;">
+            <h4
+              style="font-size: 0.95rem; font-weight: 700; color: var(--primary-hover); margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
               <span>🔥</span> Make Your Own Meal (₹20 Combo Discount)
             </h4>
-            
+
             <div class="combo-selectors-row" style="display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
               <!-- 1. Shawarma Select -->
               <div class="form-group" style="flex: 1; min-width: 140px; margin-bottom: 0;">
-                <label style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; display: block;">Select Shawarma</label>
-                <select [ngModel]="selectedShawarmaId()" (ngModelChange)="selectedShawarmaId.set($event)" name="comboShawarma" style="width: 100%; padding: 8px; border-radius: 4px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; outline: none; cursor: pointer;">
+                <label
+                  style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; display: block;">Select
+                  Shawarma</label>
+                <select [ngModel]="selectedShawarmaId()" (ngModelChange)="selectedShawarmaId.set($event)"
+                  name="comboShawarma"
+                  style="width: 100%; padding: 8px; border-radius: 4px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; outline: none; cursor: pointer;">
                   <option value="" disabled selected>-- Choose Shawarma --</option>
-                  <option *ngFor="let item of shawarmas()" [value]="item.id">{{ item.name }} (₹{{ item.price }})</option>
+                  <option *ngFor="let item of shawarmas()" [value]="item.id">{{ item.name }} (₹{{ item.price }})
+                  </option>
                 </select>
               </div>
 
               <!-- 2. Side Select -->
               <div class="form-group" style="flex: 1; min-width: 140px; margin-bottom: 0;">
-                <label style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; display: block;">Select Side</label>
-                <select [ngModel]="selectedSideId()" (ngModelChange)="selectedSideId.set($event)" name="comboSide" style="width: 100%; padding: 8px; border-radius: 4px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; outline: none; cursor: pointer;">
+                <label
+                  style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; display: block;">Select
+                  Side</label>
+                <select [ngModel]="selectedSideId()" (ngModelChange)="selectedSideId.set($event)" name="comboSide"
+                  style="width: 100%; padding: 8px; border-radius: 4px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; outline: none; cursor: pointer;">
                   <option value="" disabled selected>-- Choose Side --</option>
                   <option *ngFor="let item of sides()" [value]="item.id">{{ item.name }} (₹{{ item.price }})</option>
                 </select>
@@ -390,28 +438,42 @@
 
               <!-- 3. Beverage Select -->
               <div class="form-group" style="flex: 1; min-width: 140px; margin-bottom: 0;">
-                <label style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; display: block;">Select Beverage</label>
-                <select [ngModel]="selectedBeverageId()" (ngModelChange)="selectedBeverageId.set($event)" name="comboBeverage" style="width: 100%; padding: 8px; border-radius: 4px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; outline: none; cursor: pointer;">
+                <label
+                  style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; display: block;">Select
+                  Beverage</label>
+                <select [ngModel]="selectedBeverageId()" (ngModelChange)="selectedBeverageId.set($event)"
+                  name="comboBeverage"
+                  style="width: 100%; padding: 8px; border-radius: 4px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; outline: none; cursor: pointer;">
                   <option value="" disabled selected>-- Choose Beverage --</option>
-                  <option *ngFor="let item of beverages()" [value]="item.id">{{ item.name }} (₹{{ item.price }})</option>
+                  <option *ngFor="let item of beverages()" [value]="item.id">{{ item.name }} (₹{{ item.price }})
+                  </option>
                 </select>
               </div>
             </div>
 
             <!-- Combo Actions -->
-            <div class="combo-actions-row" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: rgba(255, 255, 255, 0.02); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.04); flex-wrap: wrap;">
+            <div class="combo-actions-row"
+              style="display: flex; align-items: center; justify-content: space-between; gap: 12px; background: rgba(255, 255, 255, 0.02); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.04); flex-wrap: wrap;">
               <div style="display: flex; align-items: center; gap: 8px;">
                 <label style="font-size: 0.8rem; color: var(--text-secondary); margin: 0;">Qty:</label>
-                <input type="number" [ngModel]="comboQuantity()" (ngModelChange)="comboQuantity.set($event)" name="comboQty" min="1" style="width: 60px; padding: 4px 8px; border-radius: 4px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; text-align: center;" />
+                <input type="number" [ngModel]="comboQuantity()" (ngModelChange)="comboQuantity.set($event)"
+                  name="comboQty" min="1"
+                  style="width: 60px; padding: 4px 8px; border-radius: 4px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: #fff; text-align: center;" />
               </div>
 
-              <div *ngIf="selectedShawarmaId() && selectedSideId() && selectedBeverageId()" class="combo-price-preview" style="font-size: 0.9rem; font-weight: 600; color: #fff;">
-                Price: <span style="text-decoration: line-through; opacity: 0.5; margin-right: 6px;">₹{{ selectedShawarmaPrice + selectedSidePrice + selectedBeveragePrice }}</span>
+              <div *ngIf="selectedShawarmaId() && selectedSideId() && selectedBeverageId()" class="combo-price-preview"
+                style="font-size: 0.9rem; font-weight: 600; color: #fff;">
+                Price: <span style="text-decoration: line-through; opacity: 0.5; margin-right: 6px;">₹{{
+                  selectedShawarmaPrice + selectedSidePrice + selectedBeveragePrice }}</span>
                 <span style="color: var(--success); font-weight: 800;">₹{{ liveComboTotalPrice }}</span>
-                <span style="font-size: 0.75rem; color: #ef4444; background: rgba(239,68,68,0.1); padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold;">₹20 OFF</span>
+                <span
+                  style="font-size: 0.75rem; color: #ef4444; background: rgba(239,68,68,0.1); padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold;">₹20
+                  OFF</span>
               </div>
 
-              <button type="button" class="btn btn-primary btn-sm" (click)="addComboItem()" [disabled]="!selectedShawarmaId() || !selectedSideId() || !selectedBeverageId()" style="padding: 6px 12px; font-size: 0.82rem; font-weight: bold; border-radius: 4px; border: none; cursor: pointer;">
+              <button type="button" class="btn btn-primary btn-sm" (click)="addComboItem()"
+                [disabled]="!selectedShawarmaId() || !selectedSideId() || !selectedBeverageId()"
+                style="padding: 6px 12px; font-size: 0.82rem; font-weight: bold; border-radius: 4px; border: none; cursor: pointer;">
                 Add Combo Meal
               </button>
             </div>
@@ -423,21 +485,21 @@
             <div *ngIf="orderItems().length === 0" class="no-items-placeholder">
               No dishes added to this ticket yet. Select items above.
             </div>
-            
+
             <div *ngIf="orderItems().length > 0" class="ticket-items-list">
               <div *ngFor="let item of orderItems(); let i = index" class="ticket-item-row">
                 <span class="item-name">{{ item.name }}</span>
                 <span class="item-price">₹{{ item.price }}</span>
-                
+
                 <!-- Qty Adjustment Controls -->
                 <div class="qty-controls">
                   <button type="button" class="btn-qty" (click)="adjustQuantity(i, -1)">-</button>
                   <span class="qty-val">{{ item.quantity }}</span>
                   <button type="button" class="btn-qty" (click)="adjustQuantity(i, 1)">+</button>
                 </div>
-                
+
                 <span class="item-total">₹{{ (item.price * item.quantity) | number:'1.2-2' }}</span>
-                
+
                 <button type="button" class="btn-remove-item" (click)="removeOrderItem(i)" title="Remove item">
                   &times;
                 </button>
@@ -465,17 +527,25 @@
 
   <!-- Billing Discount Confirmation Modal -->
   <div *ngIf="showCreateBillModal()" class="modal-backdrop" (click)="closeCreateBillModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()" style="max-width: 420px; background: rgba(30, 30, 45, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);">
-      <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding: 16px; display: flex; justify-content: space-between; align-items: center;">
+    <div class="modal-content" (click)="$event.stopPropagation()"
+      style="max-width: 420px; background: rgba(30, 30, 45, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);">
+      <div class="modal-header"
+        style="border-bottom: 1px solid rgba(255,255,255,0.1); padding: 16px; display: flex; justify-content: space-between; align-items: center;">
         <h3 class="modal-title" style="margin: 0; color: #fff; font-size: 1.25rem;">Create Invoice</h3>
-        <button class="modal-close" (click)="closeCreateBillModal()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        <button class="modal-close" (click)="closeCreateBillModal()"
+          style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">&times;</button>
       </div>
       <div class="modal-body" style="padding: 20px; color: #fff;">
-        <p style="margin-top: 0; font-size: 0.95rem; opacity: 0.85;">Generate invoice bill for Table: <strong>{{ billingOrder()?.tableNo }}</strong> (Order #{{ billingOrder()?.orderNumber }})</p>
-        
+        <p style="margin-top: 0; font-size: 0.95rem; opacity: 0.85;">Generate invoice bill for Table: <strong>{{
+            billingOrder()?.tableNo }}</strong> (Order #{{ billingOrder()?.orderNumber }})</p>
+
         <div class="form-group" style="margin-top: 15px;">
-          <label for="billDiscountSelect" style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Select Discount Amount</label>
-          <select id="billDiscountSelect" class="form-control" [ngModel]="billingDiscount()" (ngModelChange)="billingDiscount.set(+$event)" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: #fff; outline: none; cursor: pointer; font-size: 1rem; font-family: inherit;">
+          <label for="billDiscountSelect"
+            style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Select Discount
+            Amount</label>
+          <select id="billDiscountSelect" class="form-control" [ngModel]="billingDiscount()"
+            (ngModelChange)="billingDiscount.set(+$event)"
+            style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: #fff; outline: none; cursor: pointer; font-size: 1rem; font-family: inherit;">
             <option [value]="0">0% (No Discount)</option>
             <option [value]="10">10% Discount</option>
             <option [value]="15">15% Discount</option>
@@ -487,11 +557,15 @@
           <label style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Payment Method</label>
           <div style="display: flex; gap: 15px; align-items: center;">
             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
-              <input type="radio" name="paymentMode" value="Cash" [ngModel]="billingPaymentMode()" (ngModelChange)="billingPaymentMode.set($event)" style="cursor: pointer; width: 18px; height: 18px; accent-color: #10b981;">
+              <input type="radio" name="paymentMode" value="Cash" [ngModel]="billingPaymentMode()"
+                (ngModelChange)="billingPaymentMode.set($event)"
+                style="cursor: pointer; width: 18px; height: 18px; accent-color: #10b981;">
               Cash
             </label>
             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
-              <input type="radio" name="paymentMode" value="UPI" [ngModel]="billingPaymentMode()" (ngModelChange)="billingPaymentMode.set($event)" style="cursor: pointer; width: 18px; height: 18px; accent-color: #10b981;">
+              <input type="radio" name="paymentMode" value="UPI" [ngModel]="billingPaymentMode()"
+                (ngModelChange)="billingPaymentMode.set($event)"
+                style="cursor: pointer; width: 18px; height: 18px; accent-color: #10b981;">
               UPI
             </label>
           </div>
@@ -499,42 +573,67 @@
 
         <!-- Split Payment Controls -->
         <div *ngIf="billingPaymentMode() === 'Cash'" class="form-group" style="margin-top: 12px;">
-          <label for="splitUpiAmount" style="display: block; font-weight: 500; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-secondary);">UPI Split Amount (₹)</label>
-          <input type="number" id="splitUpiAmount" [ngModel]="billingUpiAmount()" (ngModelChange)="billingUpiAmount.set($event)" min="0" [max]="(billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)" placeholder="Enter UPI amount paid" class="form-control" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: #fff; outline: none; font-size: 0.95rem;" />
-          <div style="font-size: 0.8rem; margin-top: 6px; color: #10b981; display: flex; justify-content: space-between;">
+          <label for="splitUpiAmount"
+            style="display: block; font-weight: 500; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-secondary);">UPI
+            Split Amount (₹)</label>
+          <input type="number" id="splitUpiAmount" [ngModel]="billingUpiAmount()"
+            (ngModelChange)="billingUpiAmount.set($event)" min="0"
+            [max]="(billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)"
+            placeholder="Enter UPI amount paid" class="form-control"
+            style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: #fff; outline: none; font-size: 0.95rem;" />
+          <div
+            style="font-size: 0.8rem; margin-top: 6px; color: #10b981; display: flex; justify-content: space-between;">
             <span>💵 Cash portion:</span>
-            <strong>₹{{ (((billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)) - billingUpiAmount() > 0 ? ((billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)) - billingUpiAmount() : 0) | number:'1.2-2' }}</strong>
+            <strong>₹{{ (((billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)) - billingUpiAmount() > 0 ?
+              ((billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)) - billingUpiAmount() : 0) |
+              number:'1.2-2' }}</strong>
           </div>
         </div>
 
         <div *ngIf="billingPaymentMode() === 'UPI'" class="form-group" style="margin-top: 12px;">
-          <label for="splitCashAmount" style="display: block; font-weight: 500; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-secondary);">Cash Split Amount (₹)</label>
-          <input type="number" id="splitCashAmount" [ngModel]="billingCashAmount()" (ngModelChange)="billingCashAmount.set($event)" min="0" [max]="(billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)" placeholder="Enter Cash amount paid" class="form-control" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: #fff; outline: none; font-size: 0.95rem;" />
-          <div style="font-size: 0.8rem; margin-top: 6px; color: #10b981; display: flex; justify-content: space-between;">
+          <label for="splitCashAmount"
+            style="display: block; font-weight: 500; font-size: 0.85rem; margin-bottom: 6px; color: var(--text-secondary);">Cash
+            Split Amount (₹)</label>
+          <input type="number" id="splitCashAmount" [ngModel]="billingCashAmount()"
+            (ngModelChange)="billingCashAmount.set($event)" min="0"
+            [max]="(billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)"
+            placeholder="Enter Cash amount paid" class="form-control"
+            style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: #fff; outline: none; font-size: 0.95rem;" />
+          <div
+            style="font-size: 0.8rem; margin-top: 6px; color: #10b981; display: flex; justify-content: space-between;">
             <span>📱 UPI portion:</span>
-            <strong>₹{{ (((billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)) - billingCashAmount() > 0 ? ((billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)) - billingCashAmount() : 0) | number:'1.2-2' }}</strong>
+            <strong>₹{{ (((billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)) - billingCashAmount() > 0
+              ? ((billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)) - billingCashAmount() : 0) |
+              number:'1.2-2' }}</strong>
           </div>
         </div>
 
         <!-- Dynamic summary of calculations -->
-        <div class="bill-calculation-summary" style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.15); display: flex; flex-direction: column; gap: 8px;">
+        <div class="bill-calculation-summary"
+          style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.15); display: flex; flex-direction: column; gap: 8px;">
           <div style="display: flex; justify-content: space-between; font-size: 0.9rem; opacity: 0.8;">
             <span>Items Total:</span>
             <span>₹{{ (billingOrder()?.totalAmount || 0) | number:'1.2-2' }}</span>
           </div>
-          <div *ngIf="billingDiscount() > 0" style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #ef4444; font-weight: 600;">
+          <div *ngIf="billingDiscount() > 0"
+            style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #ef4444; font-weight: 600;">
             <span>Discount ({{ billingDiscount() }}%):</span>
             <span>-₹{{ (billingOrder()?.totalAmount || 0) * billingDiscount() / 100 | number:'1.2-2' }}</span>
           </div>
-          <div style="display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 700; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 4px;">
+          <div
+            style="display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 700; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 4px;">
             <span>Total Payable:</span>
-            <span style="color: #10b981;">₹{{ (billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100) | number:'1.2-2' }}</span>
+            <span style="color: #10b981;">₹{{ (billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100) |
+              number:'1.2-2' }}</span>
           </div>
         </div>
       </div>
-      <div class="modal-footer" style="border-top: 1px solid rgba(255,255,255,0.1); padding: 16px; display: flex; justify-content: flex-end; gap: 12px;">
-        <button class="btn btn-secondary" (click)="closeCreateBillModal()" style="padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: #fff;">Cancel</button>
-        <button class="btn btn-primary" (click)="confirmCreateBill()" [disabled]="isSubmitting()" style="padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; background: #10b981; color: #fff;">
+      <div class="modal-footer"
+        style="border-top: 1px solid rgba(255,255,255,0.1); padding: 16px; display: flex; justify-content: flex-end; gap: 12px;">
+        <button class="btn btn-secondary" (click)="closeCreateBillModal()"
+          style="padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: #fff;">Cancel</button>
+        <button class="btn btn-primary" (click)="confirmCreateBill()" [disabled]="isSubmitting()"
+          style="padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; background: #10b981; color: #fff;">
           {{ isSubmitting() ? 'Creating Bill...' : 'Create Bill' }}
         </button>
       </div>
@@ -542,152 +641,184 @@
   </div>
 </div>
 
-  <!-- Menu Posters Modal -->
-  <div *ngIf="showMenuPostersModal()" class="modal-backdrop" (click)="showMenuPostersModal.set(false)" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; backdrop-filter: blur(8px);">
-    <div class="modal-content" (click)="$event.stopPropagation()" style="background: var(--bg-secondary); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; width: 100%; max-width: 650px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); max-height: 90vh;">
-      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.2);">
-        <h2 class="modal-title" style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
-          <span>📖</span> Reference Menu Posters
-        </h2>
-        <button class="modal-close" (click)="showMenuPostersModal.set(false)" style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
-      </div>
+<!-- Menu Posters Modal -->
+<div *ngIf="showMenuPostersModal()" class="modal-backdrop" (click)="showMenuPostersModal.set(false)"
+  style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.75); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 20px; backdrop-filter: blur(8px);">
+  <div class="modal-content" (click)="$event.stopPropagation()"
+    style="background: var(--bg-secondary); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; width: 100%; max-width: 650px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); max-height: 90vh;">
+    <div class="modal-header"
+      style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-color); background: rgba(0,0,0,0.2);">
+      <h2 class="modal-title"
+        style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+        <span>📖</span> Reference Menu Posters
+      </h2>
+      <button class="modal-close" (click)="showMenuPostersModal.set(false)"
+        style="background: none; border: none; color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
+    </div>
 
-      <!-- Poster Tabs Selector -->
-      <div class="poster-tabs" style="display: flex; background: rgba(0,0,0,0.1); border-bottom: 1px solid var(--border-color); padding: 4px;">
-        <button class="poster-tab-btn" [style.background]="activePosterTab() === 'meal' ? 'var(--primary)' : 'transparent'" [style.color]="activePosterTab() === 'meal' ? '#fff' : 'var(--text-secondary)'" (click)="activePosterTab.set('meal')" style="flex: 1; padding: 10px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.85rem; transition: all 0.2s;">
-          Make Your Own Meal (Combo)
-        </button>
-        <button class="poster-tab-btn" [style.background]="activePosterTab() === 'veg' ? 'var(--primary)' : 'transparent'" [style.color]="activePosterTab() === 'veg' ? '#fff' : 'var(--text-secondary)'" (click)="activePosterTab.set('veg')" style="flex: 1; padding: 10px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.85rem; transition: all 0.2s;">
-          Vegetarian Menu
-        </button>
-        <button class="poster-tab-btn" [style.background]="activePosterTab() === 'nonveg' ? 'var(--primary)' : 'transparent'" [style.color]="activePosterTab() === 'nonveg' ? '#fff' : 'var(--text-secondary)'" (click)="activePosterTab.set('nonveg')" style="flex: 1; padding: 10px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.85rem; transition: all 0.2s;">
-          Non-Vegetarian Menu
-        </button>
-      </div>
+    <!-- Poster Tabs Selector -->
+    <div class="poster-tabs"
+      style="display: flex; background: rgba(0,0,0,0.1); border-bottom: 1px solid var(--border-color); padding: 4px;">
+      <button class="poster-tab-btn"
+        [style.background]="activePosterTab() === 'meal' ? 'var(--primary)' : 'transparent'"
+        [style.color]="activePosterTab() === 'meal' ? '#fff' : 'var(--text-secondary)'"
+        (click)="activePosterTab.set('meal')"
+        style="flex: 1; padding: 10px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.85rem; transition: all 0.2s;">
+        Make Your Own Meal (Combo)
+      </button>
+      <button class="poster-tab-btn" [style.background]="activePosterTab() === 'veg' ? 'var(--primary)' : 'transparent'"
+        [style.color]="activePosterTab() === 'veg' ? '#fff' : 'var(--text-secondary)'"
+        (click)="activePosterTab.set('veg')"
+        style="flex: 1; padding: 10px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.85rem; transition: all 0.2s;">
+        Vegetarian Menu
+      </button>
+      <button class="poster-tab-btn"
+        [style.background]="activePosterTab() === 'nonveg' ? 'var(--primary)' : 'transparent'"
+        [style.color]="activePosterTab() === 'nonveg' ? '#fff' : 'var(--text-secondary)'"
+        (click)="activePosterTab.set('nonveg')"
+        style="flex: 1; padding: 10px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.85rem; transition: all 0.2s;">
+        Non-Vegetarian Menu
+      </button>
+    </div>
 
-      <!-- Poster Content Area -->
-      <div class="poster-content" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.05); min-height: 350px;">
-        <div *ngIf="activePosterTab() === 'meal'" class="animate-fade-in" style="width: 100%; text-align: center;">
-          <img src="/menu_make_your_own_meal.png" alt="Make Your Own Meal Poster" style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
-        </div>
-        <div *ngIf="activePosterTab() === 'veg'" class="animate-fade-in" style="width: 100%; text-align: center;">
-          <img src="/menu_vegetarian.png" alt="Vegetarian Menu Poster" style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
-        </div>
-        <div *ngIf="activePosterTab() === 'nonveg'" class="animate-fade-in" style="width: 100%; text-align: center;">
-          <img src="/menu_nonveg.png" alt="Non-Vegetarian Menu Poster" style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
-        </div>
+    <!-- Poster Content Area -->
+    <div class="poster-content"
+      style="flex: 1; overflow-y: auto; padding: 20px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.05); min-height: 350px;">
+      <div *ngIf="activePosterTab() === 'meal'" class="animate-fade-in" style="width: 100%; text-align: center;">
+        <img src="/menu_make_your_own_meal.png" alt="Make Your Own Meal Poster"
+          style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
       </div>
-      
-      <div class="modal-footer" style="padding: 12px 20px; border-top: 1px solid var(--border-color); text-align: right; background: rgba(0,0,0,0.1);">
-        <button type="button" class="btn btn-secondary" (click)="showMenuPostersModal.set(false)" style="padding: 6px 16px; font-weight: 600; cursor: pointer; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #fff;">Close</button>
+      <div *ngIf="activePosterTab() === 'veg'" class="animate-fade-in" style="width: 100%; text-align: center;">
+        <img src="/menu_vegetarian.png" alt="Vegetarian Menu Poster"
+          style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
+      </div>
+      <div *ngIf="activePosterTab() === 'nonveg'" class="animate-fade-in" style="width: 100%; text-align: center;">
+        <img src="/menu_nonveg.png" alt="Non-Vegetarian Menu Poster"
+          style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
       </div>
     </div>
+
+    <div class="modal-footer"
+      style="padding: 12px 20px; border-top: 1px solid var(--border-color); text-align: right; background: rgba(0,0,0,0.1);">
+      <button type="button" class="btn btn-secondary" (click)="showMenuPostersModal.set(false)"
+        style="padding: 6px 16px; font-weight: 600; cursor: pointer; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #fff;">Close</button>
+    </div>
   </div>
+</div>
 
-  <!-- INVOICE DETAILS MODAL -->
-  <div *ngIf="showDetailsModal()" class="modal-backdrop" (click)="closeDetailsModal()">
-    <div class="modal-content receipt-modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3 class="modal-title">Bill Invoice Info</h3>
-        <button class="modal-close" (click)="closeDetailsModal()">&times;</button>
+<!-- INVOICE DETAILS MODAL -->
+<div *ngIf="showDetailsModal()" class="modal-backdrop" (click)="closeDetailsModal()">
+  <div class="modal-content receipt-modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3 class="modal-title">Bill Invoice Info</h3>
+      <button class="modal-close" (click)="closeDetailsModal()">&times;</button>
+    </div>
+
+    <div class="modal-body print-wrapper">
+      <div class="receipt-actions-top no-print">
+        <button class="btn btn-secondary btn-sm" (click)="printReceipt()">
+          Print Receipt / PDF
+        </button>
       </div>
-      
-      <div class="modal-body print-wrapper">
-        <div class="receipt-actions-top no-print">
-          <button class="btn btn-secondary btn-sm" (click)="printReceipt()">
-            Print Receipt / PDF
-          </button>
+
+      <!-- Physical Receipt Print Area -->
+      <div class="physical-receipt modal-receipt" id="receipt-print-area">
+        <div class="receipt-border-decor"></div>
+
+        <div class="receipt-brand">
+          <h2>Engineering Tadka</h2>
+          <p class="receipt-tagline">TAX INVOICE RECEIPT</p>
+          <p class="receipt-order-no" *ngIf="selectedBill()?.orderNumber"
+            style="font-weight: 800; color: #e74c3c; margin: 4px 0 0 0; font-size: 1rem; letter-spacing: 0.5px;">
+            ORDER #{{ selectedBill()?.orderNumber }}
+          </p>
+          <p class="receipt-outlet" *ngIf="selectedBillRestaurant()">
+            Branch: {{ selectedBillRestaurant()?.name }}<br>
+            <span class="small-address">{{ selectedBillRestaurant()?.address }}</span>
+          </p>
         </div>
-        
-        <!-- Physical Receipt Print Area -->
-        <div class="physical-receipt modal-receipt" id="receipt-print-area">
-          <div class="receipt-border-decor"></div>
-          
-          <div class="receipt-brand">
-            <h2>Engineering Tadka</h2>
-            <p class="receipt-tagline">TAX INVOICE RECEIPT</p>
-            <p class="receipt-order-no" *ngIf="selectedBill()?.orderNumber" style="font-weight: 800; color: #e74c3c; margin: 4px 0 0 0; font-size: 1rem; letter-spacing: 0.5px;">
-              ORDER #{{ selectedBill()?.orderNumber }}
-            </p>
-            <p class="receipt-outlet" *ngIf="selectedBillRestaurant()">
-              Branch: {{ selectedBillRestaurant()?.name }}<br>
-              <span class="small-address">{{ selectedBillRestaurant()?.address }}</span>
-            </p>
+
+        <div class="receipt-meta">
+          <div>Invoice ID: <span class="code-font">{{ selectedBill()?.id }}</span></div>
+          <div *ngIf="selectedBill()?.paymentMode">Payment Method: <span
+              style="font-weight: 700; color: var(--primary-hover);">{{ selectedBill()?.paymentMode }}</span></div>
+          <div *ngIf="selectedBill()?.orderNumber"
+            style="font-weight: 850; color: var(--color-accent); font-size: 0.95rem;">Order Number: #{{
+            selectedBill()?.orderNumber }}</div>
+          <div>Date: {{ selectedBill()?.date }}</div>
+          <div *ngIf="selectedBill()?.mobile">Contact: {{ selectedBill()?.mobile }}</div>
+          <div *ngIf="selectedBill()?.emailId">Email: {{ selectedBill()?.emailId }}</div>
+          <div *ngIf="selectedBill()?.description">Table/Notes: {{ selectedBill()?.description }}</div>
+        </div>
+
+        <div class="receipt-divider"></div>
+
+        <div class="receipt-items">
+          <div class="receipt-table-header">
+            <span>Item Detail</span>
+            <span>Total</span>
           </div>
-
-          <div class="receipt-meta">
-            <div>Invoice ID: <span class="code-font">{{ selectedBill()?.id }}</span></div>
-            <div *ngIf="selectedBill()?.paymentMode">Payment Method: <span style="font-weight: 700; color: var(--primary-hover);">{{ selectedBill()?.paymentMode }}</span></div>
-            <div *ngIf="selectedBill()?.orderNumber" style="font-weight: 850; color: var(--color-accent); font-size: 0.95rem;">Order Number: #{{ selectedBill()?.orderNumber }}</div>
-            <div>Date: {{ selectedBill()?.date }}</div>
-            <div *ngIf="selectedBill()?.mobile">Contact: {{ selectedBill()?.mobile }}</div>
-            <div *ngIf="selectedBill()?.emailId">Email: {{ selectedBill()?.emailId }}</div>
-            <div *ngIf="selectedBill()?.description">Table/Notes: {{ selectedBill()?.description }}</div>
+          <div *ngFor="let item of selectedBill()?.foodItems" class="receipt-item-row">
+            <span class="item-desc">{{ item.name }} x{{ item.quantity }} @ ₹{{ item.price }}</span>
+            <span class="item-amount">₹{{ (item.price * item.quantity) | number:'1.2-2' }}</span>
           </div>
+        </div>
 
-          <div class="receipt-divider"></div>
+        <div class="receipt-divider"></div>
 
-          <div class="receipt-items">
-            <div class="receipt-table-header">
-              <span>Item Detail</span>
-              <span>Total</span>
-            </div>
-            <div *ngFor="let item of selectedBill()?.foodItems" class="receipt-item-row">
-              <span class="item-desc">{{ item.name }} x{{ item.quantity }} @ ₹{{ item.price }}</span>
-              <span class="item-amount">₹{{ (item.price * item.quantity) | number:'1.2-2' }}</span>
-            </div>
+        <div class="receipt-totals">
+          <div *ngIf="selectedBill()?.discount" class="total-row">
+            <span>Items Total:</span>
+            <span>₹{{ (selectedBill()!.amount + (selectedBill()!.cgst || 0) + (selectedBill()!.sgst || 0)) / (1 -
+              (selectedBill()?.discount || 0) / 100) | number:'1.2-2' }}</span>
           </div>
-
-          <div class="receipt-divider"></div>
-
-          <div class="receipt-totals">
-            <div *ngIf="selectedBill()?.discount" class="total-row">
-              <span>Items Total:</span>
-              <span>₹{{ (selectedBill()!.amount + (selectedBill()!.cgst || 0) + (selectedBill()!.sgst || 0)) / (1 - (selectedBill()?.discount || 0) / 100) | number:'1.2-2' }}</span>
-            </div>
-            <div *ngIf="selectedBill()?.discount" class="total-row discount-row" style="color: #ef4444; font-weight: bold;">
-              <span>Discount ({{ selectedBill()?.discount }}%):</span>
-              <span>-₹{{ (((selectedBill()!.amount + (selectedBill()!.cgst || 0) + (selectedBill()!.sgst || 0)) / (1 - (selectedBill()?.discount || 0) / 100)) - (selectedBill()!.amount + (selectedBill()!.cgst || 0) + (selectedBill()!.sgst || 0))) | number:'1.2-2' }}</span>
-            </div>
-            <div class="total-row">
-              <span>Subtotal:</span>
-              <span>₹{{ selectedBill()?.amount | number:'1.2-2' }}</span>
-            </div>
-            <div class="total-row tax-row">
-              <span>CGST (2.5%):</span>
-              <span>₹{{ selectedBill()?.cgst | number:'1.2-2' }}</span>
-            </div>
-            <div class="total-row tax-row">
-              <span>SGST (2.5%):</span>
-              <span>₹{{ selectedBill()?.sgst | number:'1.2-2' }}</span>
-            </div>
-            <div class="receipt-divider dot-divider"></div>
-            <div class="total-row grand-total-row">
-              <span>GRAND TOTAL:</span>
-              <span>₹{{ (selectedBill()!.amount + (selectedBill()!.cgst || 0) + (selectedBill()!.sgst || 0)) | number:'1.2-2' }}</span>
-            </div>
-            <div class="gst-inclusive-text">
-              * Note: All prices are inclusive of GST (CGST 2.5% + SGST 2.5%)
-            </div>
+          <div *ngIf="selectedBill()?.discount" class="total-row discount-row"
+            style="color: #ef4444; font-weight: bold;">
+            <span>Discount ({{ selectedBill()?.discount }}%):</span>
+            <span>-₹{{ (((selectedBill()!.amount + (selectedBill()!.cgst || 0) + (selectedBill()!.sgst || 0)) / (1 -
+              (selectedBill()?.discount || 0) / 100)) - (selectedBill()!.amount + (selectedBill()!.cgst || 0) +
+              (selectedBill()!.sgst || 0))) | number:'1.2-2' }}</span>
           </div>
+          <div class="total-row">
+            <span>Subtotal:</span>
+            <span>₹{{ selectedBill()?.amount | number:'1.2-2' }}</span>
+          </div>
+          <div class="total-row tax-row">
+            <span>CGST (2.5%):</span>
+            <span>₹{{ selectedBill()?.cgst | number:'1.2-2' }}</span>
+          </div>
+          <div class="total-row tax-row">
+            <span>SGST (2.5%):</span>
+            <span>₹{{ selectedBill()?.sgst | number:'1.2-2' }}</span>
+          </div>
+          <div class="receipt-divider dot-divider"></div>
+          <div class="total-row grand-total-row">
+            <span>GRAND TOTAL:</span>
+            <span>₹{{ (selectedBill()!.amount + (selectedBill()!.cgst || 0) + (selectedBill()!.sgst || 0)) |
+              number:'1.2-2' }}</span>
+          </div>
+          <div class="gst-inclusive-text">
+            * Note: All prices are inclusive of GST (CGST 2.5% + SGST 2.5%)
+          </div>
+        </div>
 
-          <div class="receipt-divider"></div>
-          
-          <div class="receipt-footer">
-            <span class="badge status-tag-big" [ngClass]="{
+        <div class="receipt-divider"></div>
+
+        <div class="receipt-footer">
+          <span class="badge status-tag-big" [ngClass]="{
               'badge-success': selectedBill()?.status === 'paid',
               'badge-warning': selectedBill()?.status === 'pending',
               'badge-danger': selectedBill()?.status === 'overdue'
             }">
-              {{ selectedBill()?.status?.toUpperCase() }}
-            </span>
-            <p class="footer-msg">Thank you for dining with us! Come back soon!</p>
-          </div>
+            {{ selectedBill()?.status?.toUpperCase() }}
+          </span>
+          <p class="footer-msg">Thank you for dining with us! Come back soon!</p>
         </div>
       </div>
-      
-      <div class="modal-footer no-print">
-        <button class="btn btn-secondary" (click)="closeDetailsModal()">Close</button>
-      </div>
+    </div>
+
+    <div class="modal-footer no-print">
+      <button class="btn btn-secondary" (click)="closeDetailsModal()">Close</button>
     </div>
   </div>
+</div>
