@@ -34,6 +34,11 @@ export const routes: Routes = [
     loadComponent: () => import('./components/payouts/payouts.component').then(m => m.PayoutsComponent)
   },
   {
+    path: 'wastage',
+    // Lazy load wastage component
+    loadComponent: () => import('./components/wastage/wastage.component').then(m => m.WastageComponent)
+  },
+  {
     path: 'billing',
     loadComponent: () => import('./components/billing/billing.component').then(m => m.BillingComponent)
   },

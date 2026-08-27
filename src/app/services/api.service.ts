@@ -73,6 +73,19 @@ export interface Payout {
   updatedAt?: string;
 }
 
+export interface Wastage {
+  id?: string;
+  restaurantId?: string;
+  inventoryItemId: string;
+  inventoryItemName: string;
+  quantity: number;
+  date: string;
+  reason?: string;
+  amount: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface EmailLog {
   to: string;
   timestamp: string;
@@ -307,6 +320,25 @@ export class ApiService {
 
   deletePayout(id: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/payouts/${id}`, { responseType: 'text' });
+  }
+
+  // WASTAGE
+  getWastages(restaurantId?: string): Observable<Wastage[]> {
+    const params: Record<string, string> = {};
+    if (restaurantId) params['restaurantId'] = restaurantId;
+    return this.http.get<Wastage[]>(`${this.baseUrl}/wastage`, { params });
+  }
+
+  createWastage(wastage: Wastage): Observable<Wastage> {
+    return this.http.post<Wastage>(`${this.baseUrl}/wastage`, wastage);
+  }
+
+  updateWastage(id: string, wastage: Partial<Wastage>): Observable<any> {
+    return this.http.put(`${this.baseUrl}/wastage/${id}`, wastage);
+  }
+
+  deleteWastage(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/wastage/${id}`, { responseType: 'text' });
   }
 
   uploadExpenseImage(file: File): Observable<{ imageUrl: string }> {
