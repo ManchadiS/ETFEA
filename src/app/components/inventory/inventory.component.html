@@ -1,22 +1,23 @@
 <div class="inventory-container animate-fade-in">
   <div class="header-section">
     <div>
-      <h1>Inventory List</h1>
-      <p class="subtitle">Organize and manage ingredients, raw catalog items, and restaurant supplies.</p>
+      <h1>Inventory Management</h1>
+      <p class="subtitle">Monitor raw supplies, track current stock levels, and set automatic low-stock alerts.</p>
     </div>
     <button class="btn btn-primary" (click)="openAddModal()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
         <line x1="12" y1="5" x2="12" y2="19"/>
         <line x1="5" y1="12" x2="19" y2="12"/>
       </svg>
-      Add Catalog Item
+      Add Supply Item
     </button>
   </div>
 
   <!-- Summary Cards Row -->
   <div class="metrics-row">
-    <div class="glass-panel metric-card">
-      <div class="metric-icon">
+    <!-- Total Items Card -->
+    <div class="glass-panel metric-card" [class.active-card]="activeFilter() === 'All'" (click)="setFilter('All')">
+      <div class="metric-icon total-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M20 7l-8-4-8 4 8 4 8-4z" />
           <path d="M4 12l8 4 8-4" />
@@ -24,13 +25,42 @@
         </svg>
       </div>
       <div class="metric-info">
-        <span class="metric-label">Total Unique Items</span>
-        <h3 class="metric-value">{{ filteredItems().length }}</h3>
+        <span class="metric-label">Total Supply Items</span>
+        <h3 class="metric-value">{{ getMetricsCount('Total') }}</h3>
+      </div>
+    </div>
+
+    <!-- Low Stock Card -->
+    <div class="glass-panel metric-card warning-card" [class.active-card]="activeFilter() === 'LowStock'" [class.pulse-glow]="getMetricsCount('LowStock') > 0" (click)="setFilter('LowStock')">
+      <div class="metric-icon low-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <div class="metric-info">
+        <span class="metric-label">Low Stock Alerts</span>
+        <h3 class="metric-value text-warning">{{ getMetricsCount('LowStock') }}</h3>
+      </div>
+    </div>
+
+    <!-- Out of Stock Card -->
+    <div class="glass-panel metric-card danger-card" [class.active-card]="activeFilter() === 'OutOfStock'" [class.pulse-danger]="getMetricsCount('OutOfStock') > 0" (click)="setFilter('OutOfStock')">
+      <div class="metric-icon out-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+        </svg>
+      </div>
+      <div class="metric-info">
+        <span class="metric-label">Out of Stock</span>
+        <h3 class="metric-value text-danger">{{ getMetricsCount('OutOfStock') }}</h3>
       </div>
     </div>
   </div>
 
-  <!-- Search Area -->
+  <!-- Search and Segmented Filters Bar -->
   <div class="filters-bar">
     <div class="search-box">
       <span class="search-icon">
@@ -39,14 +69,30 @@
           <line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
       </span>
-      <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event); onSearch()" placeholder="Search inventory items by name..." />
+      <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event); onSearch()" placeholder="Search supplies by name..." />
+    </div>
+
+    <!-- Segmented Tab Controls -->
+    <div class="filter-tabs">
+      <button class="filter-tab" [class.active]="activeFilter() === 'All'" (click)="setFilter('All')">
+        All
+      </button>
+      <button class="filter-tab" [class.active]="activeFilter() === 'InStock'" (click)="setFilter('InStock')">
+        In Stock
+      </button>
+      <button class="filter-tab" [class.active]="activeFilter() === 'LowStock'" (click)="setFilter('LowStock')">
+        Low Stock
+      </button>
+      <button class="filter-tab" [class.active]="activeFilter() === 'OutOfStock'" (click)="setFilter('OutOfStock')">
+        Out of Stock
+      </button>
     </div>
   </div>
 
   <!-- Loading state -->
   <div *ngIf="isLoading()" class="loading-state">
     <div class="spinner"></div>
-    <p>Loading inventory items...</p>
+    <p>Loading inventory supplies...</p>
   </div>
 
   <!-- Empty state -->
@@ -56,8 +102,8 @@
       <path d="M4 12l8 4 8-4" />
       <path d="M4 17l8 4 8-4" />
     </svg>
-    <h3>No Inventory Items Found</h3>
-    <p>No catalog supplies have been registered for this outlet. Try seeding mock data in System Control.</p>
+    <h3>No Supplies Found</h3>
+    <p>No inventory items match the current query or status filters. Seed mock database entries or add a new supply item.</p>
   </div>
 
   <!-- Inventory Table -->
@@ -68,15 +114,47 @@
           <th>Sl. No.</th>
           <th>Item Name</th>
           <th>Restaurant Outlet</th>
+          <th>Current Stock</th>
+          <th>Alert Level</th>
+          <th>Stock Status</th>
+          <th style="text-align: center;">Quick Adjust</th>
           <th style="text-align: right;">Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let item of filteredItems(); let idx = index" class="table-row">
+        <tr *ngFor="let item of filteredItems(); let idx = index" class="table-row" [class.danger-row]="(item.quantity || 0) === 0" [class.warning-row]="(item.quantity || 0) > 0 && (item.quantity || 0) <= (item.threshold || 10)">
           <td class="index-cell">{{ idx + 1 }}</td>
           <td class="name-cell">{{ item.name }}</td>
           <td>
             <span class="outlet-badge">{{ getRestaurantName(item.restaurantId) }}</span>
+          </td>
+          <td class="stock-cell">
+            <span class="stock-qty">{{ item.quantity !== undefined ? item.quantity : 0 }}</span>
+            <span class="stock-unit">{{ item.unit || 'units' }}</span>
+          </td>
+          <td class="threshold-cell">
+            <span class="threshold-qty">{{ item.threshold !== undefined ? item.threshold : 10 }}</span>
+            <span class="threshold-unit">{{ item.unit || 'units' }}</span>
+          </td>
+          <td>
+            <span *ngIf="(item.quantity || 0) === 0" class="status-badge status-out">Out of Stock</span>
+            <span *ngIf="(item.quantity || 0) > 0 && (item.quantity || 0) <= (item.threshold || 10)" class="status-badge status-low">Low Stock</span>
+            <span *ngIf="(item.quantity || 0) > (item.threshold || 10)" class="status-badge status-in">In Stock</span>
+          </td>
+          <td class="adjust-cell">
+            <div class="adjust-btn-group">
+              <button class="btn-adjust btn-minus" (click)="quickAdjustQuantity(item, -1)" [disabled]="(item.quantity || 0) <= 0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </button>
+              <button class="btn-adjust btn-plus" (click)="quickAdjustQuantity(item, 1)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </button>
+            </div>
           </td>
           <td class="actions-cell">
             <button class="btn btn-secondary btn-icon-only" (click)="openEditModal(item)">
@@ -120,6 +198,32 @@
         <div class="form-group">
           <label for="itemName">Item Name *</label>
           <input type="text" id="itemName" [(ngModel)]="name" placeholder="e.g. Basmati Rice, Refined Oil, Chicken" required />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group half-width">
+            <label for="itemQty">Current Stock Quantity *</label>
+            <input type="number" id="itemQty" [(ngModel)]="quantity" min="0" placeholder="e.g. 50" required />
+          </div>
+
+          <div class="form-group half-width">
+            <label for="itemUnit">Unit of Measurement *</label>
+            <select id="itemUnit" [(ngModel)]="unit" required>
+              <option value="kg">kg (Kilograms)</option>
+              <option value="grams">g (Grams)</option>
+              <option value="litres">L (Litres)</option>
+              <option value="ml">ml (Millilitres)</option>
+              <option value="units">Units / Pieces</option>
+              <option value="packets">Packets</option>
+              <option value="boxes">Boxes</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="itemThreshold">Low Stock Alert Threshold *</label>
+          <input type="number" id="itemThreshold" [(ngModel)]="threshold" min="0" placeholder="e.g. 10" required />
+          <span class="field-hint">A warning trigger will fire if stock level matches or falls below this limit.</span>
         </div>
       </div>
       <div class="modal-footer">

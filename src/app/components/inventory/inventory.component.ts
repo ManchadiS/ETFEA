@@ -30,6 +30,7 @@ export class InventoryComponent implements OnInit {
   searchQuery = signal<string>('');
   showModal = signal<boolean>(false);
   errorMessage = signal<string>('');
+  activeFilter = signal<'All' | 'InStock' | 'LowStock' | 'OutOfStock'>('All');
 
   isEditing = false;
   modalTitle = 'Add Inventory Item';
@@ -38,6 +39,9 @@ export class InventoryComponent implements OnInit {
   currentId = '';
   name = '';
   restaurantId = '';
+  quantity = 0;
+  unit = 'units';
+  threshold = 10;
 
   constructor() {
     // Automatically refetch inventory items when active restaurant changes
@@ -77,13 +81,31 @@ export class InventoryComponent implements OnInit {
   filterItems() {
     const list = this.inventoryItems();
     const query = this.searchQuery().trim().toLowerCase();
+    const filter = this.activeFilter();
 
     const filtered = list.filter(item => {
       const matchesSearch = !query || item.name.toLowerCase().includes(query);
-      return matchesSearch;
+      if (!matchesSearch) return false;
+
+      const qty = item.quantity !== undefined ? item.quantity : 0;
+      const thres = item.threshold !== undefined ? item.threshold : 10;
+
+      if (filter === 'OutOfStock') {
+        return qty === 0;
+      } else if (filter === 'LowStock') {
+        return qty > 0 && qty <= thres;
+      } else if (filter === 'InStock') {
+        return qty > thres;
+      }
+      return true;
     });
 
     this.filteredItems.set(filtered);
+  }
+
+  setFilter(filter: 'All' | 'InStock' | 'LowStock' | 'OutOfStock') {
+    this.activeFilter.set(filter);
+    this.filterItems();
   }
 
   onSearch() {
@@ -96,6 +118,9 @@ export class InventoryComponent implements OnInit {
     this.currentId = '';
     this.name = '';
     this.restaurantId = this.apiService.selectedRestaurantId(); // pre-select active restaurant if any
+    this.quantity = 0;
+    this.unit = 'units';
+    this.threshold = 10;
     this.errorMessage.set('');
     this.showModal.set(true);
   }
@@ -106,6 +131,9 @@ export class InventoryComponent implements OnInit {
     this.currentId = item.id || '';
     this.name = item.name;
     this.restaurantId = item.restaurantId || '';
+    this.quantity = item.quantity !== undefined ? item.quantity : 0;
+    this.unit = item.unit || 'units';
+    this.threshold = item.threshold !== undefined ? item.threshold : 10;
     this.errorMessage.set('');
     this.showModal.set(true);
   }
@@ -122,7 +150,10 @@ export class InventoryComponent implements OnInit {
 
     const payload: InventoryItem = {
       name: this.name.trim(),
-      restaurantId: this.restaurantId
+      restaurantId: this.restaurantId,
+      quantity: this.quantity,
+      unit: this.unit.trim(),
+      threshold: this.threshold
     };
 
     this.isLoading.set(true);
@@ -151,6 +182,46 @@ export class InventoryComponent implements OnInit {
         }
       });
     }
+  }
+
+  quickAdjustQuantity(item: InventoryItem, delta: number) {
+    if (!item.id) return;
+    const currentQty = item.quantity !== undefined ? item.quantity : 0;
+    const newQty = Math.max(0, currentQty + delta);
+    if (newQty === currentQty) return;
+
+    // Optimistic local update
+    this.inventoryItems.update(items =>
+      items.map(i => i.id === item.id ? { ...i, quantity: newQty } : i)
+    );
+    this.filterItems();
+
+    this.apiService.updateInventoryItem(item.id, { quantity: newQty }).subscribe({
+      next: () => {
+        this.fetchInventoryItems();
+      },
+      error: (err) => {
+        console.error('Error adjusting inventory item quantity:', err);
+        // Revert by refetching
+        this.fetchInventoryItems();
+      }
+    });
+  }
+
+  getMetricsCount(status: 'Total' | 'LowStock' | 'OutOfStock'): number {
+    const list = this.inventoryItems();
+    if (status === 'Total') {
+      return list.length;
+    } else if (status === 'LowStock') {
+      return list.filter(i => {
+        const qty = i.quantity !== undefined ? i.quantity : 0;
+        const thres = i.threshold !== undefined ? i.threshold : 10;
+        return qty > 0 && qty <= thres;
+      }).length;
+    } else if (status === 'OutOfStock') {
+      return list.filter(i => (i.quantity !== undefined ? i.quantity : 0) === 0).length;
+    }
+    return 0;
   }
 
   deleteInventoryItem(id?: string) {

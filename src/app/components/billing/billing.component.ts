@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, Restaurant, FoodItem, Billing, FoodOrderItem, Customer } from '../../services/api.service';
+import { ApiService, Restaurant, FoodItem, Billing, FoodOrderItem, Customer, InventoryItem, PurchaseBill, PurchaseBillItem } from '../../services/api.service';
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -23,6 +23,24 @@ export class BillingComponent implements OnInit {
   activeTab = signal<string>('create');
   isLoading = signal<boolean>(false);
   isSubmitting = signal<boolean>(false);
+
+  // Purchase Bills State Signals
+  purchaseBills = signal<PurchaseBill[]>([]);
+  filteredPurchaseBills = signal<PurchaseBill[]>([]);
+  inventoryItems = signal<InventoryItem[]>([]);
+  purchaseItems = signal<PurchaseBillItem[]>([]);
+  selectedPurchaseItemId = '';
+  selectedPurchaseQuantity = 1;
+  selectedPurchasePrice = 0;
+  purchaseSupplierName = '';
+  purchaseBillNumber = '';
+  purchaseDate = new Date().toLocaleDateString('sv');
+  purchasePaymentMode = 'Cash';
+  purchaseStatus = 'paid';
+  purchaseSearchQuery = '';
+  purchaseStatusFilter = 'All';
+  selectedPurchaseBill = signal<PurchaseBill | null>(null);
+  showPurchaseDetailsModal = signal<boolean>(false);
 
   // Invoice builder state
   selectedRestaurantId = '';
@@ -120,6 +138,10 @@ export class BillingComponent implements OnInit {
     return this.apiService.selectedRestaurantId();
   }
 
+  get currentUserEmail(): string {
+    return this.apiService.currentUser()?.email || '';
+  }
+
   constructor() {
     // Automatically refetch billing data when active restaurant changes
     effect(() => {
@@ -144,14 +166,19 @@ export class BillingComponent implements OnInit {
       restaurants: this.apiService.getRestaurants(),
       foodItems: this.apiService.getFoodItems(restId),
       bills: this.apiService.getBills(restId),
-      customers: this.apiService.getCustomers()
+      customers: this.apiService.getCustomers(),
+      inventoryItems: this.apiService.getInventoryItems(restId),
+      purchaseBills: this.apiService.getPurchaseBills(restId)
     }).subscribe({
       next: (res) => {
         this.restaurants.set(res.restaurants);
         this.foodItems.set(res.foodItems);
         this.bills.set(res.bills);
         this.allCustomers.set(res.customers);
+        this.inventoryItems.set(res.inventoryItems);
+        this.purchaseBills.set(res.purchaseBills);
         this.filterBills();
+        this.filterPurchaseBills();
         
         if (restId) {
           this.selectedRestaurantId = restId;
@@ -331,6 +358,8 @@ export class BillingComponent implements OnInit {
     this.activeTab.set(tab);
     if (tab === 'records') {
       this.fetchBillsOnly();
+    } else if (tab === 'purchase-records') {
+      this.fetchPurchaseBillsOnly();
     }
   }
 
@@ -623,5 +652,139 @@ export class BillingComponent implements OnInit {
     document.body.innerHTML = originalContent;
     
     window.location.reload();
+  }
+
+  getRestaurantName(id: string): string {
+    const rest = this.restaurants().find(r => r.id === id);
+    return rest ? rest.name : 'Main HQ';
+  }
+
+  // PURCHASE BILLS LOGIC
+
+  fetchPurchaseBillsOnly() {
+    const restId = this.apiService.selectedRestaurantId();
+    this.apiService.getPurchaseBills(restId).subscribe({
+      next: (list) => {
+        this.purchaseBills.set(list);
+        this.filterPurchaseBills();
+      }
+    });
+  }
+
+  filterPurchaseBills() {
+    const list = this.purchaseBills();
+    const query = this.purchaseSearchQuery.trim().toLowerCase();
+    const filter = this.purchaseStatusFilter;
+    
+    const filtered = list.filter(bill => {
+      const matchesSearch = !query || 
+        bill.supplierName.toLowerCase().includes(query) || 
+        (bill.billNumber && bill.billNumber.toLowerCase().includes(query));
+      
+      const matchesStatus = filter === 'All' || bill.status === filter;
+      return matchesSearch && matchesStatus;
+    });
+    this.filteredPurchaseBills.set(filtered);
+  }
+
+  addPurchaseItem() {
+    if (!this.selectedPurchaseItemId || this.selectedPurchaseQuantity <= 0 || this.selectedPurchasePrice < 0) return;
+    const invItem = this.inventoryItems().find(i => i.id === this.selectedPurchaseItemId);
+    if (!invItem) return;
+    
+    const currentItems = this.purchaseItems();
+    const existingIndex = currentItems.findIndex(item => item.inventoryItemId === this.selectedPurchaseItemId);
+    
+    if (existingIndex !== -1) {
+      currentItems[existingIndex].quantity += this.selectedPurchaseQuantity;
+      currentItems[existingIndex].total = currentItems[existingIndex].quantity * currentItems[existingIndex].pricePerUnit;
+      this.purchaseItems.set([...currentItems]);
+    } else {
+      const newItem: PurchaseBillItem = {
+        inventoryItemId: invItem.id || '',
+        name: invItem.name,
+        quantity: this.selectedPurchaseQuantity,
+        unit: invItem.unit || 'units',
+        pricePerUnit: this.selectedPurchasePrice,
+        total: this.selectedPurchaseQuantity * this.selectedPurchasePrice
+      };
+      this.purchaseItems.set([...currentItems, newItem]);
+    }
+    
+    this.selectedPurchaseItemId = '';
+    this.selectedPurchaseQuantity = 1;
+    this.selectedPurchasePrice = 0;
+  }
+
+  removePurchaseItem(index: number) {
+    const current = this.purchaseItems();
+    current.splice(index, 1);
+    this.purchaseItems.set([...current]);
+  }
+
+  get purchaseTotalCost(): number {
+    return this.purchaseItems().reduce((sum, item) => sum + item.total, 0);
+  }
+
+  submitPurchaseBill() {
+    const outletId = this.selectedRestaurantId || this.apiService.selectedRestaurantId();
+    if (!outletId) {
+      this.errorMessage.set('Please select a restaurant outlet.');
+      return;
+    }
+    if (!this.purchaseSupplierName.trim()) {
+      this.errorMessage.set('Supplier name is required.');
+      return;
+    }
+    if (this.purchaseItems().length === 0) {
+      this.errorMessage.set('Add at least one item to the purchase bill.');
+      return;
+    }
+    
+    this.isSubmitting.set(true);
+    this.errorMessage.set('');
+    this.successMessage.set('');
+    
+    const payload: PurchaseBill = {
+      restaurantId: outletId,
+      supplierName: this.purchaseSupplierName.trim(),
+      billNumber: this.purchaseBillNumber.trim() || undefined,
+      date: this.purchaseDate,
+      items: this.purchaseItems(),
+      totalAmount: this.purchaseTotalCost,
+      paymentMode: this.purchasePaymentMode,
+      status: this.purchaseStatus
+    };
+    
+    this.apiService.createPurchaseBill(payload).subscribe({
+      next: () => {
+        this.successMessage.set('Purchase bill successfully logged. Stock levels updated in inventory!');
+        this.purchaseItems.set([]);
+        this.purchaseSupplierName = '';
+        this.purchaseBillNumber = '';
+        this.purchaseDate = new Date().toLocaleDateString('sv');
+        this.purchasePaymentMode = 'Cash';
+        this.purchaseStatus = 'paid';
+        this.isSubmitting.set(false);
+        this.fetchInitialData();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(() => this.successMessage.set(''), 4000);
+      },
+      error: (err) => {
+        console.error('Error logging purchase bill:', err);
+        this.errorMessage.set(err.error?.error || 'Failed to log purchase bill.');
+        this.isSubmitting.set(false);
+      }
+    });
+  }
+
+  openPurchaseDetails(bill: PurchaseBill) {
+    this.selectedPurchaseBill.set(bill);
+    this.showPurchaseDetailsModal.set(true);
+  }
+  
+  closePurchaseDetails() {
+    this.showPurchaseDetailsModal.set(false);
+    this.selectedPurchaseBill.set(null);
   }
 }

@@ -111,6 +111,20 @@ export class CreateOrderComponent implements OnInit, OnDestroy {
   // Track active restaurant change
   selectedRestaurantId = this.apiService.selectedRestaurantId;
 
+  // Miscellaneous Item signals
+  miscAmount = signal<number | null>(null);
+  miscNote = signal<string>('Miscellaneous');
+
+  // Check if the cart contains a miscellaneous item
+  hasMiscItem = computed(() => {
+    const note = this.miscNote().trim() || 'Miscellaneous';
+    return this.orderItems().some(item => 
+      item.name === 'Miscellaneous' || 
+      item.name === note || 
+      item.name.toLowerCase().includes('miscellaneous')
+    );
+  });
+
   // Computed: Get distinct categories from menu items
   categories = computed<string[]>(() => {
     const list = this.allDishes();
@@ -218,6 +232,10 @@ export class CreateOrderComponent implements OnInit, OnDestroy {
 
   // CART OPERATIONS
   addToCart(dish: FoodItem) {
+    if (this.hasMiscItem()) {
+      this.showMessage('Miscellaneous orders can only contain the miscellaneous item. Please clear the basket to add other menu items.', 'error');
+      return;
+    }
     const currentItems = [...this.orderItems()];
     const existingIndex = currentItems.findIndex(item => item.name === dish.name);
 
@@ -236,6 +254,10 @@ export class CreateOrderComponent implements OnInit, OnDestroy {
   }
 
   addComboItem() {
+    if (this.hasMiscItem()) {
+      this.showMessage('Miscellaneous orders can only contain the miscellaneous item. Please clear the basket to add other menu items.', 'error');
+      return;
+    }
     const shId = this.selectedShawarmaId();
     const sideId = this.selectedSideId();
     const bevId = this.selectedBeverageId();
@@ -275,6 +297,29 @@ export class CreateOrderComponent implements OnInit, OnDestroy {
     this.selectedSideId.set('');
     this.selectedBeverageId.set('');
     this.comboQuantity.set(1);
+  }
+
+  addMiscItem() {
+    const amt = this.miscAmount();
+    if (!amt || amt <= 0) {
+      this.showMessage('Please enter a valid amount greater than 0.', 'error');
+      return;
+    }
+    
+    const name = this.miscNote().trim() || 'Miscellaneous';
+    
+    // Force the cart to contain ONLY this item
+    this.orderItems.set([
+      {
+        name: name,
+        price: amt,
+        quantity: 1
+      }
+    ]);
+    
+    // Open the cart drawer
+    this.showCartDrawer.set(true);
+    this.showMessage('Miscellaneous item added to basket. Other items cleared.', 'success');
   }
 
   removeFromCart(index: number) {

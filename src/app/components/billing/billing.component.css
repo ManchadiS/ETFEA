@@ -626,3 +626,16 @@
   margin-top: 6px;
   font-style: italic;
 }
+
+/* Purchase billing custom tab overrides */
+.tab-btn-purchase {
+  border-radius: 0;
+}
+.header-tabs button:last-child {
+  border-top-right-radius: var(--radius-full);
+  border-bottom-right-radius: var(--radius-full);
+}
+.header-tabs button:first-child {
+  border-top-left-radius: var(--radius-full);
+  border-bottom-left-radius: var(--radius-full);
+}

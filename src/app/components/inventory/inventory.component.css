@@ -416,3 +416,234 @@ th {
     transform: scale(1);
   }
 }
+
+/* Metric Card Active and Custom Variants */
+.metric-card {
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.metric-card:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.metric-card.active-card {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+}
+
+.metric-card.warning-card.active-card {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.4);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+}
+
+.metric-card.danger-card.active-card {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+}
+
+.total-icon {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+}
+
+.low-icon {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.out-icon {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.text-warning {
+  color: #fbbf24;
+}
+
+.text-danger {
+  color: #f87171;
+}
+
+/* Animations for Active Alert Cards */
+.pulse-glow {
+  animation: warningPulse 2s infinite alternate;
+}
+
+.pulse-danger {
+  animation: dangerPulse 1.5s infinite alternate;
+}
+
+@keyframes warningPulse {
+  0% { border-color: rgba(245, 158, 11, 0.2); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.05); }
+  100% { border-color: rgba(245, 158, 11, 0.6); box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25); }
+}
+
+@keyframes dangerPulse {
+  0% { border-color: rgba(239, 68, 68, 0.2); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.05); }
+  100% { border-color: rgba(239, 68, 68, 0.6); box-shadow: 0 4px 20px rgba(239, 68, 68, 0.35); }
+}
+
+/* Segmented Tabs Control */
+.filter-tabs {
+  display: flex;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-left: auto;
+}
+
+.filter-tab {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-tab:hover {
+  color: #fff;
+}
+
+.filter-tab.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Table Alert Rows */
+.table-row.warning-row {
+  background: rgba(245, 158, 11, 0.015);
+}
+.table-row.warning-row:hover {
+  background: rgba(245, 158, 11, 0.03);
+}
+
+.table-row.danger-row {
+  background: rgba(239, 68, 68, 0.02);
+}
+.table-row.danger-row:hover {
+  background: rgba(239, 68, 68, 0.045);
+}
+
+/* Quantities columns */
+.stock-cell, .threshold-cell {
+  font-family: monospace;
+  font-size: 15px;
+}
+.stock-qty {
+  font-weight: 700;
+  color: #fff;
+  margin-right: 4px;
+}
+.stock-unit, .threshold-unit {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: normal;
+}
+.threshold-qty {
+  color: rgba(255, 255, 255, 0.7);
+  margin-right: 4px;
+}
+
+/* Status Badges */
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.status-in {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-low {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.status-out {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Quick Adjust Quantity Controls */
+.adjust-cell {
+  text-align: center;
+}
+
+.adjust-btn-group {
+  display: inline-flex;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.btn-adjust {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.btn-adjust svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-adjust:hover:not([disabled]) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.btn-adjust:active:not([disabled]) {
+  transform: scale(0.9);
+}
+
+.btn-adjust[disabled] {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+/* Modal Form Grids */
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.half-width {
+  flex: 1;
+}
+
+.field-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  margin-top: 4px;
+  line-height: 1.4;
+}

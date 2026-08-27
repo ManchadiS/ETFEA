@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ApiService, Restaurant, FoodItem, Expense, Billing } from '../../services/api.service';
+import { ApiService, Restaurant, FoodItem, Expense, Billing, Payout } from '../../services/api.service';
 import { forkJoin } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -36,6 +36,7 @@ export class DashboardComponent implements OnInit {
   foodItems = signal<FoodItem[]>([]);
   rawBills = signal<Billing[]>([]);
   rawExpenses = signal<Expense[]>([]);
+  rawPayouts = signal<Payout[]>([]);
 
   isLoading = signal<boolean>(false);
 
@@ -70,6 +71,32 @@ export class DashboardComponent implements OnInit {
       if (end && d > end) return false;
       return true;
     });
+  });
+
+  payouts = computed(() => {
+    const start = this.startDate();
+    const end = this.endDate();
+    const list = this.rawPayouts();
+    if (!start && !end) return list;
+    return list.filter(p => {
+      const d = p.date;
+      if (!d) return false;
+      if (start && d < start) return false;
+      if (end && d > end) return false;
+      return true;
+    });
+  });
+
+  totalPayouts = computed(() => {
+    return this.payouts().reduce((sum, p) => sum + (p.amount || 0), 0);
+  });
+
+  swiggyPayouts = computed(() => {
+    return this.payouts().filter(p => p.platform === 'Swiggy').reduce((sum, p) => sum + (p.amount || 0), 0);
+  });
+
+  zomatoPayouts = computed(() => {
+    return this.payouts().filter(p => p.platform === 'Zomato').reduce((sum, p) => sum + (p.amount || 0), 0);
   });
 
   totalRevenue = computed(() => {
@@ -499,13 +526,15 @@ export class DashboardComponent implements OnInit {
       restaurants: this.apiService.getRestaurants(),
       foodItems: this.apiService.getFoodItems(restId),
       bills: this.apiService.getBills(restId),
-      expenses: this.apiService.getExpenses(restId)
+      expenses: this.apiService.getExpenses(restId),
+      payouts: this.apiService.getPayouts(restId)
     }).subscribe({
       next: (res) => {
         this.restaurants.set(res.restaurants);
         this.foodItems.set(res.foodItems);
         this.rawBills.set(res.bills);
         this.rawExpenses.set(res.expenses);
+        this.rawPayouts.set(res.payouts);
         this.isLoading.set(false);
       },
       error: (err) => {

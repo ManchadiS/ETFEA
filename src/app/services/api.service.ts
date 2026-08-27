@@ -61,6 +61,18 @@ export interface Expense {
   updatedAt?: string;
 }
 
+export interface Payout {
+  id?: string;
+  restaurantId?: string;
+  platform: 'Swiggy' | 'Zomato';
+  amount: number;
+  date: string;
+  referenceNumber?: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface EmailLog {
   to: string;
   timestamp: string;
@@ -78,6 +90,29 @@ export interface EmailLog {
     contact?: string;
   };
   error?: string | null;
+}
+
+export interface PurchaseBillItem {
+  inventoryItemId: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  pricePerUnit: number;
+  total: number;
+}
+
+export interface PurchaseBill {
+  id?: string;
+  restaurantId: string;
+  supplierName: string;
+  billNumber?: string;
+  date?: string;
+  items: PurchaseBillItem[];
+  totalAmount: number;
+  paymentMode?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface EmailStatus {
@@ -120,6 +155,9 @@ export interface InventoryItem {
   id?: string;
   restaurantId: string;
   name: string;
+  quantity?: number;
+  unit?: string;
+  threshold?: number;
 }
 
 export interface OrderItem {
@@ -163,8 +201,8 @@ export interface Customer {
 })
 export class ApiService {
   private http = inject(HttpClient);
-  private baseUrl = 'https://api.engineeringtadka.com/api/v1'; //prod url
-  // private baseUrl = 'http://localhost:3000/api/v1';
+  // private baseUrl = 'https://api.engineeringtadka.com/api/v1'; //prod url
+  private baseUrl = 'http://localhost:3000/api/v1';
 
   // Global active restaurant selection state
   selectedRestaurantId = signal<string>('');
@@ -252,6 +290,25 @@ export class ApiService {
     return this.http.delete(`${this.baseUrl}/expenses/${id}`, { responseType: 'text' });
   }
 
+  // PAYOUTS
+  getPayouts(restaurantId?: string): Observable<Payout[]> {
+    const params: Record<string, string> = {};
+    if (restaurantId) params['restaurantId'] = restaurantId;
+    return this.http.get<Payout[]>(`${this.baseUrl}/payouts`, { params });
+  }
+
+  createPayout(payout: Payout): Observable<Payout> {
+    return this.http.post<Payout>(`${this.baseUrl}/payouts`, payout);
+  }
+
+  updatePayout(id: string, payout: Partial<Payout>): Observable<any> {
+    return this.http.put(`${this.baseUrl}/payouts/${id}`, payout);
+  }
+
+  deletePayout(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/payouts/${id}`, { responseType: 'text' });
+  }
+
   uploadExpenseImage(file: File): Observable<{ imageUrl: string }> {
     const formData = new FormData();
     formData.append('image', file);
@@ -336,6 +393,21 @@ export class ApiService {
 
   deleteInventoryItem(id: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/inventory/${id}`, { responseType: 'text' });
+  }
+
+  // PURCHASE BILLS
+  getPurchaseBills(restaurantId?: string): Observable<PurchaseBill[]> {
+    const params: Record<string, string> = {};
+    if (restaurantId) params['restaurantId'] = restaurantId;
+    return this.http.get<PurchaseBill[]>(`${this.baseUrl}/purchase-bills`, { params });
+  }
+
+  createPurchaseBill(bill: PurchaseBill): Observable<PurchaseBill> {
+    return this.http.post<PurchaseBill>(`${this.baseUrl}/purchase-bills`, bill);
+  }
+
+  getPurchaseBill(id: string): Observable<PurchaseBill> {
+    return this.http.get<PurchaseBill>(`${this.baseUrl}/purchase-bills/${id}`);
   }
 
   // ORDERS
