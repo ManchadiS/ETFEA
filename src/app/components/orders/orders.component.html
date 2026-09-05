@@ -23,17 +23,44 @@
       </button>
     </div>
 
-    <div class="header-actions">
-      <!-- <button class="btn btn-primary" (click)="openAddModal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-          stroke-linejoin="round" class="btn-icon">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-        New Order
+    <div class="header-actions" style="display: flex; gap: 8px;">
+      <button type="button" class="btn btn-outline-info" (click)="showMenuPostersModal.set(true)"
+        style="padding: 8px 14px; font-size: 0.85rem; border: 1px solid var(--primary-hover); color: var(--primary-hover); background: transparent; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+        📖 Menu Posters
+      </button>
+      <!-- <button class="btn btn-primary" (click)="openAddModal()" style="padding: 8px 14px; font-size: 0.85rem; border-radius: 8px; font-weight: bold;">
+        + New Ticket
       </button> -->
     </div>
   </div>
+
+  <!-- 6 Value Combos Quick Cards Bar
+  <div *ngIf="!isLoading() && activeTab() === 'kitchen'" class="glass-panel" style="margin-bottom: 20px; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 6px;">
+        <span>🔥</span> 6 Value Combos (Direct 1-Click Ticket)
+      </h3>
+      <span style="font-size: 0.75rem; color: var(--text-secondary);">Click any combo to quickly create a ticket with preset pricing</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
+      <div *ngFor="let combo of presetCombos" class="glass-panel" [style.background]="combo.bgGradient" [style.borderColor]="combo.borderColor" style="border-radius: 10px; padding: 10px; display: flex; gap: 10px; align-items: center; border-width: 1.5px; border-style: solid; cursor: pointer; transition: transform 0.15s;" (click)="openNewOrderWithCombo(combo)">
+        <img [src]="combo.image" [alt]="combo.name" style="width: 70px; height: 65px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: #000; border: 1px solid rgba(255,255,255,0.1);">
+        <div style="flex: 1; min-width: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+            <span [style.background]="combo.themeColor" style="color: #000; font-size: 0.68rem; font-weight: 900; padding: 1px 6px; border-radius: 8px;">#{{ combo.comboNumber }}</span>
+            <span style="font-size: 0.95rem; font-weight: 900; color: #fff;">₹{{ combo.price }}</span>
+          </div>
+          <div style="font-size: 0.8rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            {{ combo.itemsText }}
+          </div>
+          <div style="font-size: 0.7rem; color: var(--primary-hover); font-weight: 600; margin-top: 2px;">
+            + Click to Order
+          </div>
+        </div>
+      </div>
+    </div>
+  </div> -->
 
   <!-- Messages -->
   <div *ngIf="successMessage()" class="alert alert-success">
@@ -401,12 +428,27 @@
             </div>
           </div>
 
+          <!-- Quick Preset Value Combos (1-Click) -->
+          <div class="preset-combos-chips-section"
+            style="margin-top: 16px; padding: 12px; background: rgba(245, 158, 11, 0.05); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 8px; margin-bottom: 16px;">
+            <div
+              style="font-size: 0.85rem; font-weight: 700; color: #f59e0b; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+              <span>🔥</span> Quick 1-Click Value Combos:
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+              <button *ngFor="let combo of presetCombos" type="button" (click)="addPresetCombo(combo)"
+                style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #fff; padding: 5px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                + {{ combo.short }}
+              </button>
+            </div>
+          </div>
+
           <!-- Make Your Own Meal (Combo) Creator -->
           <div class="combo-creator-section separator-top"
             style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.05); margin-bottom: 20px;">
             <h4
               style="font-size: 0.95rem; font-weight: 700; color: var(--primary-hover); margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
-              <span>🔥</span> Make Your Own Meal (₹20 Combo Discount)
+              <span>🔥</span> Custom Combo Builder (10% Discount)
             </h4>
 
             <div class="combo-selectors-row" style="display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
@@ -467,7 +509,7 @@
                   selectedShawarmaPrice + selectedSidePrice + selectedBeveragePrice }}</span>
                 <span style="color: var(--success); font-weight: 800;">₹{{ liveComboTotalPrice }}</span>
                 <span
-                  style="font-size: 0.75rem; color: #ef4444; background: rgba(239,68,68,0.1); padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold;">₹20
+                  style="font-size: 0.75rem; color: #ef4444; background: rgba(239,68,68,0.1); padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold;">10%
                   OFF</span>
               </div>
 
@@ -528,24 +570,87 @@
   <!-- Billing Discount Confirmation Modal -->
   <div *ngIf="showCreateBillModal()" class="modal-backdrop" (click)="closeCreateBillModal()">
     <div class="modal-content" (click)="$event.stopPropagation()"
-      style="max-width: 420px; background: rgba(30, 30, 45, 0.95); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);">
+      style="max-width: 620px; width: 95%; background: rgba(30, 30, 45, 0.98); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6); max-height: 90vh; display: flex; flex-direction: column;">
       <div class="modal-header"
-        style="border-bottom: 1px solid rgba(255,255,255,0.1); padding: 16px; display: flex; justify-content: space-between; align-items: center;">
-        <h3 class="modal-title" style="margin: 0; color: #fff; font-size: 1.25rem;">Create Invoice</h3>
+        style="border-bottom: 1px solid rgba(255,255,255,0.1); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3 class="modal-title" style="margin: 0; color: #fff; font-size: 1.25rem; display: flex; align-items: center; gap: 8px;">
+            <span>🧾</span> Create Invoice / Bill
+          </h3>
+          <p style="margin: 4px 0 0 0; font-size: 0.85rem; color: var(--text-secondary);">
+            Table: <strong style="color: #fff;">{{ billingOrder()?.tableNo || 'N/A' }}</strong> &bull; Order <strong style="color: #fff;">#{{ billingOrder()?.orderNumber }}</strong>
+          </p>
+        </div>
         <button class="modal-close" (click)="closeCreateBillModal()"
-          style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">&times;</button>
+          style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
       </div>
-      <div class="modal-body" style="padding: 20px; color: #fff;">
-        <p style="margin-top: 0; font-size: 0.95rem; opacity: 0.85;">Generate invoice bill for Table: <strong>{{
-            billingOrder()?.tableNo }}</strong> (Order #{{ billingOrder()?.orderNumber }})</p>
 
-        <div class="form-group" style="margin-top: 15px;">
+      <div class="modal-body" style="padding: 18px 20px; color: #fff; overflow-y: auto; flex: 1;">
+        <!-- Food Items Table with Editable Prices & Qty Adjustments -->
+        <div class="form-group" style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="font-weight: 700; font-size: 0.9rem; color: #fff; margin: 0; display: flex; align-items: center; gap: 6px;">
+              <span>🍽️</span> Selected Items & Prices
+            </label>
+            <span style="font-size: 0.75rem; background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); padding: 2px 8px; border-radius: 4px; font-weight: 600;">
+              Unit price is editable
+            </span>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; overflow: hidden; max-height: 200px; overflow-y: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+              <thead>
+                <tr style="background: rgba(255,255,255,0.05); color: var(--text-secondary); text-align: left; border-bottom: 1px solid rgba(255,255,255,0.08);">
+                  <th style="padding: 8px 10px;">Item Name</th>
+                  <th style="padding: 8px 10px; width: 115px;">Price (₹)</th>
+                  <th style="padding: 8px 10px; width: 85px; text-align: center;">Qty</th>
+                  <th style="padding: 8px 10px; text-align: right; width: 85px;">Total</th>
+                  <th style="padding: 8px 6px; width: 30px; text-align: center;"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of billingItems(); let idx = index" style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                  <td style="padding: 8px 10px; font-weight: 600; color: #fff;">
+                    {{ item.name }}
+                  </td>
+                  <td style="padding: 6px 10px;">
+                    <div style="display: flex; align-items: center; gap: 4px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.25); border-radius: 6px; padding: 2px 6px;">
+                      <span style="opacity: 0.6; font-size: 0.8rem; font-weight: 600;">₹</span>
+                      <input type="number" [ngModel]="item.price" (ngModelChange)="updateBillingItemPrice(idx, $event)" min="0" step="1"
+                             style="width: 65px; background: transparent; border: none; color: #fff; text-align: right; font-weight: 700; font-size: 0.85rem; outline: none;" />
+                    </div>
+                  </td>
+                  <td style="padding: 6px 10px; text-align: center;">
+                    <div style="display: inline-flex; align-items: center; gap: 4px; background: rgba(0,0,0,0.25); border-radius: 4px; padding: 2px 4px;">
+                      <button type="button" (click)="adjustBillingItemQty(idx, -1)" style="background: none; border: none; color: #fff; width: 18px; height: 18px; cursor: pointer; font-weight: bold; line-height: 1;">-</button>
+                      <span style="font-weight: 700; min-width: 16px; text-align: center; color: #fff;">{{ item.quantity }}</span>
+                      <button type="button" (click)="adjustBillingItemQty(idx, 1)" style="background: none; border: none; color: #fff; width: 18px; height: 18px; cursor: pointer; font-weight: bold; line-height: 1;">+</button>
+                    </div>
+                  </td>
+                  <td style="padding: 8px 10px; text-align: right; font-weight: 700; color: #10b981;">
+                    ₹{{ (item.price * item.quantity) | number:'1.2-2' }}
+                  </td>
+                  <td style="padding: 8px 6px; text-align: center;">
+                    <button type="button" (click)="removeBillingItem(idx)" style="background: none; border: none; color: #ef4444; font-size: 1.1rem; cursor: pointer; line-height: 1;" title="Remove Item">&times;</button>
+                  </td>
+                </tr>
+                <tr *ngIf="billingItems().length === 0">
+                  <td colspan="5" style="text-align: center; padding: 16px; color: #ef4444; font-weight: 600;">
+                    No items in this ticket. Please keep at least 1 item.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Discount Selection -->
+        <div class="form-group" style="margin-top: 14px;">
           <label for="billDiscountSelect"
-            style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Select Discount
-            Amount</label>
+            style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 6px;">Select Discount</label>
           <select id="billDiscountSelect" class="form-control" [ngModel]="billingDiscount()"
             (ngModelChange)="billingDiscount.set(+$event)"
-            style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: #fff; outline: none; cursor: pointer; font-size: 1rem; font-family: inherit;">
+            style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: #fff; outline: none; cursor: pointer; font-size: 0.95rem; font-family: inherit;">
             <option [value]="0">0% (No Discount)</option>
             <option [value]="10">10% Discount</option>
             <option [value]="15">15% Discount</option>
@@ -553,8 +658,9 @@
           </select>
         </div>
 
-        <div class="form-group" style="margin-top: 15px;">
-          <label style="display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 8px;">Payment Method</label>
+        <!-- Payment Method -->
+        <div class="form-group" style="margin-top: 14px;">
+          <label style="display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 6px;">Payment Method</label>
           <div style="display: flex; gap: 15px; align-items: center;">
             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.95rem;">
               <input type="radio" name="paymentMode" value="Cash" [ngModel]="billingPaymentMode()"
@@ -578,15 +684,13 @@
             Split Amount (₹)</label>
           <input type="number" id="splitUpiAmount" [ngModel]="billingUpiAmount()"
             (ngModelChange)="billingUpiAmount.set($event)" min="0"
-            [max]="(billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)"
+            [max]="billingGrandTotal"
             placeholder="Enter UPI amount paid" class="form-control"
             style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: #fff; outline: none; font-size: 0.95rem;" />
           <div
             style="font-size: 0.8rem; margin-top: 6px; color: #10b981; display: flex; justify-content: space-between;">
             <span>💵 Cash portion:</span>
-            <strong>₹{{ (((billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)) - billingUpiAmount() > 0 ?
-              ((billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)) - billingUpiAmount() : 0) |
-              number:'1.2-2' }}</strong>
+            <strong>₹{{ (billingGrandTotal - billingUpiAmount() > 0 ? billingGrandTotal - billingUpiAmount() : 0) | number:'1.2-2' }}</strong>
           </div>
         </div>
 
@@ -596,44 +700,42 @@
             Split Amount (₹)</label>
           <input type="number" id="splitCashAmount" [ngModel]="billingCashAmount()"
             (ngModelChange)="billingCashAmount.set($event)" min="0"
-            [max]="(billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)"
+            [max]="billingGrandTotal"
             placeholder="Enter Cash amount paid" class="form-control"
             style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.3); color: #fff; outline: none; font-size: 0.95rem;" />
           <div
             style="font-size: 0.8rem; margin-top: 6px; color: #10b981; display: flex; justify-content: space-between;">
             <span>📱 UPI portion:</span>
-            <strong>₹{{ (((billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)) - billingCashAmount() > 0
-              ? ((billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100)) - billingCashAmount() : 0) |
-              number:'1.2-2' }}</strong>
+            <strong>₹{{ (billingGrandTotal - billingCashAmount() > 0 ? billingGrandTotal - billingCashAmount() : 0) | number:'1.2-2' }}</strong>
           </div>
         </div>
 
         <!-- Dynamic summary of calculations -->
         <div class="bill-calculation-summary"
-          style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.15); display: flex; flex-direction: column; gap: 8px;">
-          <div style="display: flex; justify-content: space-between; font-size: 0.9rem; opacity: 0.8;">
+          style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed rgba(255,255,255,0.15); display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.9rem; opacity: 0.85;">
             <span>Items Total:</span>
-            <span>₹{{ (billingOrder()?.totalAmount || 0) | number:'1.2-2' }}</span>
+            <span>₹{{ billingItemsTotal | number:'1.2-2' }}</span>
           </div>
           <div *ngIf="billingDiscount() > 0"
             style="display: flex; justify-content: space-between; font-size: 0.9rem; color: #ef4444; font-weight: 600;">
             <span>Discount ({{ billingDiscount() }}%):</span>
-            <span>-₹{{ (billingOrder()?.totalAmount || 0) * billingDiscount() / 100 | number:'1.2-2' }}</span>
+            <span>-₹{{ (billingItemsTotal * billingDiscount() / 100) | number:'1.2-2' }}</span>
           </div>
           <div
-            style="display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 700; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 4px;">
+            style="display: flex; justify-content: space-between; font-size: 1.15rem; font-weight: 800; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; margin-top: 4px;">
             <span>Total Payable:</span>
-            <span style="color: #10b981;">₹{{ (billingOrder()?.totalAmount || 0) * (1 - billingDiscount() / 100) |
-              number:'1.2-2' }}</span>
+            <span style="color: #10b981;">₹{{ billingGrandTotal | number:'1.2-2' }}</span>
           </div>
         </div>
       </div>
+
       <div class="modal-footer"
-        style="border-top: 1px solid rgba(255,255,255,0.1); padding: 16px; display: flex; justify-content: flex-end; gap: 12px;">
+        style="border-top: 1px solid rgba(255,255,255,0.1); padding: 14px 20px; display: flex; justify-content: flex-end; gap: 12px; background: rgba(0,0,0,0.2);">
         <button class="btn btn-secondary" (click)="closeCreateBillModal()"
           style="padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; border: 1px solid rgba(255,255,255,0.15); background: transparent; color: #fff;">Cancel</button>
-        <button class="btn btn-primary" (click)="confirmCreateBill()" [disabled]="isSubmitting()"
-          style="padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; background: #10b981; color: #fff;">
+        <button class="btn btn-primary" (click)="confirmCreateBill()" [disabled]="isSubmitting() || billingItems().length === 0"
+          style="padding: 8px 18px; border-radius: 6px; font-weight: 700; cursor: pointer; border: none; background: #10b981; color: #fff;">
           {{ isSubmitting() ? 'Creating Bill...' : 'Create Bill' }}
         </button>
       </div>
@@ -658,43 +760,88 @@
 
     <!-- Poster Tabs Selector -->
     <div class="poster-tabs"
-      style="display: flex; background: rgba(0,0,0,0.1); border-bottom: 1px solid var(--border-color); padding: 4px;">
-      <button class="poster-tab-btn"
+      style="display: flex; flex-wrap: wrap; gap: 4px; background: rgba(0,0,0,0.1); border-bottom: 1px solid var(--border-color); padding: 8px;">
+      <button type="button" class="poster-tab-btn"
+        [style.background]="activePosterTab() === 'combos' ? 'var(--primary)' : 'transparent'"
+        [style.color]="activePosterTab() === 'combos' ? '#fff' : 'var(--text-secondary)'"
+        (click)="activePosterTab.set('combos')"
+        style="padding: 8px 12px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s;">
+        🔥 6 Value Combos
+      </button>
+      <button type="button" class="poster-tab-btn"
+        [style.background]="activePosterTab() === 'card' ? 'var(--primary)' : 'transparent'"
+        [style.color]="activePosterTab() === 'card' ? '#fff' : 'var(--text-secondary)'"
+        (click)="activePosterTab.set('card')"
+        style="padding: 8px 12px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s;">
+        📜 Main Menu Card
+      </button>
+      <button type="button" class="poster-tab-btn"
+        [style.background]="activePosterTab() === 'goodfood' ? 'var(--primary)' : 'transparent'"
+        [style.color]="activePosterTab() === 'goodfood' ? '#fff' : 'var(--text-secondary)'"
+        (click)="activePosterTab.set('goodfood')"
+        style="padding: 8px 12px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s;">
+        🍔 Good Food Good Mood
+      </button>
+      <button type="button" class="poster-tab-btn"
+        [style.background]="activePosterTab() === 'gooddrinks' ? 'var(--primary)' : 'transparent'"
+        [style.color]="activePosterTab() === 'gooddrinks' ? '#fff' : 'var(--text-secondary)'"
+        (click)="activePosterTab.set('gooddrinks')"
+        style="padding: 8px 12px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s;">
+        🍹 Drinks & Shakes
+      </button>
+      <button type="button" class="poster-tab-btn"
         [style.background]="activePosterTab() === 'meal' ? 'var(--primary)' : 'transparent'"
         [style.color]="activePosterTab() === 'meal' ? '#fff' : 'var(--text-secondary)'"
         (click)="activePosterTab.set('meal')"
-        style="flex: 1; padding: 10px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.85rem; transition: all 0.2s;">
-        Make Your Own Meal (Combo)
+        style="padding: 8px 12px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s;">
+        🍱 Combo Meal
       </button>
-      <button class="poster-tab-btn" [style.background]="activePosterTab() === 'veg' ? 'var(--primary)' : 'transparent'"
+      <button type="button" class="poster-tab-btn"
+        [style.background]="activePosterTab() === 'veg' ? 'var(--primary)' : 'transparent'"
         [style.color]="activePosterTab() === 'veg' ? '#fff' : 'var(--text-secondary)'"
         (click)="activePosterTab.set('veg')"
-        style="flex: 1; padding: 10px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.85rem; transition: all 0.2s;">
-        Vegetarian Menu
+        style="padding: 8px 12px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s;">
+        🥗 Vegetarian
       </button>
-      <button class="poster-tab-btn"
+      <button type="button" class="poster-tab-btn"
         [style.background]="activePosterTab() === 'nonveg' ? 'var(--primary)' : 'transparent'"
         [style.color]="activePosterTab() === 'nonveg' ? '#fff' : 'var(--text-secondary)'"
         (click)="activePosterTab.set('nonveg')"
-        style="flex: 1; padding: 10px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.85rem; transition: all 0.2s;">
-        Non-Vegetarian Menu
+        style="padding: 8px 12px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s;">
+        🍗 Non-Veg
       </button>
     </div>
 
     <!-- Poster Content Area -->
     <div class="poster-content"
-      style="flex: 1; overflow-y: auto; padding: 20px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.05); min-height: 350px;">
+      style="flex: 1; overflow-y: auto; padding: 20px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.05); min-height: 380px;">
+      <div *ngIf="activePosterTab() === 'combos'" class="animate-fade-in" style="width: 100%; text-align: center;">
+        <img src="/poster_combos.jpg" alt="6 Value Combos Poster"
+          style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
+      </div>
+      <div *ngIf="activePosterTab() === 'card'" class="animate-fade-in" style="width: 100%; text-align: center;">
+        <img src="/menu_main_card.jpg" alt="Engineering Tadka Main Menu Card"
+          style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
+      </div>
+      <div *ngIf="activePosterTab() === 'goodfood'" class="animate-fade-in" style="width: 100%; text-align: center;">
+        <img src="/poster_good_food.jpg" alt="Good Food Good Mood Poster"
+          style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
+      </div>
+      <div *ngIf="activePosterTab() === 'gooddrinks'" class="animate-fade-in" style="width: 100%; text-align: center;">
+        <img src="/poster_good_drinks.jpg" alt="Good Drinks Great Vibes Poster"
+          style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
+      </div>
       <div *ngIf="activePosterTab() === 'meal'" class="animate-fade-in" style="width: 100%; text-align: center;">
         <img src="/menu_make_your_own_meal.png" alt="Make Your Own Meal Poster"
-          style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
+          style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
       </div>
       <div *ngIf="activePosterTab() === 'veg'" class="animate-fade-in" style="width: 100%; text-align: center;">
         <img src="/menu_vegetarian.png" alt="Vegetarian Menu Poster"
-          style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
+          style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
       </div>
       <div *ngIf="activePosterTab() === 'nonveg'" class="animate-fade-in" style="width: 100%; text-align: center;">
         <img src="/menu_nonveg.png" alt="Non-Vegetarian Menu Poster"
-          style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
+          style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
       </div>
     </div>
 

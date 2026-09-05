@@ -97,7 +97,7 @@
       <!-- Make Your Own Meal (Combo) Creator -->
       <div class="combo-creator-section separator-top" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.05);">
         <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--primary-hover); margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
-          <span>🔥</span> Make Your Own Meal (₹20 Combo Discount)
+          <span>🔥</span> Make Your Own Meal (10% Combo Discount)
         </h4>
         
         <div class="combo-selectors-row" style="display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
@@ -139,7 +139,7 @@
           <div *ngIf="selectedShawarmaId() && selectedSideId() && selectedBeverageId()" class="combo-price-preview" style="font-size: 0.9rem; font-weight: 600; color: #fff;">
             Price: <span style="text-decoration: line-through; opacity: 0.5; margin-right: 6px;">₹{{ selectedShawarmaPrice + selectedSidePrice + selectedBeveragePrice }}</span>
             <span style="color: var(--success); font-weight: 800;">₹{{ liveComboTotalPrice }}</span>
-            <span style="font-size: 0.75rem; color: #ef4444; background: rgba(239,68,68,0.1); padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold;">₹20 OFF</span>
+            <span style="font-size: 0.75rem; color: #ef4444; background: rgba(239,68,68,0.1); padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: bold;">10% OFF</span>
           </div>
 
           <button class="btn btn-primary btn-sm" (click)="addComboItem()" [disabled]="!selectedShawarmaId() || !selectedSideId() || !selectedBeverageId()" style="padding: 6px 12px; font-size: 0.82rem; font-weight: bold; border-radius: 4px; border: none; cursor: pointer;">
@@ -164,7 +164,13 @@
             <tbody>
               <tr *ngFor="let item of orderItems(); let i = index">
                 <td class="item-name-cell">{{ item.name }} <span class="time-label">{{ item.time }}</span></td>
-                <td>₹{{ item.price | number:'1.2-2' }}</td>
+                <td style="width: 120px;">
+                  <div style="display: flex; align-items: center; gap: 4px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 2px 6px;">
+                    <span style="opacity: 0.6; font-size: 0.82rem; font-weight: 600;">₹</span>
+                    <input type="number" [ngModel]="item.price" (ngModelChange)="updateItemPrice(i, $event)" min="0" step="1"
+                           style="width: 65px; background: transparent; border: none; color: #fff; text-align: right; font-weight: 700; font-size: 0.88rem; outline: none;" />
+                  </div>
+                </td>
                 <td>
                   <div class="qty-adjuster">
                     <button (click)="adjustQuantity(i, -1)" class="qty-btn">-</button>
@@ -609,28 +615,52 @@
       </div>
 
       <!-- Poster Tabs Selector -->
-      <div class="poster-tabs" style="display: flex; background: rgba(0,0,0,0.1); border-bottom: 1px solid var(--border-color); padding: 4px;">
-        <button class="poster-tab-btn" [style.background]="activePosterTab() === 'meal' ? 'var(--primary)' : 'transparent'" [style.color]="activePosterTab() === 'meal' ? '#fff' : 'var(--text-secondary)'" (click)="activePosterTab.set('meal')" style="flex: 1; padding: 10px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.85rem; transition: all 0.2s;">
-          Make Your Own Meal (Combo)
+      <div class="poster-tabs" style="display: flex; flex-wrap: wrap; gap: 4px; background: rgba(0,0,0,0.1); border-bottom: 1px solid var(--border-color); padding: 8px;">
+        <button class="poster-tab-btn" [style.background]="activePosterTab() === 'combos' ? 'var(--primary)' : 'transparent'" [style.color]="activePosterTab() === 'combos' ? '#fff' : 'var(--text-secondary)'" (click)="activePosterTab.set('combos')" style="padding: 8px 12px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s;">
+          🔥 6 Value Combos
         </button>
-        <button class="poster-tab-btn" [style.background]="activePosterTab() === 'veg' ? 'var(--primary)' : 'transparent'" [style.color]="activePosterTab() === 'veg' ? '#fff' : 'var(--text-secondary)'" (click)="activePosterTab.set('veg')" style="flex: 1; padding: 10px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.85rem; transition: all 0.2s;">
-          Vegetarian Menu
+        <button class="poster-tab-btn" [style.background]="activePosterTab() === 'card' ? 'var(--primary)' : 'transparent'" [style.color]="activePosterTab() === 'card' ? '#fff' : 'var(--text-secondary)'" (click)="activePosterTab.set('card')" style="padding: 8px 12px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s;">
+          📜 Main Menu Card
         </button>
-        <button class="poster-tab-btn" [style.background]="activePosterTab() === 'nonveg' ? 'var(--primary)' : 'transparent'" [style.color]="activePosterTab() === 'nonveg' ? '#fff' : 'var(--text-secondary)'" (click)="activePosterTab.set('nonveg')" style="flex: 1; padding: 10px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.85rem; transition: all 0.2s;">
-          Non-Vegetarian Menu
+        <button class="poster-tab-btn" [style.background]="activePosterTab() === 'goodfood' ? 'var(--primary)' : 'transparent'" [style.color]="activePosterTab() === 'goodfood' ? '#fff' : 'var(--text-secondary)'" (click)="activePosterTab.set('goodfood')" style="padding: 8px 12px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s;">
+          🍔 Good Food Good Mood
+        </button>
+        <button class="poster-tab-btn" [style.background]="activePosterTab() === 'gooddrinks' ? 'var(--primary)' : 'transparent'" [style.color]="activePosterTab() === 'gooddrinks' ? '#fff' : 'var(--text-secondary)'" (click)="activePosterTab.set('gooddrinks')" style="padding: 8px 12px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s;">
+          🍹 Drinks & Shakes
+        </button>
+        <button class="poster-tab-btn" [style.background]="activePosterTab() === 'meal' ? 'var(--primary)' : 'transparent'" [style.color]="activePosterTab() === 'meal' ? '#fff' : 'var(--text-secondary)'" (click)="activePosterTab.set('meal')" style="padding: 8px 12px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s;">
+          🍱 Combo Meal
+        </button>
+        <button class="poster-tab-btn" [style.background]="activePosterTab() === 'veg' ? 'var(--primary)' : 'transparent'" [style.color]="activePosterTab() === 'veg' ? '#fff' : 'var(--text-secondary)'" (click)="activePosterTab.set('veg')" style="padding: 8px 12px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s;">
+          🥗 Vegetarian
+        </button>
+        <button class="poster-tab-btn" [style.background]="activePosterTab() === 'nonveg' ? 'var(--primary)' : 'transparent'" [style.color]="activePosterTab() === 'nonveg' ? '#fff' : 'var(--text-secondary)'" (click)="activePosterTab.set('nonveg')" style="padding: 8px 12px; border: none; font-weight: 600; cursor: pointer; border-radius: 6px; font-size: 0.8rem; transition: all 0.2s;">
+          🍗 Non-Veg
         </button>
       </div>
 
       <!-- Poster Content Area -->
-      <div class="poster-content" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.05); min-height: 350px;">
+      <div class="poster-content" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.05); min-height: 380px;">
+        <div *ngIf="activePosterTab() === 'combos'" class="animate-fade-in" style="width: 100%; text-align: center;">
+          <img src="/poster_combos.jpg" alt="6 Value Combos Poster" style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
+        </div>
+        <div *ngIf="activePosterTab() === 'card'" class="animate-fade-in" style="width: 100%; text-align: center;">
+          <img src="/menu_main_card.jpg" alt="Engineering Tadka Main Menu Card" style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
+        </div>
+        <div *ngIf="activePosterTab() === 'goodfood'" class="animate-fade-in" style="width: 100%; text-align: center;">
+          <img src="/poster_good_food.jpg" alt="Good Food Good Mood Poster" style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
+        </div>
+        <div *ngIf="activePosterTab() === 'gooddrinks'" class="animate-fade-in" style="width: 100%; text-align: center;">
+          <img src="/poster_good_drinks.jpg" alt="Good Drinks Great Vibes Poster" style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
+        </div>
         <div *ngIf="activePosterTab() === 'meal'" class="animate-fade-in" style="width: 100%; text-align: center;">
-          <img src="/menu_make_your_own_meal.png" alt="Make Your Own Meal Poster" style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
+          <img src="/menu_make_your_own_meal.png" alt="Make Your Own Meal Poster" style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
         </div>
         <div *ngIf="activePosterTab() === 'veg'" class="animate-fade-in" style="width: 100%; text-align: center;">
-          <img src="/menu_vegetarian.png" alt="Vegetarian Menu Poster" style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
+          <img src="/menu_vegetarian.png" alt="Vegetarian Menu Poster" style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
         </div>
         <div *ngIf="activePosterTab() === 'nonveg'" class="animate-fade-in" style="width: 100%; text-align: center;">
-          <img src="/menu_nonveg.png" alt="Non-Vegetarian Menu Poster" style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
+          <img src="/menu_nonveg.png" alt="Non-Vegetarian Menu Poster" style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);" />
         </div>
       </div>
       

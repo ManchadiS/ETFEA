@@ -24,6 +24,10 @@
         <span class="report-icon">💸</span>
         <span>Operations Expenses</span>
       </li>
+      <li [class.active]="reportTab() === 'inventory_expenses'" (click)="setReportTab('inventory_expenses')">
+        <span class="report-icon">📦</span>
+        <span>Inventory Expenses</span>
+      </li>
     </ul>
   </aside>
 
@@ -35,6 +39,7 @@
           <span *ngIf="reportTab() === 'bills'">Bills Invoice Report</span>
           <span *ngIf="reportTab() === 'food_sales'">Food Item Sales Report</span>
           <span *ngIf="reportTab() === 'expenses'">Operations Expense Report</span>
+          <span *ngIf="reportTab() === 'inventory_expenses'">📦 Inventory Expense & Procurement Report</span>
         </h1>
         <p class="subtitle">Scope: {{ activeRestaurantName() }}</p>
       </div>
@@ -98,7 +103,11 @@
             <span class="summary-val">{{ billsSummary().count }}</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">Tax Collected (GST)</span>
+            <span class="summary-label">Subtotal</span>
+            <span class="summary-val">₹{{ billsSummary().subtotal | number:'1.2-2' }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Taxes (CGST + SGST)</span>
             <span class="summary-val">₹{{ billsSummary().tax | number:'1.2-2' }}</span>
           </div>
           <div class="summary-item highlight">
@@ -108,49 +117,51 @@
         </div>
 
         <div class="action-bar">
-          <button class="btn btn-success" (click)="downloadBillsExcel()" [disabled]="billsSummary().count === 0">
+          <button class="btn btn-success" (click)="downloadBillsExcel()" [disabled]="bills().length === 0">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon" style="width:16px; height:16px;">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            Download Bills Report (Excel/CSV)
+            Download Invoices Report (Excel/CSV)
           </button>
         </div>
 
         <div class="report-preview-section">
-          <h3>Bills List Summary</h3>
+          <h3>Bills Preview (Filtered: {{ bills().length }} records)</h3>
           <div class="table-container">
             <table *ngIf="bills().length > 0; else noBills">
               <thead>
                 <tr>
+                  <th>Order #</th>
                   <th>Date</th>
-                  <th>ID</th>
-                  <th>Subtotal</th>
-                  <th>GST</th>
+                  <th>Customer</th>
+                  <th>Order Type</th>
+                  <th>Payment</th>
+                  <th>Amount</th>
+                  <th>Tax</th>
                   <th>Total</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let bill of bills()">
-                  <td>{{ bill.date | date:'dd/MM/yyyy' }}</td>
-                  <td>{{ bill.id?.substring(0, 6) }}</td>
-                  <td>₹{{ bill.amount | number:'1.2-2' }}</td>
-                  <td>₹{{ (bill.cgst || 0) + (bill.sgst || 0) | number:'1.2-2' }}</td>
-                  <td>₹{{ (bill.amount || 0) + (bill.cgst || 0) + (bill.sgst || 0) | number:'1.2-2' }}</td>
+                <tr *ngFor="let b of bills()">
+                  <td><strong>#{{ b.orderNumber || b.id?.substring(0, 6) }}</strong></td>
+                  <td>{{ b.date | date:'dd/MM/yyyy' }}</td>
+                  <td>{{ b.mobile || b.emailId || 'Guest' }}</td>
+                  <td><span class="badge" style="background: rgba(255,255,255,0.06); text-transform: uppercase;">{{ b.orderType || 'dinein' }}</span></td>
+                  <td><span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">{{ b.paymentMode || 'Cash' }}</span></td>
+                  <td>₹{{ (b.amount || 0) | number:'1.2-2' }}</td>
+                  <td>₹{{ ((b.cgst || 0) + (b.sgst || 0)) | number:'1.2-2' }}</td>
+                  <td style="color: var(--primary); font-weight: 700;">₹{{ ((b.amount || 0) + (b.cgst || 0) + (b.sgst || 0)) | number:'1.2-2' }}</td>
                   <td>
-                    <span class="badge" [ngClass]="{
-                      'badge-success': bill.status === 'paid',
-                      'badge-warning': bill.status === 'pending',
-                      'badge-danger': bill.status === 'overdue'
-                    }">{{ bill.status }}</span>
+                    <span class="badge" [ngClass]="b.status === 'paid' ? 'badge-paid' : 'badge-pending'">{{ b.status }}</span>
                   </td>
                 </tr>
               </tbody>
             </table>
             <ng-template #noBills>
-              <p class="no-data-msg">No bills generated for this period.</p>
+              <p class="no-data-msg">No bills found for the selected period.</p>
             </ng-template>
           </div>
         </div>
@@ -168,11 +179,11 @@
             <span class="summary-val">{{ startDate() && endDate() ? startDate() + ' to ' + endDate() : 'All Time' }}</span>
           </div>
           <div class="summary-item">
-            <span class="summary-label">Total Items Sold</span>
-            <span class="summary-val">{{ totalFoodItemsSold() }} qty</span>
+            <span class="summary-label">Total Units Sold</span>
+            <span class="summary-val">{{ totalFoodItemsSold() }} items</span>
           </div>
           <div class="summary-item highlight">
-            <span class="summary-label">Total Revenue</span>
+            <span class="summary-label">Food Items Revenue</span>
             <span class="summary-val">₹{{ totalFoodRevenue() | number:'1.2-2' }}</span>
           </div>
         </div>
@@ -184,39 +195,39 @@
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            Download Food Sales (Excel/CSV)
+            Download Food Sales Report (Excel/CSV)
           </button>
         </div>
 
         <div class="report-preview-section">
-          <h3>Food Item Sales Summary</h3>
+          <h3>Dish Sales Volume & Revenue</h3>
           <div class="table-container">
-            <table *ngIf="foodSales().length > 0; else noFoodSales">
+            <table *ngIf="foodSales().length > 0; else noSales">
               <thead>
                 <tr>
-                  <th>Item Name</th>
-                  <th>Price</th>
+                  <th>Dish / Item Name</th>
+                  <th>Menu Price</th>
                   <th>Quantity Sold</th>
-                  <th>Revenue</th>
+                  <th>Total Sales Revenue</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let item of foodSales()">
-                  <td class="desc-cell">{{ item.name }}</td>
+                  <td><strong>{{ item.name }}</strong></td>
                   <td>₹{{ item.price | number:'1.2-2' }}</td>
-                  <td style="font-weight: 600; color: var(--primary-hover);">{{ item.quantity }}</td>
-                  <td style="font-weight: 600; color: var(--success);">₹{{ item.revenue | number:'1.2-2' }}</td>
+                  <td><span class="badge" style="background: rgba(255,255,255,0.08); font-weight: 700;">{{ item.quantity }} units</span></td>
+                  <td style="color: var(--success); font-weight: 700;">₹{{ item.revenue | number:'1.2-2' }}</td>
                 </tr>
               </tbody>
             </table>
-            <ng-template #noFoodSales>
-              <p class="no-data-msg">No menu items sold for this period.</p>
+            <ng-template #noSales>
+              <p class="no-data-msg">No sales data available for this period.</p>
             </ng-template>
           </div>
         </div>
       </div>
 
-      <!-- Expense Report Tab -->
+      <!-- Operations Expenses Report Tab -->
       <div *ngIf="reportTab() === 'expenses'" class="tab-content glass-panel animate-fade-in">
         <div class="report-summary-box">
           <div class="summary-item">
@@ -279,6 +290,338 @@
           </div>
         </div>
       </div>
+
+      <!-- INVENTORY EXPENSE & PROCUREMENT REPORT TAB -->
+      <div *ngIf="reportTab() === 'inventory_expenses'" class="tab-content glass-panel animate-fade-in">
+        
+        <!-- Summary KPI Metric Cards Row -->
+        <div class="report-summary-box" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+          <div class="summary-item">
+            <span class="summary-label">Selected Outlet</span>
+            <span class="summary-val">{{ activeRestaurantName() }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Date Range</span>
+            <span class="summary-val">{{ startDate() && endDate() ? (startDate() | date:'dd/MM/yy') + ' - ' + (endDate() | date:'dd/MM/yy') : 'All Time' }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Inventory Records</span>
+            <span class="summary-val">{{ inventoryExpenses().length }} entries</span>
+          </div>
+          <div class="summary-item" *ngIf="topInventorySpendItem()">
+            <span class="summary-label">Top Expense Item</span>
+            <span class="summary-val" style="color: var(--primary-hover); font-size: 1.05rem;">
+              {{ topInventorySpendItem()?.name }} (₹{{ topInventorySpendItem()?.totalSpend | number:'1.0-0' }})
+            </span>
+          </div>
+          <div class="summary-item highlight" style="background: linear-gradient(135deg, rgba(242, 92, 5, 0.2), rgba(239, 68, 68, 0.1)); border: 1px solid rgba(242, 92, 5, 0.4);">
+            <span class="summary-label" style="color: #fca5a5;">Total Inventory Spend</span>
+            <span class="summary-val" style="color: #fff; font-size: 1.45rem; font-weight: 900;">
+              ₹{{ totalInventorySpend() | number:'1.2-2' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Filter & Drill-down Control Bar -->
+        <div class="glass-panel" style="margin-top: 16px; padding: 16px; border-radius: 12px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06); display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;">
+          
+          <!-- Left: Specific Item Selector -->
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label for="invItemSelect" style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">
+                🎯 Filter Particular Item:
+              </label>
+              <select id="invItemSelect" 
+                      [ngModel]="selectedInventoryItemFilter()" 
+                      (ngModelChange)="selectedInventoryItemFilter.set($event)"
+                      style="background: var(--bg-dark); color: #fff; border: 1px solid var(--primary); border-radius: 8px; padding: 8px 14px; font-size: 0.9rem; font-weight: 600; cursor: pointer; min-width: 220px;">
+                <option value="All">All Inventory Items (Overview)</option>
+                <option *ngFor="let name of availableInventoryItemNames()" [value]="name">{{ name }}</option>
+              </select>
+            </div>
+
+            <!-- Search Filter -->
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">
+                🔍 Search Notes / Name:
+              </label>
+              <input type="text" 
+                     placeholder="Search item, vendor, notes..."
+                     [ngModel]="inventorySearchQuery()"
+                     (ngModelChange)="inventorySearchQuery.set($event)"
+                     style="background: var(--bg-dark); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; font-size: 0.88rem; min-width: 200px;">
+            </div>
+
+            <!-- Sort By -->
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label style="font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">
+                📊 Sort By:
+              </label>
+              <select [ngModel]="inventorySortBy()"
+                      (ngModelChange)="inventorySortBy.set($event)"
+                      style="background: var(--bg-dark); color: #fff; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 8px 12px; font-size: 0.88rem; cursor: pointer;">
+                <option value="spend_desc">Highest Spend (₹ High to Low)</option>
+                <option value="spend_asc">Lowest Spend (₹ Low to High)</option>
+                <option value="tx_desc">Most Purchase Orders</option>
+                <option value="name_asc">Item Name (A to Z)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Right: Excel Export Action -->
+          <div style="display: flex; gap: 10px; align-items: flex-end;">
+            <button class="btn btn-success" (click)="downloadInventoryExpensesExcel()" [disabled]="filteredInventoryItemReports().length === 0" style="padding: 10px 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; border-radius: 8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px; height:18px;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span>Download Excel Report</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Particular Item Spotlight Card (Shown when an item is selected) -->
+        <div *ngIf="selectedItemReport()" class="glass-panel" style="margin-top: 16px; padding: 18px 20px; border-radius: 14px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(242, 92, 5, 0.08) 100%); border: 1.5px solid var(--primary); box-shadow: 0 8px 30px rgba(0,0,0,0.3);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <h2 style="font-size: 1.35rem; font-weight: 900; color: #fff; margin: 0;">
+                  📦 {{ selectedItemReport()?.name }}
+                </h2>
+                <span class="badge" [ngClass]="selectedItemReport()?.stockStatus === 'In Stock' ? 'badge-paid' : (selectedItemReport()?.stockStatus === 'Low Stock' ? 'badge-pending' : 'badge-danger')" style="font-size: 0.75rem; padding: 3px 8px;">
+                  {{ selectedItemReport()?.stockStatus }} ({{ selectedItemReport()?.currentStock }} {{ selectedItemReport()?.unit }})
+                </span>
+              </div>
+              <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 4px 0 0 0;">
+                Detailed expenditure and procurement history for this particular inventory item
+              </p>
+            </div>
+
+            <button type="button" (click)="selectedInventoryItemFilter.set('All')" class="btn btn-outline-light" style="padding: 6px 14px; font-size: 0.82rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: transparent; color: #fff; cursor: pointer;">
+              ← Back to All Items
+            </button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px;">
+            <div style="background: rgba(0,0,0,0.4); padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);">
+              <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Total Spent</span>
+              <div style="font-size: 1.35rem; font-weight: 900; color: #f87171; margin-top: 2px;">
+                ₹{{ selectedItemReport()?.totalSpend | number:'1.2-2' }}
+              </div>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.4); padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);">
+              <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Purchase Orders</span>
+              <div style="font-size: 1.35rem; font-weight: 900; color: #fff; margin-top: 2px;">
+                {{ selectedItemReport()?.transactionCount }} orders
+              </div>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.4); padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);">
+              <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Avg Cost / Order</span>
+              <div style="font-size: 1.35rem; font-weight: 900; color: #fbbf24; margin-top: 2px;">
+                ₹{{ selectedItemReport()?.averageSpendPerTransaction | number:'1.0-0' }}
+              </div>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.4); padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);">
+              <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Budget Share</span>
+              <div style="font-size: 1.35rem; font-weight: 900; color: #60a5fa; margin-top: 2px;">
+                {{ selectedItemReport()?.percentageOfTotal }}%
+              </div>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.4); padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);">
+              <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">Last Purchased</span>
+              <div style="font-size: 1rem; font-weight: 700; color: #fff; margin-top: 4px;">
+                {{ selectedItemReport()?.lastPurchasedDate ? (selectedItemReport()?.lastPurchasedDate | date:'dd/MM/yyyy') : 'No recent purchase' }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Item-by-Item Breakdown Table -->
+        <div class="report-preview-section" style="margin-top: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h3 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px;">
+              <span>📊</span> Inventory Items Spend Breakdown ({{ filteredInventoryItemReports().length }} items)
+            </h3>
+            <span style="font-size: 0.8rem; color: var(--text-secondary);">Click any row to drill down into purchase entries</span>
+          </div>
+
+          <div class="table-container">
+            <table *ngIf="filteredInventoryItemReports().length > 0; else noInvReports">
+              <thead>
+                <tr>
+                  <th style="width: 40px;">#</th>
+                  <th>Inventory Item</th>
+                  <th>Current Stock</th>
+                  <th>Purchase Orders</th>
+                  <th>Total Spent (INR)</th>
+                  <th>Avg / Purchase</th>
+                  <th>% of Inventory Spend</th>
+                  <th>Last Purchased</th>
+                  <th style="text-align: center;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <ng-container *ngFor="let item of filteredInventoryItemReports(); let idx = index">
+                  <tr style="cursor: pointer; transition: background 0.15s;" 
+                      [style.background]="expandedItemName() === item.name || selectedInventoryItemFilter() === item.name ? 'rgba(242, 92, 5, 0.08)' : ''"
+                      (click)="toggleExpandItem(item.name)">
+                    <td><strong>{{ idx + 1 }}</strong></td>
+                    <td>
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 1.05rem;">📦</span>
+                        <div>
+                          <strong style="color: #fff; font-size: 0.95rem;">{{ item.name }}</strong>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="badge" [ngClass]="item.stockStatus === 'In Stock' ? 'badge-paid' : (item.stockStatus === 'Low Stock' ? 'badge-pending' : 'badge-danger')">
+                        {{ item.currentStock }} {{ item.unit }}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge" style="background: rgba(255,255,255,0.08); font-weight: 700;">
+                        {{ item.transactionCount }} orders
+                      </span>
+                    </td>
+                    <td style="color: #f87171; font-weight: 800; font-size: 1rem;">
+                      ₹{{ item.totalSpend | number:'1.2-2' }}
+                    </td>
+                    <td style="color: var(--text-secondary); font-weight: 600;">
+                      ₹{{ item.averageSpendPerTransaction | number:'1.0-0' }}
+                    </td>
+                    <td>
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="flex: 1; min-width: 60px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                          <div [style.width.%]="item.percentageOfTotal" style="height: 100%; background: linear-gradient(90deg, var(--primary), #ef4444); border-radius: 3px;"></div>
+                        </div>
+                        <span style="font-size: 0.8rem; font-weight: 700; color: #fff; width: 45px;">{{ item.percentageOfTotal }}%</span>
+                      </div>
+                    </td>
+                    <td style="color: var(--text-secondary); font-size: 0.85rem;">
+                      {{ item.lastPurchasedDate ? (item.lastPurchasedDate | date:'dd/MM/yyyy') : '-' }}
+                    </td>
+                    <td style="text-align: center;">
+                      <button type="button" 
+                              (click)="$event.stopPropagation(); selectedInventoryItemFilter.set(item.name)"
+                              style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer;">
+                        Focus
+                      </button>
+                    </td>
+                  </tr>
+
+                  <!-- Expandable Nested Transactions Drawer -->
+                  <tr *ngIf="expandedItemName() === item.name" style="background: rgba(0,0,0,0.35);">
+                    <td colspan="9" style="padding: 14px 20px;">
+                      <div style="border-left: 3px solid var(--primary); padding-left: 14px;">
+                        <h4 style="font-size: 0.88rem; font-weight: 800; color: var(--primary-hover); margin: 0 0 10px 0;">
+                          📝 Purchase Receipts for "{{ item.name }}" ({{ item.transactions.length }} entries):
+                        </h4>
+
+                        <div *ngIf="item.transactions.length > 0; else noItemTx" style="display: flex; flex-direction: column; gap: 8px;">
+                          <div *ngFor="let tx of item.transactions" style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                              <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">📅 {{ tx.date | date:'dd/MM/yyyy' }}</span>
+                              <span class="badge" [style.background]="tx.sourceType === 'Purchase Bill' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(245, 158, 11, 0.2)'" [style.color]="tx.sourceType === 'Purchase Bill' ? '#93c5fd' : '#fde047'" style="font-size: 0.7rem; font-weight: 700;">
+                                {{ tx.sourceType }}
+                              </span>
+                              <span style="font-size: 0.88rem; color: #fff; font-weight: 500;">{{ tx.description }}</span>
+                              <span *ngIf="tx.createdBy && tx.createdBy !== 'Purchase Bill'" style="font-size: 0.75rem; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">by {{ tx.createdBy }}</span>
+                            </div>
+
+                            <div style="display: flex; gap: 12px; align-items: center;">
+                              <span style="font-size: 0.95rem; font-weight: 800; color: #f87171;">₹{{ tx.amount | number:'1.2-2' }}</span>
+                              <button *ngIf="tx.imageUrl" type="button" (click)="openReceipt(tx.imageUrl, item.name + ' - ' + tx.date)" style="background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; padding: 3px 8px; border-radius: 4px; font-size: 0.72rem; cursor: pointer; font-weight: bold;">
+                                🧾 Receipt
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <ng-template #noItemTx>
+                          <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">No expense records logged for this item yet.</p>
+                        </ng-template>
+                      </div>
+                    </td>
+                  </tr>
+                </ng-container>
+              </tbody>
+            </table>
+
+            <ng-template #noInvReports>
+              <p class="no-data-msg">No inventory expenses found matching your filter criteria.</p>
+            </ng-template>
+          </div>
+        </div>
+
+        <!-- Full Detailed Procurement Ledger Section -->
+        <div class="report-preview-section" style="margin-top: 30px;">
+          <h3 style="margin-bottom: 12px; font-size: 1.15rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px;">
+            <span>🧾</span> Complete Procurement Expense Transactions Log ({{ inventoryExpenses().length }} entries)
+          </h3>
+
+          <div class="table-container">
+            <table *ngIf="inventoryExpenses().length > 0; else noAllInvTx">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>ID</th>
+                  <th>Category</th>
+                  <th>Description / Item Specification</th>
+                  <th>Amount</th>
+                  <th>Recorded By</th>
+                  <th style="text-align: center;">Receipt</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let exp of inventoryExpenses()">
+                  <td>{{ exp.date | date:'dd/MM/yyyy' }}</td>
+                  <td>{{ exp.id?.substring(0, 6) }}</td>
+                  <td>
+                    <span class="badge" style="background: rgba(242, 92, 5, 0.2); color: var(--primary-hover); font-weight: 700;">
+                      {{ exp.category }}
+                    </span>
+                  </td>
+                  <td><strong style="color: #fff;">{{ exp.description }}</strong></td>
+                  <td style="color: #f87171; font-weight: 800; font-size: 0.95rem;">₹{{ exp.amount | number:'1.2-2' }}</td>
+                  <td style="color: var(--text-muted); font-size: 0.82rem;">{{ exp.createdBy || 'Staff' }}</td>
+                  <td style="text-align: center;">
+                    <button *ngIf="exp.imageUrl" type="button" (click)="openReceipt(exp.imageUrl, exp.description || 'Receipt')" style="background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; font-weight: bold;">
+                      🧾 View
+                    </button>
+                    <span *ngIf="!exp.imageUrl" style="color: var(--text-muted); font-size: 0.8rem;">-</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <ng-template #noAllInvTx>
+              <p class="no-data-msg">No inventory procurement transactions found for this period.</p>
+            </ng-template>
+          </div>
+        </div>
+
+      </div>
     </ng-container>
   </main>
+
+  <!-- Receipt Viewer Modal Popup -->
+  <div *ngIf="receiptModal().show" class="modal-backdrop animate-fade-in" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px;" (click)="closeReceipt()">
+    <div class="glass-panel" style="background: #111; border: 1px solid rgba(255,255,255,0.2); border-radius: 16px; max-width: 600px; width: 100%; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column;" (click)="$event.stopPropagation()">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+        <h3 style="margin: 0; font-size: 1.1rem; color: #fff; font-weight: 800;">
+          🧾 Receipt Image: {{ receiptModal().title }}
+        </h3>
+        <button type="button" (click)="closeReceipt()" style="background: transparent; border: none; color: #fff; font-size: 1.3rem; cursor: pointer;">✕</button>
+      </div>
+      <div style="padding: 20px; display: flex; justify-content: center; align-items: center; overflow: auto; max-height: calc(90vh - 120px);">
+        <img [src]="receiptModal().url" [alt]="receiptModal().title" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+      </div>
+    </div>
+  </div>
 </div>

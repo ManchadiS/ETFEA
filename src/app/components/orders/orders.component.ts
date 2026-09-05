@@ -87,6 +87,102 @@ export class OrdersComponent implements OnInit {
   emailId = signal<string>('');
   orderItems = signal<OrderItem[]>([]);
 
+  // 6 Pre-set Value Combos from Menu Poster
+  presetCombos = [
+    {
+      comboNumber: '1',
+      name: 'Combo 1: Sandwich + Fries + Milk Shake',
+      itemsText: 'Sandwich + Fries + Milk Shake',
+      price: 290,
+      image: '/assets/combos/combo_1.png',
+      badge: '🔥 Bestseller',
+      themeColor: '#f59e0b',
+      bgGradient: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.05) 100%)',
+      borderColor: 'rgba(245, 158, 11, 0.4)',
+      short: '1. Sandwich+Fries+Shake (₹290)'
+    },
+    {
+      comboNumber: '2',
+      name: 'Combo 2: Sandwich + Cold Coffee',
+      itemsText: 'Sandwich + Cold Coffee',
+      price: 180,
+      image: '/assets/combos/combo_2.png',
+      badge: '☕ Quick Bite',
+      themeColor: '#ea580c',
+      bgGradient: 'linear-gradient(135deg, rgba(234, 88, 12, 0.15) 0%, rgba(194, 65, 12, 0.05) 100%)',
+      borderColor: 'rgba(234, 88, 12, 0.4)',
+      short: '2. Sandwich+Coffee (₹180)'
+    },
+    {
+      comboNumber: '3',
+      name: 'Combo 3: Sandwich + Tea + Fries',
+      itemsText: 'Sandwich + Tea + Fries',
+      price: 200,
+      image: '/assets/combos/combo_3.png',
+      badge: '🍵 Chai Lover',
+      themeColor: '#16a34a',
+      bgGradient: 'linear-gradient(135deg, rgba(22, 163, 74, 0.15) 0%, rgba(21, 128, 61, 0.05) 100%)',
+      borderColor: 'rgba(22, 163, 74, 0.4)',
+      short: '3. Sandwich+Tea+Fries (₹200)'
+    },
+    {
+      comboNumber: '4',
+      name: 'Combo 4: Biryani + Coke',
+      itemsText: 'Biryani + Coke',
+      price: 230,
+      image: '/assets/combos/combo_4.png',
+      badge: '🍗 Desi Tadka',
+      themeColor: '#0284c7',
+      bgGradient: 'linear-gradient(135deg, rgba(2, 132, 199, 0.15) 0%, rgba(3, 105, 161, 0.05) 100%)',
+      borderColor: 'rgba(2, 132, 199, 0.4)',
+      short: '4. Biryani+Coke (₹230)'
+    },
+    {
+      comboNumber: '5',
+      name: 'Combo 5: Chicken Drumstick (2pc) + Fries + Milk Shake',
+      itemsText: 'Chicken Drumstick (2pc) + Fries + Milk Shake',
+      price: 450,
+      image: '/assets/combos/combo_5.png',
+      badge: '👑 Feast Combo',
+      themeColor: '#7c3aed',
+      bgGradient: 'linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(109, 40, 217, 0.05) 100%)',
+      borderColor: 'rgba(124, 58, 237, 0.4)',
+      short: '5. Drumstick+Fries+Shake (₹450)'
+    },
+    {
+      comboNumber: '⭐',
+      name: 'Tadka Special: Drum Stick (1pc) + Paneer Tikka (2pc) + Dahi Kebab (2pc) + Milk Shake',
+      itemsText: 'Drum Stick (1pc) + Paneer Tikka (2pc) + Dahi Kebab (2pc) + Milk Shake',
+      price: 350,
+      image: '/assets/combos/combo_6.png',
+      badge: '⭐ Special Platter',
+      themeColor: '#eab308',
+      bgGradient: 'linear-gradient(135deg, rgba(234, 179, 8, 0.2) 0%, rgba(161, 98, 7, 0.08) 100%)',
+      borderColor: 'rgba(234, 179, 8, 0.6)',
+      short: '⭐ Tadka Special Platter (₹350)'
+    }
+  ];
+
+  openNewOrderWithCombo(combo: { name: string; price: number }) {
+    this.openAddModal();
+    this.addPresetCombo(combo);
+  }
+
+  addPresetCombo(combo: { name: string; price: number }) {
+    const current = [...this.orderItems()];
+    const idx = current.findIndex(i => i.name === combo.name);
+    if (idx !== -1) {
+      current[idx].quantity += 1;
+    } else {
+      current.push({
+        name: combo.name,
+        price: combo.price,
+        quantity: 1
+      });
+    }
+    this.orderItems.set(current);
+  }
+
   // Combo builder state
   selectedShawarmaId = signal<string>('');
   selectedSideId = signal<string>('');
@@ -125,7 +221,7 @@ export class OrdersComponent implements OnInit {
   get liveComboTotalPrice(): number {
     const sum = this.selectedShawarmaPrice + this.selectedSidePrice + this.selectedBeveragePrice;
     if (sum === 0) return 0;
-    return Math.max(0, sum - 20);
+    return Math.round(sum * 0.90);
   }
   selectedQuantity = 1;
   status = signal<'pending_payment' | 'received' | 'preparing' | 'ready' | 'completed' | 'cancelled'>('received');
@@ -134,10 +230,44 @@ export class OrdersComponent implements OnInit {
   // Billing confirmation modal signals
   showCreateBillModal = signal<boolean>(false);
   billingOrder = signal<Order | null>(null);
+  billingItems = signal<OrderItem[]>([]);
   billingDiscount = signal<number>(0);
   billingPaymentMode = signal<string>('Cash');
   billingCashAmount = signal<number>(0);
   billingUpiAmount = signal<number>(0);
+
+  get billingItemsTotal(): number {
+    return this.billingItems().reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  }
+
+  get billingGrandTotal(): number {
+    return this.billingItemsTotal * (1 - this.billingDiscount() / 100);
+  }
+
+  updateBillingItemPrice(index: number, newPrice: number) {
+    const items = [...this.billingItems()];
+    if (items[index]) {
+      items[index].price = Math.max(0, Number(newPrice) || 0);
+      this.billingItems.set(items);
+    }
+  }
+
+  adjustBillingItemQty(index: number, change: number) {
+    const items = [...this.billingItems()];
+    if (items[index]) {
+      items[index].quantity += change;
+      if (items[index].quantity <= 0) {
+        items.splice(index, 1);
+      }
+      this.billingItems.set(items);
+    }
+  }
+
+  removeBillingItem(index: number) {
+    const items = [...this.billingItems()];
+    items.splice(index, 1);
+    this.billingItems.set(items);
+  }
 
   // Bill Details Modal signals
   showDetailsModal = signal<boolean>(false);
@@ -311,8 +441,8 @@ export class OrdersComponent implements OnInit {
 
     // Calculate sum of individual items
     const rawPrice = sh.price + side.price + bev.price;
-    // Subtract ₹20 combo discount
-    const finalPrice = Math.max(0, rawPrice - 20);
+    // Apply 10% combo discount
+    const finalPrice = Math.round(rawPrice * 0.90);
 
     const comboName = `Combo Meal (${sh.name} + ${side.name} + ${bev.name})`;
 
@@ -551,6 +681,7 @@ export class OrdersComponent implements OnInit {
 
   openCreateBillModal(order: Order) {
     this.billingOrder.set(order);
+    this.billingItems.set((order.items || []).map(i => ({ ...i })));
     this.billingDiscount.set(0);
     this.billingPaymentMode.set(order.paymentMode || 'Cash');
     this.billingCashAmount.set(0);
@@ -561,17 +692,22 @@ export class OrdersComponent implements OnInit {
   closeCreateBillModal() {
     this.showCreateBillModal.set(false);
     this.billingOrder.set(null);
+    this.billingItems.set([]);
   }
 
   confirmCreateBill() {
     const order = this.billingOrder();
     if (!order) return;
 
+    if (this.billingItems().length === 0) {
+      this.errorMessage.set('Invoice must contain at least one food item.');
+      return;
+    }
+
     const discount = this.billingDiscount();
     const cgstRate = 2.5;
     const sgstRate = 2.5;
-    const baseTotal = order.totalAmount;
-    const grandTotal = baseTotal * (1 - discount / 100);
+    const grandTotal = this.billingGrandTotal;
     const cgstAmount = Math.round((grandTotal * cgstRate) / (100 + cgstRate + sgstRate) * 100) / 100;
     const sgstAmount = Math.round((grandTotal * sgstRate) / (100 + cgstRate + sgstRate) * 100) / 100;
     const subtotal = grandTotal - cgstAmount - sgstAmount;
@@ -600,11 +736,7 @@ export class OrdersComponent implements OnInit {
       emailId: order.emailId || undefined,
       cgst: cgstAmount,
       sgst: sgstAmount,
-      foodItems: order.items.map(item => ({
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity
-      })),
+      foodItems: this.billingItems(),
       orderNumber: order.orderNumber,
       discount: discount,
       paymentMode: mode,
@@ -616,7 +748,11 @@ export class OrdersComponent implements OnInit {
     this.apiService.createBill(billPayload).subscribe({
       next: (createdBill) => {
         if (order.id) {
-          this.apiService.updateOrder(order.id, { status: 'completed' }).subscribe({
+          this.apiService.updateOrder(order.id, { 
+            status: 'completed',
+            items: this.billingItems(),
+            totalAmount: grandTotal
+          }).subscribe({
             next: () => {
               this.isSubmitting.set(false);
               this.closeCreateBillModal();

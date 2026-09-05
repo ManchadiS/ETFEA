@@ -43,6 +43,7 @@ export interface Billing {
   orderNumber?: number;
   discount?: number;
   paymentMode?: string;
+  orderType?: string;
   cashAmount?: number;
   upiAmount?: number;
 }

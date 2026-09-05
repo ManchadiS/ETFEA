@@ -126,7 +126,7 @@ export class BillingComponent implements OnInit {
   get liveComboTotalPrice(): number {
     const sum = this.selectedShawarmaPrice + this.selectedSidePrice + this.selectedBeveragePrice;
     if (sum === 0) return 0;
-    return Math.max(0, sum - 20);
+    return Math.round(sum * 0.90);
   }
 
   get selectedRestaurantName(): string {
@@ -407,8 +407,8 @@ export class BillingComponent implements OnInit {
 
     // Calculate sum of individual items
     const rawPrice = sh.price + side.price + bev.price;
-    // Subtract ₹20 combo discount
-    const finalPrice = Math.max(0, rawPrice - 20);
+    // Apply 10% combo discount
+    const finalPrice = Math.round(rawPrice * 0.90);
 
     const comboName = `Combo Meal (${sh.name} + ${side.name} + ${bev.name})`;
 
@@ -442,6 +442,14 @@ export class BillingComponent implements OnInit {
     const currentOrder = [...this.orderItems()];
     currentOrder.splice(index, 1);
     this.orderItems.set(currentOrder);
+  }
+
+  updateItemPrice(index: number, newPrice: number) {
+    const currentOrder = [...this.orderItems()];
+    if (currentOrder[index]) {
+      currentOrder[index].price = Math.max(0, Number(newPrice) || 0);
+      this.orderItems.set(currentOrder);
+    }
   }
 
   adjustQuantity(index: number, change: number) {
