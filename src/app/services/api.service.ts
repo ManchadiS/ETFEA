@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface Restaurant {
@@ -72,6 +72,31 @@ export interface Payout {
   description?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface BankEntry {
+  id?: string;
+  restaurantId?: string;
+  type: 'opening_balance' | 'deposit' | 'deduction';
+  amount: number;
+  date: string;
+  source?: string;
+  description?: string;
+  referenceNumber?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BankSummary {
+  currentBalance: number;
+  openingBalance: number;
+  upiOrdersTotal: number;
+  swiggyTotal: number;
+  zomatoTotal: number;
+  otherDeposits: number;
+  totalDeductions: number;
+  totalInflows: number;
+  transactionsCount: number;
 }
 
 export interface Wastage {
@@ -172,6 +197,69 @@ export interface InventoryItem {
   quantity?: number;
   unit?: string;
   threshold?: number;
+  status?: 'healthy' | 'low' | 'out';
+}
+
+export interface RecipeIngredient {
+  inventoryItemId: string;
+  inventoryItemName: string;
+  quantity: number;
+  unit: string;
+}
+
+export interface Recipe {
+  id?: string;
+  restaurantId: string;
+  dishName: string;
+  dishId?: string;
+  category?: string;
+  appliance?: 'Sandwich Maker' | 'Air Fryer' | 'Induction' | 'Microwave' | 'Mixer' | 'Assembly' | string;
+  yieldPortions?: number;
+  ingredients: RecipeIngredient[];
+  notes?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface DailyInventoryItemReport {
+  id: string;
+  name: string;
+  unit: string;
+  threshold: number;
+  openingStock: number;
+  purchased: number;
+  deducted: number;
+  wasted: number;
+  closingStock: number;
+  status: 'healthy' | 'low' | 'out';
+}
+
+export interface InventoryDeductionLog {
+  id: string;
+  dishName: string;
+  inventoryItemName: string;
+  quantity: number;
+  unit: string;
+  source: string;
+  orderId?: string;
+  createdAt: string;
+}
+
+export interface DailyInventoryReport {
+  date: string;
+  restaurantId: string;
+  summary: {
+    totalItemsCount: number;
+    healthyCount: number;
+    lowStockCount: number;
+    outOfStockCount: number;
+    totalPurchasesSum: number;
+    totalDeductionsSum: number;
+    totalWastageSum: number;
+  };
+  items: DailyInventoryItemReport[];
+  deductionLogs: InventoryDeductionLog[];
 }
 
 export interface OrderItem {
@@ -416,7 +504,7 @@ export class ApiService {
     return this.http.get<InventoryItem[]>(`${this.baseUrl}/inventory`, { params });
   }
 
-  createInventoryItem(item: InventoryItem): Observable<InventoryItem> {
+  createInventoryItem(item: Partial<InventoryItem>): Observable<InventoryItem> {
     return this.http.post<InventoryItem>(`${this.baseUrl}/inventory`, item);
   }
 
@@ -510,5 +598,72 @@ export class ApiService {
     razorpaySignature: string;
   }): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/orders/verify-payment`, paymentDetails);
+  }
+
+  // RECIPES
+  getRecipes(restaurantId?: string): Observable<Recipe[]> {
+    const url = restaurantId ? `${this.baseUrl}/recipes?restaurantId=${restaurantId}` : `${this.baseUrl}/recipes`;
+    return this.http.get<Recipe[]>(url);
+  }
+
+  getRecipe(id: string): Observable<Recipe> {
+    return this.http.get<Recipe>(`${this.baseUrl}/recipes/${id}`);
+  }
+
+  createRecipe(recipe: Partial<Recipe>): Observable<Recipe> {
+    return this.http.post<Recipe>(`${this.baseUrl}/recipes`, recipe);
+  }
+
+  updateRecipe(id: string, recipe: Partial<Recipe>): Observable<Recipe> {
+    return this.http.put<Recipe>(`${this.baseUrl}/recipes/${id}`, recipe);
+  }
+
+  deleteRecipe(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/recipes/${id}`);
+  }
+
+  seedDefaultRecipes(restaurantId: string): Observable<{ count: number; message: string }> {
+    return this.http.post<{ count: number; message: string }>(`${this.baseUrl}/recipes/seed-default`, { restaurantId });
+  }
+
+  // DAILY INVENTORY CONSUMPTION & REPORT
+  getDailyInventoryReport(restaurantId: string, date?: string): Observable<DailyInventoryReport> {
+    const dateParam = date ? `&date=${date}` : '';
+    return this.http.get<DailyInventoryReport>(`${this.baseUrl}/inventory/daily-report?restaurantId=${restaurantId}${dateParam}`);
+  }
+
+  getInventoryDeductions(restaurantId: string, date?: string): Observable<InventoryDeductionLog[]> {
+    const dateParam = date ? `&date=${date}` : '';
+    return this.http.get<InventoryDeductionLog[]>(`${this.baseUrl}/inventory/deductions?restaurantId=${restaurantId}${dateParam}`);
+  }
+
+  // BANK TRANSACTIONS & TREASURY
+  getBankTransactions(restaurantId?: string, type?: string, startDate?: string, endDate?: string): Observable<BankEntry[]> {
+    let params = new HttpParams();
+    if (restaurantId) params = params.set('restaurantId', restaurantId);
+    if (type && type !== 'all') params = params.set('type', type);
+    if (startDate) params = params.set('startDate', startDate);
+    if (endDate) params = params.set('endDate', endDate);
+    return this.http.get<BankEntry[]>(`${this.baseUrl}/bank-transactions`, { params });
+  }
+
+  getBankSummary(restaurantId?: string, startDate?: string, endDate?: string): Observable<BankSummary> {
+    let params = new HttpParams();
+    if (restaurantId) params = params.set('restaurantId', restaurantId);
+    if (startDate) params = params.set('startDate', startDate);
+    if (endDate) params = params.set('endDate', endDate);
+    return this.http.get<BankSummary>(`${this.baseUrl}/bank-transactions/summary`, { params });
+  }
+
+  createBankTransaction(entry: Partial<BankEntry>): Observable<BankEntry> {
+    return this.http.post<BankEntry>(`${this.baseUrl}/bank-transactions`, entry);
+  }
+
+  updateBankTransaction(id: string, entry: Partial<BankEntry>): Observable<BankEntry> {
+    return this.http.put<BankEntry>(`${this.baseUrl}/bank-transactions/${id}`, entry);
+  }
+
+  deleteBankTransaction(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/bank-transactions/${id}`);
   }
 }

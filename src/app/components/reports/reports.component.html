@@ -28,6 +28,10 @@
         <span class="report-icon">📦</span>
         <span>Inventory Expenses</span>
       </li>
+      <li [class.active]="reportTab() === 'daily_inventory_consumption'" (click)="setReportTab('daily_inventory_consumption')">
+        <span class="report-icon">📉</span>
+        <span>Daily Stock Deductions</span>
+      </li>
     </ul>
   </aside>
 
@@ -40,6 +44,7 @@
           <span *ngIf="reportTab() === 'food_sales'">Food Item Sales Report</span>
           <span *ngIf="reportTab() === 'expenses'">Operations Expense Report</span>
           <span *ngIf="reportTab() === 'inventory_expenses'">📦 Inventory Expense & Procurement Report</span>
+          <span *ngIf="reportTab() === 'daily_inventory_consumption'">📉 Daily Stock Consumption & Deduction Report</span>
         </h1>
         <p class="subtitle">Scope: {{ activeRestaurantName() }}</p>
       </div>
@@ -604,6 +609,128 @@
               <p class="no-data-msg">No inventory procurement transactions found for this period.</p>
             </ng-template>
           </div>
+        </div>
+
+      </div>
+    </ng-container>
+
+    <!-- ================= 5. DAILY INVENTORY CONSUMPTION & DEDUCTION REPORT ================= -->
+    <ng-container *ngIf="reportTab() === 'daily_inventory_consumption'">
+      <div class="report-content-body animate-fade-in">
+        
+        <!-- Controls Bar -->
+        <div class="glass-panel" style="display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-radius: 12px; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-weight: 700; color: #fff;">Audit Date:</span>
+            <input type="date" [ngModel]="dailyAuditDate()" (ngModelChange)="onDailyAuditDateChange($event)" style="padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; font-size: 0.9rem; font-weight: 600;" />
+            <button type="button" class="quick-filter-btn" (click)="onDailyAuditDateChange(todayStr())">Today</button>
+            <button type="button" class="quick-filter-btn" (click)="fetchDailyAuditReport()">🔄 Refresh</button>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button class="export-btn" (click)="exportDailyInventoryToExcel()" [disabled]="!dailyAuditReport() || (dailyAuditReport()?.items?.length || 0) === 0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span>Export to Excel</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Summary Metric Cards -->
+        <div *ngIf="dailyAuditReport()" class="summary-cards-grid" style="margin-bottom: 24px;">
+          <div class="glass-panel stat-card">
+            <span class="stat-label">Purchases Received (+)</span>
+            <h2 class="stat-value" style="color: #10b981;">+{{ dailyAuditReport()?.summary?.totalPurchasesSum | number:'1.2-3' }}</h2>
+            <span class="stat-desc">Stock logged via purchase bills</span>
+          </div>
+
+          <div class="glass-panel stat-card">
+            <span class="stat-label">Recipe Deductions (-)</span>
+            <h2 class="stat-value" style="color: #f43f5e;">-{{ dailyAuditReport()?.summary?.totalDeductionsSum | number:'1.2-3' }}</h2>
+            <span class="stat-desc">Consumed across menu orders</span>
+          </div>
+
+          <div class="glass-panel stat-card">
+            <span class="stat-label">Wastage / Damages (-)</span>
+            <h2 class="stat-value" style="color: #fbbf24;">-{{ dailyAuditReport()?.summary?.totalWastageSum | number:'1.2-3' }}</h2>
+            <span class="stat-desc">Recorded kitchen waste</span>
+          </div>
+
+          <div class="glass-panel stat-card">
+            <span class="stat-label">Healthy Stock Rate</span>
+            <h2 class="stat-value" style="color: #00e5ff;">{{ dailyAuditReport()?.summary?.healthyCount }} / {{ dailyAuditReport()?.summary?.totalItemsCount }}</h2>
+            <span class="stat-desc">Items above safety threshold</span>
+          </div>
+        </div>
+
+        <!-- Search and Status Filters -->
+        <div class="glass-panel" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+          <div style="flex: 1; max-width: 400px; position: relative;">
+            <input type="text" [ngModel]="dailyAuditSearch()" (ngModelChange)="dailyAuditSearch.set($event)" placeholder="Search raw item in audit report..." style="width: 100%; padding: 8px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; font-size: 0.88rem;" />
+          </div>
+
+          <div class="quick-filter-btns">
+            <button class="quick-filter-btn" [class.active]="dailyAuditStatusFilter() === 'All'" (click)="dailyAuditStatusFilter.set('All')">All</button>
+            <button class="quick-filter-btn" [class.active]="dailyAuditStatusFilter() === 'low'" (click)="dailyAuditStatusFilter.set('low')">Low Stock</button>
+            <button class="quick-filter-btn" [class.active]="dailyAuditStatusFilter() === 'out'" (click)="dailyAuditStatusFilter.set('out')">Out of Stock</button>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="glass-panel table-container">
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th>Supply Item</th>
+                <th style="text-align: right;">Opening Stock</th>
+                <th style="text-align: right;">Purchases (+)</th>
+                <th style="text-align: right;">Recipe Deductions (-)</th>
+                <th style="text-align: right;">Wastage (-)</th>
+                <th style="text-align: right;">Closing Balance</th>
+                <th style="text-align: center;">Stock Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of filteredDailyAuditItems()">
+                <td>
+                  <strong style="color: #fff; font-size: 0.92rem;">{{ item.name }}</strong>
+                  <span style="font-size: 0.76rem; color: var(--text-muted); margin-left: 6px;">({{ item.unit }})</span>
+                </td>
+                <td style="text-align: right; color: rgba(255,255,255,0.7); font-weight: 600;">
+                  {{ item.openingStock | number:'1.2-3' }} {{ item.unit }}
+                </td>
+                <td style="text-align: right; font-weight: 700; color: #10b981;">
+                  <span *ngIf="item.purchased > 0">+{{ item.purchased | number:'1.2-3' }}</span>
+                  <span *ngIf="item.purchased === 0" style="color: rgba(255,255,255,0.25);">0</span>
+                </td>
+                <td style="text-align: right; font-weight: 700; color: #f43f5e;">
+                  <span *ngIf="item.deducted > 0">-{{ item.deducted | number:'1.2-3' }}</span>
+                  <span *ngIf="item.deducted === 0" style="color: rgba(255,255,255,0.25);">0</span>
+                </td>
+                <td style="text-align: right; font-weight: 700; color: #fbbf24;">
+                  <span *ngIf="item.wasted > 0">-{{ item.wasted | number:'1.2-3' }}</span>
+                  <span *ngIf="item.wasted === 0" style="color: rgba(255,255,255,0.25);">0</span>
+                </td>
+                <td style="text-align: right; font-weight: 800; font-size: 1rem;" [ngStyle]="{'color': item.status === 'out' ? '#ef4444' : (item.status === 'low' ? '#f59e0b' : '#10b981')}">
+                  {{ item.closingStock | number:'1.2-3' }} {{ item.unit }}
+                </td>
+                <td style="text-align: center;">
+                  <span *ngIf="item.status === 'healthy'" style="padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: bold; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);">
+                    🟢 In Stock
+                  </span>
+                  <span *ngIf="item.status === 'low'" style="padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: bold; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);">
+                    🟡 Low Stock
+                  </span>
+                  <span *ngIf="item.status === 'out'" style="padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4);">
+                    🔴 Out of Stock
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
       </div>

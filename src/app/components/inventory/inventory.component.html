@@ -1,240 +1,867 @@
 <div class="inventory-container animate-fade-in">
+  
+  <!-- ================= TOP HEADER & MODULE TABS ================= -->
   <div class="header-section">
     <div>
-      <h1>Inventory Management</h1>
-      <p class="subtitle">Monitor raw supplies, track current stock levels, and set automatic low-stock alerts.</p>
+      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+        <span style="font-size: 1.6rem;">📦</span>
+        <h1 style="margin: 0;">Inventory & Kitchen Recipe Engine</h1>
+      </div>
+      <p class="subtitle">Real-time stock tracking, appliance-specific recipe deductions, and daily consumption audit.</p>
     </div>
-    <div style="display: flex; gap: 10px; align-items: center;">
-      <a routerLink="/reports" class="btn btn-outline-info" style="padding: 9px 16px; font-size: 0.88rem; font-weight: 700; border: 1px solid var(--primary-hover); color: var(--primary-hover); border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 6px;">
-        <span>📊</span> Inventory Expense Report
+
+    <!-- Action Buttons for Active Tab -->
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <a routerLink="/reports" [queryParams]="{tab: 'inventory_expenses'}" class="btn btn-outline-info" style="padding: 9px 16px; font-size: 0.88rem; font-weight: 700; border: 1px solid rgba(0, 229, 255, 0.4); color: #00e5ff; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+        <span>📊</span> Spend Reports
       </a>
-      <button class="btn btn-primary" (click)="openAddModal()">
+
+      <button *ngIf="mainTab() === 'stock'" class="btn btn-primary" (click)="openAddModal()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
           <line x1="12" y1="5" x2="12" y2="19"/>
           <line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
         Add Supply Item
       </button>
-    </div>
-  </div>
 
-  <!-- Summary Cards Row -->
-  <div class="metrics-row">
-    <!-- Total Items Card -->
-    <div class="glass-panel metric-card" [class.active-card]="activeFilter() === 'All'" (click)="setFilter('All')">
-      <div class="metric-icon total-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 7l-8-4-8 4 8 4 8-4z" />
-          <path d="M4 12l8 4 8-4" />
-          <path d="M4 17l8 4 8-4" />
+      <button *ngIf="mainTab() === 'recipes'" class="btn btn-primary" (click)="openAddRecipeModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
-      </div>
-      <div class="metric-info">
-        <span class="metric-label">Total Supply Items</span>
-        <h3 class="metric-value">{{ getMetricsCount('Total') }}</h3>
-      </div>
-    </div>
-
-    <!-- Low Stock Card -->
-    <div class="glass-panel metric-card warning-card" [class.active-card]="activeFilter() === 'LowStock'" [class.pulse-glow]="getMetricsCount('LowStock') > 0" (click)="setFilter('LowStock')">
-      <div class="metric-icon low-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-          <line x1="12" y1="9" x2="12" y2="13"/>
-          <line x1="12" y1="17" x2="12.01" y2="17"/>
-        </svg>
-      </div>
-      <div class="metric-info">
-        <span class="metric-label">Low Stock Alerts</span>
-        <h3 class="metric-value text-warning">{{ getMetricsCount('LowStock') }}</h3>
-      </div>
-    </div>
-
-    <!-- Out of Stock Card -->
-    <div class="glass-panel metric-card danger-card" [class.active-card]="activeFilter() === 'OutOfStock'" [class.pulse-danger]="getMetricsCount('OutOfStock') > 0" (click)="setFilter('OutOfStock')">
-      <div class="metric-icon out-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/>
-          <line x1="15" y1="9" x2="9" y2="15"/>
-        </svg>
-      </div>
-      <div class="metric-info">
-        <span class="metric-label">Out of Stock</span>
-        <h3 class="metric-value text-danger">{{ getMetricsCount('OutOfStock') }}</h3>
-      </div>
-    </div>
-  </div>
-
-  <!-- Search and Segmented Filters Bar -->
-  <div class="filters-bar">
-    <div class="search-box">
-      <span class="search-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-      </span>
-      <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event); onSearch()" placeholder="Search supplies by name..." />
-    </div>
-
-    <!-- Segmented Tab Controls -->
-    <div class="filter-tabs">
-      <button class="filter-tab" [class.active]="activeFilter() === 'All'" (click)="setFilter('All')">
-        All
+        Build New Recipe
       </button>
-      <button class="filter-tab" [class.active]="activeFilter() === 'InStock'" (click)="setFilter('InStock')">
-        In Stock
+
+      <button *ngIf="mainTab() === 'recipes'" class="btn btn-outline-warning" (click)="seedStandardRecipes()" title="Sync/Reset 47 Default Menu Recipes">
+        <span>⚡</span> Sync Default Recipes
       </button>
-      <button class="filter-tab" [class.active]="activeFilter() === 'LowStock'" (click)="setFilter('LowStock')">
-        Low Stock
-      </button>
-      <button class="filter-tab" [class.active]="activeFilter() === 'OutOfStock'" (click)="setFilter('OutOfStock')">
-        Out of Stock
+
+      <button *ngIf="mainTab() === 'daily-report'" class="btn btn-outline-info" (click)="fetchDailyReport()">
+        <span>🔄</span> Refresh Report
       </button>
     </div>
   </div>
 
-  <!-- Loading state -->
-  <div *ngIf="isLoading()" class="loading-state">
-    <div class="spinner"></div>
-    <p>Loading inventory supplies...</p>
+  <!-- Main Navigation Tabs -->
+  <div class="main-module-tabs">
+    <button class="module-tab-btn" [class.active]="mainTab() === 'stock'" (click)="setMainTab('stock')">
+      <span class="tab-icon">📦</span>
+      <span class="tab-title">Raw Supplies & Current Stock</span>
+      <span class="tab-badge">{{ inventoryItems().length }}</span>
+    </button>
+
+    <button class="module-tab-btn" [class.active]="mainTab() === 'recipes'" (click)="setMainTab('recipes')">
+      <span class="tab-icon">🍽️</span>
+      <span class="tab-title">Dynamic Recipes Table & Builder</span>
+      <span class="tab-badge">{{ recipes().length }}</span>
+    </button>
+
+    <button class="module-tab-btn" [class.active]="mainTab() === 'daily-report'" (click)="setMainTab('daily-report')">
+      <span class="tab-icon">📊</span>
+      <span class="tab-title">Daily Stock Consumption & Deductions</span>
+    </button>
   </div>
 
-  <!-- Empty state -->
-  <div *ngIf="!isLoading() && filteredItems().length === 0" class="glass-panel empty-state">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <path d="M20 7l-8-4-8 4 8 4 8-4z" />
-      <path d="M4 12l8 4 8-4" />
-      <path d="M4 17l8 4 8-4" />
-    </svg>
-    <h3>No Supplies Found</h3>
-    <p>No inventory items match the current query or status filters. Seed mock database entries or add a new supply item.</p>
-  </div>
-
-  <!-- Inventory Table -->
-  <div *ngIf="!isLoading() && filteredItems().length > 0" class="glass-panel table-container">
-    <table>
-      <thead>
-        <tr>
-          <th>Sl. No.</th>
-          <th>Item Name</th>
-          <th>Restaurant Outlet</th>
-          <th>Current Stock</th>
-          <th>Alert Level</th>
-          <th>Stock Status</th>
-          <th style="text-align: center;">Quick Adjust</th>
-          <th style="text-align: right;">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let item of filteredItems(); let idx = index" class="table-row" [class.danger-row]="(item.quantity || 0) === 0" [class.warning-row]="(item.quantity || 0) > 0 && (item.quantity || 0) <= (item.threshold || 10)">
-          <td class="index-cell">{{ idx + 1 }}</td>
-          <td class="name-cell">{{ item.name }}</td>
-          <td>
-            <span class="outlet-badge">{{ getRestaurantName(item.restaurantId) }}</span>
-          </td>
-          <td class="stock-cell">
-            <span class="stock-qty">{{ item.quantity !== undefined ? item.quantity : 0 }}</span>
-            <span class="stock-unit">{{ item.unit || 'units' }}</span>
-          </td>
-          <td class="threshold-cell">
-            <span class="threshold-qty">{{ item.threshold !== undefined ? item.threshold : 10 }}</span>
-            <span class="threshold-unit">{{ item.unit || 'units' }}</span>
-          </td>
-          <td>
-            <span *ngIf="(item.quantity || 0) === 0" class="status-badge status-out">Out of Stock</span>
-            <span *ngIf="(item.quantity || 0) > 0 && (item.quantity || 0) <= (item.threshold || 10)" class="status-badge status-low">Low Stock</span>
-            <span *ngIf="(item.quantity || 0) > (item.threshold || 10)" class="status-badge status-in">In Stock</span>
-          </td>
-          <td class="adjust-cell">
-            <div class="adjust-btn-group">
-              <button class="btn-adjust btn-minus" (click)="quickAdjustQuantity(item, -1)" [disabled]="(item.quantity || 0) <= 0">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-              </button>
-              <button class="btn-adjust btn-plus" (click)="quickAdjustQuantity(item, 1)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="12" y1="5" x2="12" y2="19"/>
-                  <line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-              </button>
-            </div>
-          </td>
-          <td class="actions-cell">
-            <button class="btn btn-secondary btn-icon-only" (click)="openEditModal(item)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-              </svg>
-            </button>
-            <button class="btn btn-danger btn-icon-only" (click)="deleteInventoryItem(item.id)" *ngIf="hasDeleteAccess()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="3 6 5 6 21 6"/>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                <line x1="10" y1="11" x2="10" y2="17"/>
-                <line x1="14" y1="11" x2="14" y2="17"/>
-              </svg>
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Form Modal Overlay -->
-  <div *ngIf="showModal()" class="modal-backdrop" (click)="closeModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h3 class="modal-title">{{ modalTitle }}</h3>
-        <button class="modal-close" (click)="closeModal()">&times;</button>
+  <!-- ========================================================================= -->
+  <!-- TAB 1: RAW SUPPLIES & CURRENT STOCK                                       -->
+  <!-- ========================================================================= -->
+  <div *ngIf="mainTab() === 'stock'" class="tab-content animate-fade-in">
+    
+    <!-- Summary Cards Row -->
+    <div class="metrics-row">
+      <!-- Total Items Card -->
+      <div class="glass-panel metric-card" [class.active-card]="activeFilter() === 'All'" (click)="setFilter('All')">
+        <div class="metric-icon total-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 7l-8-4-8 4 8 4 8-4z" />
+            <path d="M4 12l8 4 8-4" />
+            <path d="M4 17l8 4 8-4" />
+          </svg>
+        </div>
+        <div class="metric-info">
+          <span class="metric-label">Total Supplies</span>
+          <h3 class="metric-value">{{ getMetricsCount('Total') }}</h3>
+        </div>
       </div>
-      <div class="modal-body">
-        <div *ngIf="errorMessage()" class="error-msg">{{ errorMessage() }}</div>
-        
-        <div class="form-group">
-          <label for="itemRestaurant">Restaurant Outlet *</label>
-          <select id="itemRestaurant" [(ngModel)]="restaurantId" required>
-            <option value="" disabled selected>-- Select Restaurant Outlet --</option>
-            <option *ngFor="let r of restaurants()" [value]="r.id">{{ r.name }}</option>
-          </select>
+
+      <!-- Low Stock Card -->
+      <div class="glass-panel metric-card warning-card" [class.active-card]="activeFilter() === 'LowStock'" [class.pulse-glow]="getMetricsCount('LowStock') > 0" (click)="setFilter('LowStock')">
+        <div class="metric-icon low-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </div>
+        <div class="metric-info">
+          <span class="metric-label">Low Stock Alerts</span>
+          <h3 class="metric-value text-warning">{{ getMetricsCount('LowStock') }}</h3>
+        </div>
+      </div>
+
+      <!-- Out of Stock Card -->
+      <div class="glass-panel metric-card danger-card" [class.active-card]="activeFilter() === 'OutOfStock'" [class.pulse-danger]="getMetricsCount('OutOfStock') > 0" (click)="setFilter('OutOfStock')">
+        <div class="metric-icon out-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+          </svg>
+        </div>
+        <div class="metric-info">
+          <span class="metric-label">Out of Stock</span>
+          <h3 class="metric-value text-danger">{{ getMetricsCount('OutOfStock') }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search and Segmented Filters Bar -->
+    <div class="filters-bar">
+      <div class="search-box">
+        <span class="search-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </span>
+        <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event); onSearch()" placeholder="Search supplies by name (e.g. Chicken, Paneer, Bread)..." />
+      </div>
+
+      <!-- Segmented Tab Controls -->
+      <div class="filter-tabs">
+        <button class="filter-tab" [class.active]="activeFilter() === 'All'" (click)="setFilter('All')">All</button>
+        <button class="filter-tab" [class.active]="activeFilter() === 'InStock'" (click)="setFilter('InStock')">In Stock</button>
+        <button class="filter-tab" [class.active]="activeFilter() === 'LowStock'" (click)="setFilter('LowStock')">Low Stock</button>
+        <button class="filter-tab" [class.active]="activeFilter() === 'OutOfStock'" (click)="setFilter('OutOfStock')">Out of Stock</button>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div *ngIf="isLoading()" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading inventory supplies...</p>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="!isLoading() && filteredItems().length === 0" class="empty-state glass-panel">
+      <div class="empty-icon">📦</div>
+      <h3>No inventory supplies found</h3>
+      <p>Try adjusting your search criteria or add new raw ingredients to begin tracking stock.</p>
+      <button class="btn btn-primary" (click)="openAddModal()">Add Supply Item</button>
+    </div>
+
+    <!-- Inventory Table -->
+    <div *ngIf="!isLoading() && filteredItems().length > 0" class="table-container glass-panel">
+      <table class="inventory-table">
+        <thead>
+          <tr>
+            <th>Supply Item</th>
+            <th>Remaining Stock</th>
+            <th>Unit</th>
+            <th>Stock Health</th>
+            <th>Threshold</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of paginatedItems()" class="table-row">
+            <td>
+              <div class="item-name-cell">
+                <span class="item-icon">🥫</span>
+                <span class="item-name">{{ item.name }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="stock-qty-cell">
+                <span class="stock-num" [ngClass]="{
+                  'num-out': (item.quantity || 0) <= 0,
+                  'num-low': (item.quantity || 0) > 0 && (item.quantity || 0) <= (item.threshold || 10),
+                  'num-healthy': (item.quantity || 0) > (item.threshold || 10)
+                }">
+                  {{ formatNumber(item.quantity) }}
+                </span>
+                <span class="stock-unit-label">{{ item.unit || 'units' }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="unit-badge">{{ item.unit || 'units' }}</span>
+            </td>
+            <td>
+              <!-- Live Health Status Badge -->
+              <span *ngIf="(item.quantity || 0) <= 0" class="status-pill status-out">
+                <span class="dot dot-out"></span> Out of Stock
+              </span>
+              <span *ngIf="(item.quantity || 0) > 0 && (item.quantity || 0) <= (item.threshold || 10)" class="status-pill status-low">
+                <span class="dot dot-low"></span> Low Stock
+              </span>
+              <span *ngIf="(item.quantity || 0) > (item.threshold || 10)" class="status-pill status-healthy">
+                <span class="dot dot-healthy"></span> Healthy
+              </span>
+            </td>
+            <td>
+              <span class="threshold-text">{{ item.threshold || 10 }} {{ item.unit }}</span>
+            </td>
+            <td style="text-align: right;">
+              <div class="actions-cell">
+                <button class="btn btn-sm btn-quick-restock" (click)="openRestockModal(item)" title="Restock item">
+                  <span>+</span> Restock
+                </button>
+                <button class="btn-icon" (click)="openEditModal(item)" title="Edit supply item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
+                <button *ngIf="hasDeleteAccess()" class="btn-icon btn-danger" (click)="deleteInventoryItem(item.id)" title="Delete supply item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination Controls Bar (1 page 10) -->
+      <div class="pagination-bar" *ngIf="filteredItems().length > 0">
+        <div class="pagination-info">
+          Showing <strong>{{ pageStartRecord() }}</strong> – <strong>{{ pageEndRecord() }}</strong> of <strong>{{ filteredItems().length }}</strong> supplies
         </div>
         
+        <div class="pagination-actions">
+          <div class="page-size-selector">
+            <label>Per page:</label>
+            <select [ngModel]="pageSize()" (ngModelChange)="changePageSize($event)">
+              <option [ngValue]="10">10</option>
+              <option [ngValue]="20">20</option>
+              <option [ngValue]="50">50</option>
+            </select>
+          </div>
+
+          <div class="pagination-nav">
+            <button 
+              type="button"
+              class="pagination-btn prev-btn" 
+              [disabled]="currentPage() === 1" 
+              (click)="prevPage()" 
+              title="Previous Page">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+              <span>Prev</span>
+            </button>
+
+            <div class="pagination-pages">
+              <ng-container *ngFor="let p of paginationPages()">
+                <button 
+                  *ngIf="p !== '...'" 
+                  type="button"
+                  class="page-num-btn" 
+                  [class.active]="currentPage() === p"
+                  (click)="goToPage(p)">
+                  {{ p }}
+                </button>
+                <span *ngIf="p === '...'" class="page-ellipsis">...</span>
+              </ng-container>
+            </div>
+
+            <button 
+              type="button"
+              class="pagination-btn next-btn" 
+              [disabled]="currentPage() === totalPages()" 
+              (click)="nextPage()" 
+              title="Next Page">
+              <span>Next</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 2: DYNAMIC RECIPES TABLE & MULTI-INGREDIENT BUILDER                   -->
+  <!-- ========================================================================= -->
+  <div *ngIf="mainTab() === 'recipes'" class="tab-content animate-fade-in">
+    
+    <!-- Appliance & Category Filter Chips -->
+    <div class="recipe-filter-section glass-panel">
+      
+      <!-- Appliance Filter Chips -->
+      <div class="filter-group">
+        <span class="group-label">Kitchen Equipment:</span>
+        <div class="chip-container">
+          <button class="chip-btn" [class.active]="recipeApplianceFilter() === 'All'" (click)="setRecipeApplianceFilter('All')">
+            All Appliances
+          </button>
+          <button *ngFor="let app of applianceOptions" class="chip-btn" [class.active]="recipeApplianceFilter() === app.value" (click)="setRecipeApplianceFilter(app.value)">
+            {{ app.label }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Category Filter Chips -->
+      <div class="filter-group" style="margin-top: 12px;">
+        <span class="group-label">Dish Category:</span>
+        <div class="chip-container">
+          <button *ngFor="let cat of categoryOptions" class="chip-btn" [class.active]="recipeCategoryFilter() === cat" (click)="setRecipeCategoryFilter(cat)">
+            {{ cat }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search & Summary Bar -->
+    <div class="filters-bar" style="margin-top: 16px;">
+      <div class="search-box">
+        <span class="search-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </span>
+        <input type="text" [ngModel]="recipeSearchQuery()" (ngModelChange)="recipeSearchQuery.set($event); onRecipeSearch()" placeholder="Search recipe by dish name or ingredient (e.g. Chicken, Dahi Kebab, Fries)..." />
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.7); font-size: 0.9rem;">
+        <span>Showing <strong>{{ filteredRecipes().length }}</strong> configured recipes</span>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isRecipesLoading()" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading kitchen recipes...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!isRecipesLoading() && filteredRecipes().length === 0" class="empty-state glass-panel">
+      <div class="empty-icon">🍽️</div>
+      <h3>No Recipes Found</h3>
+      <p>Create a new multi-ingredient recipe or click "Sync Default Recipes" to pre-load all 47 menu recipes.</p>
+      <div style="display: flex; gap: 10px; justify-content: center; margin-top: 14px;">
+        <button class="btn btn-primary" (click)="openAddRecipeModal()">Build New Recipe</button>
+        <button class="btn btn-outline-warning" (click)="seedStandardRecipes()">Sync Default Recipes</button>
+      </div>
+    </div>
+
+    <!-- Recipes Table -->
+    <div *ngIf="!isRecipesLoading() && filteredRecipes().length > 0" class="table-container glass-panel">
+      <table class="inventory-table">
+        <thead>
+          <tr>
+            <th>Dish Name & Category</th>
+            <th>Kitchen Appliance</th>
+            <th>Ingredients Breakdown</th>
+            <th>Portions</th>
+            <th>Preparation Guide / Notes</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of filteredRecipes()" class="table-row">
+            <td>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-weight: 700; color: #fff; font-size: 0.96rem;">{{ r.dishName }}</span>
+                <span style="font-size: 0.78rem; color: rgba(255,255,255,0.45);">{{ r.category || 'General' }}</span>
+              </div>
+            </td>
+            <td>
+              <span class="appliance-badge" [ngClass]="{
+                'badge-sandwich': r.appliance === 'Sandwich Maker',
+                'badge-airfryer': r.appliance === 'Air Fryer',
+                'badge-induction': r.appliance === 'Induction',
+                'badge-microwave': r.appliance === 'Microwave',
+                'badge-mixer': r.appliance === 'Mixer',
+                'badge-assembly': r.appliance === 'Assembly'
+              }">
+                <span *ngIf="r.appliance === 'Sandwich Maker'">🥪 Sandwich Maker</span>
+                <span *ngIf="r.appliance === 'Air Fryer'">🍟 Air Fryer (0 Oil)</span>
+                <span *ngIf="r.appliance === 'Induction'">⚡ Induction</span>
+                <span *ngIf="r.appliance === 'Microwave'">📡 Microwave</span>
+                <span *ngIf="r.appliance === 'Mixer'">🌪️ Mixer & Shaker</span>
+                <span *ngIf="r.appliance === 'Assembly'">🥗 Assembly</span>
+                <span *ngIf="!['Sandwich Maker','Air Fryer','Induction','Microwave','Mixer','Assembly'].includes(r.appliance || '')">{{ r.appliance }}</span>
+              </span>
+            </td>
+            <td>
+              <!-- Multi-ingredient pill stack -->
+              <div class="ingredient-pill-list">
+                <span *ngFor="let ing of r.ingredients" class="ing-pill">
+                  <span class="ing-name">{{ ing.inventoryItemName }}</span>
+                  <span class="ing-qty">{{ ing.quantity }} {{ ing.unit }}</span>
+                </span>
+              </div>
+            </td>
+            <td>
+              <span style="font-weight: 600; color: #fff;">{{ r.yieldPortions || 1 }} portion</span>
+            </td>
+            <td>
+              <span class="recipe-notes-cell" [title]="r.notes || 'No special notes'">
+                {{ r.notes || '—' }}
+              </span>
+            </td>
+            <td style="text-align: right;">
+              <div class="actions-cell">
+                <button class="btn-icon" (click)="openEditRecipeModal(r)" title="Edit recipe">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
+                <button *ngIf="hasDeleteAccess()" class="btn-icon btn-danger" (click)="deleteRecipe(r.id)" title="Delete recipe">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 3: DAILY INVENTORY CONSUMPTION & DEDUCTION REPORT                      -->
+  <!-- ========================================================================= -->
+  <div *ngIf="mainTab() === 'daily-report'" class="tab-content animate-fade-in">
+    
+    <!-- Date Selector Bar -->
+    <div class="glass-panel daily-date-bar">
+      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+        <span style="font-weight: 700; color: #fff;">Audit Date:</span>
+        <input type="date" [ngModel]="dailyReportDate()" (ngModelChange)="onDailyDateChange($event)" class="date-input" />
+        <button class="btn btn-sm btn-outline-info" (click)="setTodayDailyDate()">
+          Today
+        </button>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button class="filter-tab" [class.active]="dailyReportStatusFilter() === 'All'" (click)="dailyReportStatusFilter.set('All'); dailyCurrentPage.set(1)">All Items</button>
+        <button class="filter-tab" [class.active]="dailyReportStatusFilter() === 'low'" (click)="dailyReportStatusFilter.set('low'); dailyCurrentPage.set(1)">Low Stock</button>
+        <button class="filter-tab" [class.active]="dailyReportStatusFilter() === 'out'" (click)="dailyReportStatusFilter.set('out'); dailyCurrentPage.set(1)">Out of Stock</button>
+      </div>
+    </div>
+
+    <!-- Daily Metrics Cards -->
+    <div *ngIf="dailyReport()" class="metrics-row" style="margin-top: 16px;">
+      <div class="glass-panel metric-card">
+        <div class="metric-icon total-icon">📥</div>
+        <div class="metric-info">
+          <span class="metric-label">Purchases (+)</span>
+          <h3 class="metric-value text-success">+{{ formatNumber(dailyReport()?.summary?.totalPurchasesSum) }}</h3>
+        </div>
+      </div>
+
+      <div class="glass-panel metric-card">
+        <div class="metric-icon out-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">🍳</div>
+        <div class="metric-info">
+          <span class="metric-label">Recipe Deductions (-)</span>
+          <h3 class="metric-value text-danger">-{{ formatNumber(dailyReport()?.summary?.totalDeductionsSum) }}</h3>
+        </div>
+      </div>
+
+      <div class="glass-panel metric-card">
+        <div class="metric-icon low-icon">🗑️</div>
+        <div class="metric-info">
+          <span class="metric-label">Wastage (-)</span>
+          <h3 class="metric-value text-warning">-{{ formatNumber(dailyReport()?.summary?.totalWastageSum) }}</h3>
+        </div>
+      </div>
+
+      <div class="glass-panel metric-card">
+        <div class="metric-icon total-icon" style="background: rgba(16, 185, 129, 0.1); color: #10b981;">🟢</div>
+        <div class="metric-info">
+          <span class="metric-label">Healthy Items</span>
+          <h3 class="metric-value text-success">{{ dailyReport()?.summary?.healthyCount }} / {{ dailyReport()?.summary?.totalItemsCount }}</h3>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search for Daily Items -->
+    <div class="filters-bar" style="margin-top: 16px;">
+      <div class="search-box">
+        <span class="search-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </span>
+        <input type="text" [ngModel]="dailyReportSearch()" (ngModelChange)="dailyReportSearch.set($event); dailyCurrentPage.set(1)" placeholder="Search item in daily report..." />
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isDailyReportLoading()" class="loading-state">
+      <div class="spinner"></div>
+      <p>Calculating daily inventory consumption...</p>
+    </div>
+
+    <!-- Daily Inventory Table -->
+    <div *ngIf="!isDailyReportLoading() && filteredDailyItems().length > 0" class="table-container glass-panel" style="margin-top: 16px;">
+      <table class="inventory-table">
+        <thead>
+          <tr>
+            <th>Supply Item</th>
+            <th style="text-align: right;">Opening Stock</th>
+            <th style="text-align: right;">Purchases (+)</th>
+            <th style="text-align: right;">Recipe Deductions (-)</th>
+            <th style="text-align: right;">Wastage (-)</th>
+            <th style="text-align: right;">Closing Stock</th>
+            <th style="text-align: center;">Health Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of paginatedDailyItems()" class="table-row">
+            <td>
+              <div class="item-name-cell">
+                <span class="item-icon">🥫</span>
+                <span class="item-name">{{ item.name }}</span>
+                <span class="unit-badge" style="margin-left: 6px;">{{ item.unit }}</span>
+              </div>
+            </td>
+            <td style="text-align: right; font-weight: 600; color: rgba(255,255,255,0.7);">
+              {{ formatNumber(item.openingStock) }} {{ item.unit }}
+            </td>
+            <td style="text-align: right; font-weight: 700; color: #10b981;">
+              <span *ngIf="item.purchased > 0">+{{ formatNumber(item.purchased) }}</span>
+              <span *ngIf="item.purchased === 0" style="color: rgba(255,255,255,0.25);">0</span>
+            </td>
+            <td style="text-align: right; font-weight: 700; color: #f43f5e;">
+              <span *ngIf="item.deducted > 0">-{{ formatNumber(item.deducted) }}</span>
+              <span *ngIf="item.deducted === 0" style="color: rgba(255,255,255,0.25);">0</span>
+            </td>
+            <td style="text-align: right; font-weight: 700; color: #fbbf24;">
+              <span *ngIf="item.wasted > 0">-{{ formatNumber(item.wasted) }}</span>
+              <span *ngIf="item.wasted === 0" style="color: rgba(255,255,255,0.25);">0</span>
+            </td>
+            <td style="text-align: right;">
+              <div class="stock-qty-cell" style="justify-content: flex-end;">
+                <span class="stock-num" [ngClass]="{
+                  'num-out': item.status === 'out',
+                  'num-low': item.status === 'low',
+                  'num-healthy': item.status === 'healthy'
+                }">
+                  {{ formatNumber(item.closingStock) }}
+                </span>
+                <span class="stock-unit-label">{{ item.unit }}</span>
+              </div>
+            </td>
+            <td style="text-align: center;">
+              <span *ngIf="item.status === 'out'" class="status-pill status-out">
+                <span class="dot dot-out"></span> Out of Stock
+              </span>
+              <span *ngIf="item.status === 'low'" class="status-pill status-low">
+                <span class="dot dot-low"></span> Low Stock
+              </span>
+              <span *ngIf="item.status === 'healthy'" class="status-pill status-healthy">
+                <span class="dot dot-healthy"></span> Healthy
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination Controls Bar for Daily Report (1 page 10) -->
+      <div class="pagination-bar" *ngIf="filteredDailyItems().length > 0">
+        <div class="pagination-info">
+          Showing <strong>{{ dailyPageStartRecord() }}</strong> – <strong>{{ dailyPageEndRecord() }}</strong> of <strong>{{ filteredDailyItems().length }}</strong> daily items
+        </div>
+        
+        <div class="pagination-actions">
+          <div class="page-size-selector">
+            <label>Per page:</label>
+            <select [ngModel]="dailyPageSize()" (ngModelChange)="changeDailyPageSize($event)">
+              <option [ngValue]="10">10</option>
+              <option [ngValue]="20">20</option>
+              <option [ngValue]="50">50</option>
+            </select>
+          </div>
+
+          <div class="pagination-nav">
+            <button 
+              type="button"
+              class="pagination-btn prev-btn" 
+              [disabled]="dailyCurrentPage() === 1" 
+              (click)="prevDailyPage()" 
+              title="Previous Page">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+              <span>Prev</span>
+            </button>
+
+            <div class="pagination-pages">
+              <ng-container *ngFor="let p of dailyPaginationPages()">
+                <button 
+                  *ngIf="p !== '...'" 
+                  type="button"
+                  class="page-num-btn" 
+                  [class.active]="dailyCurrentPage() === p"
+                  (click)="goToDailyPage(p)">
+                  {{ p }}
+                </button>
+                <span *ngIf="p === '...'" class="page-ellipsis">...</span>
+              </ng-container>
+            </div>
+
+            <button 
+              type="button"
+              class="pagination-btn next-btn" 
+              [disabled]="dailyCurrentPage() === dailyTotalPages()" 
+              (click)="nextDailyPage()" 
+              title="Next Page">
+              <span>Next</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Deduction Activity Log -->
+    <div *ngIf="!isDailyReportLoading() && dailyReport()?.deductionLogs && (dailyReport()?.deductionLogs?.length || 0) > 0" class="glass-panel" style="margin-top: 24px; padding: 20px;">
+      <h3 style="margin-top: 0; margin-bottom: 12px; color: #fff; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+        <span>📝</span> Detailed Recipe Deduction Logs for {{ dailyReport()?.date }}
+      </h3>
+      <div style="max-height: 250px; overflow-y: auto;">
+        <table class="inventory-table" style="font-size: 0.85rem;">
+          <thead>
+            <tr>
+              <th>Dish Prepared</th>
+              <th>Ingredient Deducted</th>
+              <th>Quantity Deducted</th>
+              <th>Source</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let log of dailyReport()?.deductionLogs">
+              <td style="font-weight: 700; color: #fff;">{{ log.dishName }}</td>
+              <td>{{ log.inventoryItemName }}</td>
+              <td style="color: #f43f5e; font-weight: 700;">-{{ log.quantity }} {{ log.unit }}</td>
+              <td><span class="unit-badge">{{ log.source }}</span></td>
+              <td style="color: rgba(255,255,255,0.45);">{{ log.createdAt | date:'shortTime' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ADD / EDIT SUPPLY ITEM                                             -->
+  <!-- ========================================================================= -->
+  <div *ngIf="showModal()" class="modal-backdrop animate-fade-in" (click)="closeModal()">
+    <div class="modal-content glass-panel" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ modalTitle }}</h2>
+        <button class="btn-close" (click)="closeModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div *ngIf="errorMessage()" class="alert-banner danger">
+          {{ errorMessage() }}
+        </div>
+
         <div class="form-group">
-          <label for="itemName">Item Name *</label>
-          <input type="text" id="itemName" [(ngModel)]="name" placeholder="e.g. Basmati Rice, Refined Oil, Chicken" required />
+          <label>Supply Item Name *</label>
+          <input type="text" [(ngModel)]="name" placeholder="e.g. CHICKEN, WARANA MALAI PANEER, Butter" class="form-control" />
         </div>
 
         <div class="form-row">
-          <div class="form-group half-width">
-            <label for="itemQty">Current Stock Quantity *</label>
-            <input type="number" id="itemQty" [(ngModel)]="quantity" min="0" placeholder="e.g. 50" required />
+          <div class="form-group">
+            <label>Current Remaining Stock *</label>
+            <input type="number" [(ngModel)]="quantity" min="0" step="0.01" class="form-control" />
           </div>
 
-          <div class="form-group half-width">
-            <label for="itemUnit">Unit of Measurement *</label>
-            <select id="itemUnit" [(ngModel)]="unit" required>
+          <div class="form-group">
+            <label>Measurement Unit *</label>
+            <select [(ngModel)]="unit" class="form-control">
               <option value="kg">kg (Kilograms)</option>
-              <option value="grams">g (Grams)</option>
-              <option value="litres">L (Litres)</option>
-              <option value="ml">ml (Millilitres)</option>
-              <option value="units">Units / Pieces</option>
-              <option value="packets">Packets</option>
-              <option value="boxes">Boxes</option>
+              <option value="litres">litres (L)</option>
+              <option value="pkts">pkts (Packets)</option>
+              <option value="pcs">pcs (Pieces)</option>
+              <option value="cans">cans (Beverage Cans)</option>
+              <option value="bottles">bottles</option>
+              <option value="units">units</option>
             </select>
           </div>
         </div>
 
         <div class="form-group">
-          <label for="itemThreshold">Low Stock Alert Threshold *</label>
-          <input type="number" id="itemThreshold" [(ngModel)]="threshold" min="0" placeholder="e.g. 10" required />
-          <span class="field-hint">A warning trigger will fire if stock level matches or falls below this limit.</span>
+          <label>Safety Alert Threshold (Low-Stock Alert) *</label>
+          <input type="number" [(ngModel)]="threshold" min="0" step="0.5" class="form-control" />
+          <small class="form-hint">A warning badge will trigger when stock falls to or below this level.</small>
         </div>
       </div>
+
       <div class="modal-footer">
         <button class="btn btn-secondary" (click)="closeModal()">Cancel</button>
-        <button class="btn btn-primary" (click)="saveInventoryItem()">Save Item</button>
+        <button class="btn btn-primary" (click)="saveInventoryItem()">
+          {{ isEditing ? 'Save Changes' : 'Add Item' }}
+        </button>
       </div>
     </div>
   </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: DYNAMIC MULTI-INGREDIENT RECIPE BUILDER                            -->
+  <!-- ========================================================================= -->
+  <div *ngIf="showRecipeModal()" class="modal-backdrop animate-fade-in" (click)="closeRecipeModal()">
+    <div class="modal-content glass-panel recipe-modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.4rem;">🍽️</span>
+          <h2>{{ recipeModalTitle }}</h2>
+        </div>
+        <button class="btn-close" (click)="closeRecipeModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div *ngIf="recipeErrorMessage()" class="alert-banner danger">
+          {{ recipeErrorMessage() }}
+        </div>
+
+        <!-- Recipe Overview Row -->
+        <div class="form-row">
+          <div class="form-group" style="flex: 2;">
+            <label>Dish Name *</label>
+            <input type="text" [(ngModel)]="recipeDishName" placeholder="e.g. Chicken Cheese Sandwich, Dahi Kebab (6pc)" class="form-control" />
+          </div>
+
+          <div class="form-group" style="flex: 1;">
+            <label>Category</label>
+            <select [(ngModel)]="recipeCategory" class="form-control">
+              <option value="Sandwiches">Sandwiches</option>
+              <option value="Shawarma">Shawarma</option>
+              <option value="Sides">Sides & Starters</option>
+              <option value="Main Course">Main Course</option>
+              <option value="Beverages">Beverages</option>
+              <option value="Combos">Combos</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group" style="flex: 2;">
+            <label>Kitchen Equipment / Appliance *</label>
+            <select [(ngModel)]="recipeAppliance" class="form-control">
+              <option *ngFor="let opt of applianceOptions" [value]="opt.value">{{ opt.label }}</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="flex: 1;">
+            <label>Yield Portions</label>
+            <input type="number" [(ngModel)]="recipeYieldPortions" min="1" class="form-control" />
+          </div>
+        </div>
+
+        <!-- Dynamic Multi-Ingredient Builder Section -->
+        <div class="recipe-ingredients-builder">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="font-weight: 700; color: #fff; font-size: 0.95rem; margin: 0;">
+              Multi-Ingredient Formula (Auto-Deductions per Order)
+            </label>
+            <button type="button" class="btn btn-sm btn-outline-info" (click)="addIngredientRow()">
+              <span>+</span> Add Another Ingredient
+            </button>
+          </div>
+
+          <div class="ingredient-rows-container">
+            <div *ngFor="let ing of recipeIngredients; let idx = index" class="ingredient-builder-row">
+              <span class="row-num">#{{ idx + 1 }}</span>
+
+              <!-- Inventory Supply Selector -->
+              <div style="flex: 3;">
+                <select [ngModel]="ing.inventoryItemId" (ngModelChange)="onIngredientSelected(idx, $event)" class="form-control">
+                  <option value="" disabled>-- Select Raw Supply Item --</option>
+                  <option *ngFor="let item of inventoryItems()" [value]="item.id">
+                    {{ item.name }} ({{ item.unit }})
+                  </option>
+                </select>
+              </div>
+
+              <!-- Quantity Input -->
+              <div style="flex: 1.5;">
+                <input type="number" [(ngModel)]="ing.quantity" min="0.001" step="0.005" placeholder="Qty" class="form-control" />
+              </div>
+
+              <!-- Auto-selected Unit Badge -->
+              <div style="min-width: 60px; display: flex; align-items: center;">
+                <span class="unit-badge" style="width: 100%; text-align: center;">{{ ing.unit || 'units' }}</span>
+              </div>
+
+              <!-- Delete Row Button -->
+              <button type="button" class="btn-icon btn-danger" (click)="removeIngredientRow(idx)" title="Remove Ingredient">
+                &times;
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cooking Instructions & Notes -->
+        <div class="form-group" style="margin-top: 14px;">
+          <label>Chef Preparation Guide & Kitchen Notes</label>
+          <textarea [(ngModel)]="recipeNotes" rows="2" placeholder="e.g. Toast in Sandwich Maker with 15g butter for 3 mins. 0 cooking oil." class="form-control"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeRecipeModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="saveRecipe()">
+          {{ isEditingRecipe ? 'Save Recipe Changes' : 'Create Recipe' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: QUICK RESTOCK SUPPLY ITEM                                          -->
+  <!-- ========================================================================= -->
+  <div *ngIf="showRestockModal()" class="modal-backdrop animate-fade-in" (click)="closeRestockModal()">
+    <div class="modal-content glass-panel" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Quick Restock: {{ selectedRestockItem?.name }}</h2>
+        <button class="btn-close" (click)="closeRestockModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p style="color: rgba(255,255,255,0.7); margin-top: 0;">
+          Current remaining stock: <strong>{{ selectedRestockItem?.quantity }} {{ selectedRestockItem?.unit }}</strong>
+        </p>
+
+        <div class="form-row">
+          <div class="form-group" style="flex: 1;">
+            <label>Add Stock Quantity ({{ selectedRestockItem?.unit }}) *</label>
+            <input type="number" [(ngModel)]="restockQty" min="1" step="0.5" class="form-control" />
+          </div>
+
+          <div class="form-group" style="flex: 1;">
+            <label>Total Purchase Cost (₹)</label>
+            <input type="number" [(ngModel)]="restockCost" min="0" placeholder="Optional" class="form-control" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Supplier / Vendor Name</label>
+          <input type="text" [(ngModel)]="restockSupplier" placeholder="e.g. Local Dairy, Wholesale Market" class="form-control" />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeRestockModal()">Cancel</button>
+        <button class="btn btn-primary" (click)="confirmRestock()">Confirm Restock</button>
+      </div>
+    </div>
+  </div>
+
 </div>

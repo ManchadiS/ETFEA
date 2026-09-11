@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ApiService, Restaurant, FoodItem, Expense, Billing, Payout } from '../../services/api.service';
+import { ApiService, Restaurant, FoodItem, Expense, Billing, Payout, BankEntry, BankSummary } from '../../services/api.service';
 import { forkJoin } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -21,6 +21,18 @@ interface CategoryCost {
   color: string;
 }
 
+export interface UnifiedBankLedgerItem {
+  id?: string;
+  sourceType: 'opening_balance' | 'upi_order' | 'swiggy_payout' | 'zomato_payout' | 'deposit' | 'deduction';
+  isCredit: boolean;
+  categoryLabel: string;
+  amount: number;
+  date: string;
+  description: string;
+  referenceNumber?: string;
+  originalItem?: any;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -31,14 +43,46 @@ interface CategoryCost {
 export class DashboardComponent implements OnInit {
   private apiService = inject(ApiService);
 
+  // Dashboard Main Tab Switcher ('overview' or 'bank')
+  activeMainTab = signal<'overview' | 'bank'>('overview');
+
+  hasDeleteAccess(): boolean {
+    const user = this.apiService.currentUser();
+    if (!user) return false;
+    if (user.email === 'sagarmanchadi324@gmail.com' || user.role === 'Super Admin') {
+      return true;
+    }
+    return user.rights?.deleteAccess || false;
+  }
+
   // States using Signals
   restaurants = signal<Restaurant[]>([]);
   foodItems = signal<FoodItem[]>([]);
   rawBills = signal<Billing[]>([]);
   rawExpenses = signal<Expense[]>([]);
   rawPayouts = signal<Payout[]>([]);
+  rawBankEntries = signal<BankEntry[]>([]);
 
   isLoading = signal<boolean>(false);
+
+  // Bank Ledger Filters & Pagination
+  bankLedgerSearch = signal<string>('');
+  bankLedgerFilter = signal<'all' | 'inflow' | 'deduction' | 'upi' | 'payout'>('all');
+  bankCurrentPage = signal<number>(1);
+  bankPageSize = signal<number>(10);
+
+  // Bank Entry Modal State
+  showBankModal = signal<boolean>(false);
+  bankModalMode = signal<'opening_balance' | 'payout' | 'deduction' | 'deposit'>('opening_balance');
+  bankModalTitle = signal<string>('Record Opening Balance');
+  bankEntryId = '';
+  bankAmount: number | null = null;
+  bankDate: string = '';
+  bankSource: string = 'Opening Balance';
+  bankDescription: string = '';
+  bankReferenceNumber: string = '';
+  bankPlatform: 'Swiggy' | 'Zomato' = 'Swiggy';
+  bankErrorMessage = signal<string>('');
 
   // Date filters
   activeQuickFilter = signal<string>('all');
@@ -92,11 +136,158 @@ export class DashboardComponent implements OnInit {
   });
 
   swiggyPayouts = computed(() => {
-    return this.payouts().filter(p => p.platform === 'Swiggy').reduce((sum, p) => sum + (p.amount || 0), 0);
+    return this.payouts().filter(p => (p.platform || '').toLowerCase() === 'swiggy').reduce((sum, p) => sum + (p.amount || 0), 0);
   });
 
   zomatoPayouts = computed(() => {
-    return this.payouts().filter(p => p.platform === 'Zomato').reduce((sum, p) => sum + (p.amount || 0), 0);
+    return this.payouts().filter(p => (p.platform || '').toLowerCase() === 'zomato').reduce((sum, p) => sum + (p.amount || 0), 0);
+  });
+
+  // The latest opening balance entry establishes the baseline/go-live point.
+  latestOpeningBalance = computed(() => {
+    const list = this.rawBankEntries()
+      .filter(b => b.type === 'opening_balance')
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    return list.length > 0 ? list[0] : null;
+  });
+
+  // Effective cutoff date (YYYY-MM-DD). Back entries before this date are excluded from treasury calculations.
+  effectiveOpeningDate = computed<string>(() => {
+    const ob = this.latestOpeningBalance();
+    return ob && ob.date ? ob.date.substring(0, 10) : '';
+  });
+
+  bankEntries = computed(() => {
+    const start = this.startDate();
+    const end = this.endDate();
+    const list = this.rawBankEntries();
+    if (!start && !end) return list;
+    return list.filter(b => {
+      const d = b.date;
+      if (!d) return false;
+      if (start && d < start) return false;
+      if (end && d > end) return false;
+      return true;
+    });
+  });
+
+  openingBalanceTotal = computed(() => {
+    const cutoff = this.effectiveOpeningDate();
+    if (!cutoff) return 0;
+    return this.rawBankEntries()
+      .filter(b => b.type === 'opening_balance' && (b.date || '').substring(0, 10) === cutoff)
+      .reduce((sum, b) => sum + (b.amount || 0), 0);
+  });
+
+  treasuryDepositsTotal = computed(() => {
+    const cutoff = this.effectiveOpeningDate();
+    const start = this.startDate();
+    const end = this.endDate();
+    return this.rawBankEntries()
+      .filter(b => {
+        if (b.type !== 'deposit') return false;
+        const d = (b.date || '').substring(0, 10);
+        if (cutoff && d < cutoff) return false;
+        if (start && d < start) return false;
+        if (end && d > end) return false;
+        return true;
+      })
+      .reduce((sum, b) => sum + (b.amount || 0), 0);
+  });
+
+  treasuryDeductionsTotal = computed(() => {
+    const cutoff = this.effectiveOpeningDate();
+    const start = this.startDate();
+    const end = this.endDate();
+    return this.rawBankEntries()
+      .filter(b => {
+        if (b.type !== 'deduction') return false;
+        const d = (b.date || '').substring(0, 10);
+        if (cutoff && d < cutoff) return false;
+        if (start && d < start) return false;
+        if (end && d > end) return false;
+        return true;
+      })
+      .reduce((sum, b) => sum + (b.amount || 0), 0);
+  });
+
+  // Direct UPI orders collections (on or after opening balance date)
+  treasuryUpiStats = computed(() => {
+    const cutoff = this.effectiveOpeningDate();
+    const start = this.startDate();
+    const end = this.endDate();
+    let amount = 0;
+    let count = 0;
+
+    this.rawBills().forEach(b => {
+      const d = (b.date || '').substring(0, 10);
+      if (cutoff && d < cutoff) return; // Don't take back entries for calculations
+      if (start && d < start) return;
+      if (end && d > end) return;
+
+      const grandTotal = (b.amount || 0) + (b.cgst || 0) + (b.sgst || 0);
+      const hasSplit = (b.cashAmount !== undefined && b.cashAmount > 0) || (b.upiAmount !== undefined && b.upiAmount > 0);
+      let upi = 0;
+      if (hasSplit) {
+        upi = b.upiAmount || 0;
+      } else if ((b.paymentMode || '').toLowerCase() === 'upi') {
+        upi = grandTotal;
+      }
+
+      if (upi > 0) {
+        amount += upi;
+        count++;
+      }
+    });
+
+    return {
+      amount: Math.round(amount * 100) / 100,
+      count
+    };
+  });
+
+  treasurySwiggyPayouts = computed(() => {
+    const cutoff = this.effectiveOpeningDate();
+    const start = this.startDate();
+    const end = this.endDate();
+    return this.rawPayouts()
+      .filter(p => {
+        const d = (p.date || '').substring(0, 10);
+        if (cutoff && d < cutoff) return false; // Don't take back entries for calculations
+        if (start && d < start) return false;
+        if (end && d > end) return false;
+        return (p.platform || '').toLowerCase() === 'swiggy';
+      })
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
+  });
+
+  treasuryZomatoPayouts = computed(() => {
+    const cutoff = this.effectiveOpeningDate();
+    const start = this.startDate();
+    const end = this.endDate();
+    return this.rawPayouts()
+      .filter(p => {
+        const d = (p.date || '').substring(0, 10);
+        if (cutoff && d < cutoff) return false; // Don't take back entries for calculations
+        if (start && d < start) return false;
+        if (end && d > end) return false;
+        return (p.platform || '').toLowerCase() === 'zomato';
+      })
+      .reduce((sum, p) => sum + (p.amount || 0), 0);
+  });
+
+  liveCurrentBankBalance = computed(() => {
+    const opening = this.openingBalanceTotal();
+    const upi = this.treasuryUpiStats().amount;
+    const swiggy = this.treasurySwiggyPayouts();
+    const zomato = this.treasuryZomatoPayouts();
+    const deposits = this.treasuryDepositsTotal();
+    const deductions = this.treasuryDeductionsTotal();
+    return Math.round((opening + upi + swiggy + zomato + deposits - deductions) * 100) / 100;
+  });
+
+  totalBankInflows = computed(() => {
+    return Math.round((this.openingBalanceTotal() + this.treasuryUpiStats().amount + this.treasurySwiggyPayouts() + this.treasuryZomatoPayouts() + this.treasuryDepositsTotal()) * 100) / 100;
   });
 
   totalRevenue = computed(() => {
@@ -527,7 +718,8 @@ export class DashboardComponent implements OnInit {
       foodItems: this.apiService.getFoodItems(restId),
       bills: this.apiService.getBills(restId),
       expenses: this.apiService.getExpenses(restId),
-      payouts: this.apiService.getPayouts(restId)
+      payouts: this.apiService.getPayouts(restId),
+      bankEntries: this.apiService.getBankTransactions(restId)
     }).subscribe({
       next: (res) => {
         this.restaurants.set(res.restaurants);
@@ -535,6 +727,7 @@ export class DashboardComponent implements OnInit {
         this.rawBills.set(res.bills);
         this.rawExpenses.set(res.expenses);
         this.rawPayouts.set(res.payouts);
+        this.rawBankEntries.set(res.bankEntries || []);
         this.isLoading.set(false);
       },
       error: (err) => {
@@ -593,6 +786,380 @@ export class DashboardComponent implements OnInit {
   onEndDateChange(val: string) {
     this.endDate.set(val);
     this.activeQuickFilter.set('custom');
+  }
+
+  // =========================================================================
+  // UNIFIED BANK LEDGER & ACTIONS
+  // =========================================================================
+  unifiedBankLedger = computed<UnifiedBankLedgerItem[]>(() => {
+    const items: UnifiedBankLedgerItem[] = [];
+    const cutoff = this.effectiveOpeningDate();
+    const start = this.startDate();
+    const end = this.endDate();
+
+    // 1. Bank Entries (Opening Balance, Deposits, Deductions)
+    this.rawBankEntries().forEach(b => {
+      const d = (b.date || '').substring(0, 10);
+      if (cutoff && d < cutoff) return; // Exclude back entries prior to opening balance
+      if (b.type === 'opening_balance' && cutoff && d !== cutoff) return;
+      if (start && d < start) return;
+      if (end && d > end) return;
+
+      let isCredit = true;
+      let label = '💵 Bank Deposit';
+      if (b.type === 'opening_balance') {
+        label = '💰 Opening Balance';
+      } else if (b.type === 'deduction') {
+        isCredit = false;
+        label = '🔻 Account Deduction';
+      }
+      items.push({
+        id: b.id,
+        sourceType: b.type,
+        isCredit,
+        categoryLabel: label,
+        amount: b.amount || 0,
+        date: b.date || '',
+        description: b.description || (b.type === 'opening_balance' ? 'Initial Account Funds' : (b.type === 'deduction' ? 'Cash/Fund Withdrawal' : 'Deposit')),
+        referenceNumber: b.referenceNumber || '',
+        originalItem: b
+      });
+    });
+
+    // 2. Swiggy & Zomato Payouts
+    this.rawPayouts().forEach(p => {
+      const d = (p.date || '').substring(0, 10);
+      if (cutoff && d < cutoff) return; // Exclude back entries prior to opening balance
+      if (start && d < start) return;
+      if (end && d > end) return;
+
+      const isSwiggy = (p.platform || '').toLowerCase() === 'swiggy';
+      items.push({
+        id: p.id,
+        sourceType: isSwiggy ? 'swiggy_payout' : 'zomato_payout',
+        isCredit: true,
+        categoryLabel: isSwiggy ? '🛵 Swiggy Settlement' : '🔴 Zomato Settlement',
+        amount: p.amount || 0,
+        date: p.date || '',
+        description: p.description || `${p.platform} Online Platform Payout`,
+        referenceNumber: p.referenceNumber || '',
+        originalItem: p
+      });
+    });
+
+    // 3. Daily Aggregated UPI Orders Collections
+    const upiMap = new Map<string, { total: number; count: number }>();
+    this.rawBills().forEach(b => {
+      const d = (b.date || '').substring(0, 10);
+      if (!d) return;
+      if (cutoff && d < cutoff) return; // Exclude back entries prior to opening balance
+      if (start && d < start) return;
+      if (end && d > end) return;
+
+      const grandTotal = (b.amount || 0) + (b.cgst || 0) + (b.sgst || 0);
+      const hasSplit = (b.cashAmount !== undefined && b.cashAmount > 0) || (b.upiAmount !== undefined && b.upiAmount > 0);
+      let upi = 0;
+      if (hasSplit) {
+        upi = b.upiAmount || 0;
+      } else if ((b.paymentMode || '').toLowerCase() === 'upi') {
+        upi = grandTotal;
+      }
+      if (upi > 0) {
+        const curr = upiMap.get(d) || { total: 0, count: 0 };
+        curr.total += upi;
+        curr.count++;
+        upiMap.set(d, curr);
+      }
+    });
+
+    upiMap.forEach((val, dateStr) => {
+      items.push({
+        id: `upi-${dateStr}`,
+        sourceType: 'upi_order',
+        isCredit: true,
+        categoryLabel: '📱 Daily UPI Orders',
+        amount: Math.round(val.total * 100) / 100,
+        date: dateStr,
+        description: `Direct UPI customer payments (${val.count} orders/bills)`,
+        referenceNumber: 'UPI-AUTO',
+        originalItem: null
+      });
+    });
+
+    // Sort chronologically descending
+    items.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    return items;
+  });
+
+  filteredBankLedger = computed(() => {
+    const list = this.unifiedBankLedger();
+    const query = this.bankLedgerSearch().trim().toLowerCase();
+    const filter = this.bankLedgerFilter();
+
+    return list.filter(item => {
+      if (filter === 'inflow' && !item.isCredit) return false;
+      if (filter === 'deduction' && item.isCredit) return false;
+      if (filter === 'upi' && item.sourceType !== 'upi_order') return false;
+      if (filter === 'payout' && item.sourceType !== 'swiggy_payout' && item.sourceType !== 'zomato_payout') return false;
+
+      if (query) {
+        const matchDesc = (item.description || '').toLowerCase().includes(query);
+        const matchCat = (item.categoryLabel || '').toLowerCase().includes(query);
+        const matchRef = (item.referenceNumber || '').toLowerCase().includes(query);
+        const matchDate = (item.date || '').toLowerCase().includes(query);
+        const matchAmount = item.amount.toString().includes(query);
+        return matchDesc || matchCat || matchRef || matchDate || matchAmount;
+      }
+      return true;
+    });
+  });
+
+  bankTotalPages = computed(() => {
+    return Math.max(1, Math.ceil(this.filteredBankLedger().length / this.bankPageSize()));
+  });
+
+  paginatedBankLedger = computed(() => {
+    const page = this.bankCurrentPage();
+    const size = this.bankPageSize();
+    const start = (page - 1) * size;
+    return this.filteredBankLedger().slice(start, start + size);
+  });
+
+  bankPageStartRecord = computed(() => {
+    if (this.filteredBankLedger().length === 0) return 0;
+    return (this.bankCurrentPage() - 1) * this.bankPageSize() + 1;
+  });
+
+  bankPageEndRecord = computed(() => {
+    return Math.min(this.bankCurrentPage() * this.bankPageSize(), this.filteredBankLedger().length);
+  });
+
+  bankPaginationPages = computed(() => {
+    const total = this.bankTotalPages();
+    const current = this.bankCurrentPage();
+    const pages: (number | string)[] = [];
+
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (current > 3) pages.push('...');
+      const start = Math.max(2, current - 1);
+      const end = Math.min(total - 1, current + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (current < total - 2) pages.push('...');
+      pages.push(total);
+    }
+    return pages;
+  });
+
+  goToBankPage(p: number | string) {
+    if (typeof p === 'string') return;
+    if (p >= 1 && p <= this.bankTotalPages()) {
+      this.bankCurrentPage.set(p);
+    }
+  }
+
+  prevBankPage() {
+    if (this.bankCurrentPage() > 1) {
+      this.bankCurrentPage.update(p => p - 1);
+    }
+  }
+
+  nextBankPage() {
+    if (this.bankCurrentPage() < this.bankTotalPages()) {
+      this.bankCurrentPage.update(p => p + 1);
+    }
+  }
+
+  changeBankPageSize(size: number) {
+    this.bankPageSize.set(Number(size));
+    this.bankCurrentPage.set(1);
+  }
+
+  // Modal actions
+  openSetOpeningBalanceModal() {
+    this.bankModalMode.set('opening_balance');
+    this.bankModalTitle.set('Set Opening Bank Balance');
+    this.bankEntryId = '';
+    this.bankAmount = null;
+    this.bankDate = new Date().toISOString().split('T')[0];
+    this.bankSource = 'Opening Balance';
+    this.bankDescription = 'Initial bank funds';
+    this.bankReferenceNumber = '';
+    this.bankErrorMessage.set('');
+    this.showBankModal.set(true);
+  }
+
+  openAddPayoutModal(platform: 'Swiggy' | 'Zomato') {
+    this.bankModalMode.set('payout');
+    this.bankPlatform = platform;
+    this.bankModalTitle.set(`Record ${platform} Payout Addition`);
+    this.bankEntryId = '';
+    this.bankAmount = null;
+    this.bankDate = new Date().toISOString().split('T')[0];
+    this.bankSource = `${platform} Payout`;
+    this.bankDescription = `${platform} Daily Settlement Credit`;
+    this.bankReferenceNumber = '';
+    this.bankErrorMessage.set('');
+    this.showBankModal.set(true);
+  }
+
+  openAddDeductionModal() {
+    this.bankModalMode.set('deduction');
+    this.bankModalTitle.set('Record Account Deduction (Money Taken Out)');
+    this.bankEntryId = '';
+    this.bankAmount = null;
+    this.bankDate = new Date().toISOString().split('T')[0];
+    this.bankSource = 'Cash Withdrawal';
+    this.bankDescription = '';
+    this.bankReferenceNumber = '';
+    this.bankErrorMessage.set('');
+    this.showBankModal.set(true);
+  }
+
+  openAddDepositModal() {
+    this.bankModalMode.set('deposit');
+    this.bankModalTitle.set('Record Bank Deposit (Manual Inflow)');
+    this.bankEntryId = '';
+    this.bankAmount = null;
+    this.bankDate = new Date().toISOString().split('T')[0];
+    this.bankSource = 'Bank Deposit';
+    this.bankDescription = '';
+    this.bankReferenceNumber = '';
+    this.bankErrorMessage.set('');
+    this.showBankModal.set(true);
+  }
+
+  openEditBankLedgerItem(item: UnifiedBankLedgerItem) {
+    if (item.sourceType === 'upi_order') {
+      alert('UPI order collections are auto-calculated from bills/orders and cannot be edited manually.');
+      return;
+    }
+
+    if (item.sourceType === 'swiggy_payout' || item.sourceType === 'zomato_payout') {
+      const p = item.originalItem as Payout;
+      this.bankModalMode.set('payout');
+      this.bankPlatform = p.platform || 'Swiggy';
+      this.bankModalTitle.set(`Edit ${p.platform} Payout`);
+      this.bankEntryId = p.id || '';
+      this.bankAmount = p.amount;
+      this.bankDate = p.date;
+      this.bankSource = `${p.platform} Payout`;
+      this.bankDescription = p.description || '';
+      this.bankReferenceNumber = p.referenceNumber || '';
+      this.bankErrorMessage.set('');
+      this.showBankModal.set(true);
+    } else {
+      const b = item.originalItem as BankEntry;
+      this.bankModalMode.set(b.type);
+      this.bankModalTitle.set(b.type === 'opening_balance' ? 'Edit Opening Balance' : (b.type === 'deduction' ? 'Edit Account Deduction' : 'Edit Deposit'));
+      this.bankEntryId = b.id || '';
+      this.bankAmount = b.amount;
+      this.bankDate = b.date;
+      this.bankSource = b.source || '';
+      this.bankDescription = b.description || '';
+      this.bankReferenceNumber = b.referenceNumber || '';
+      this.bankErrorMessage.set('');
+      this.showBankModal.set(true);
+    }
+  }
+
+  closeBankModal() {
+    this.showBankModal.set(false);
+  }
+
+  saveBankModal() {
+    if (!this.bankAmount || this.bankAmount <= 0) {
+      this.bankErrorMessage.set('Amount must be greater than 0.');
+      return;
+    }
+    if (!this.bankDate) {
+      this.bankErrorMessage.set('Please select a valid date.');
+      return;
+    }
+
+    const restId = this.apiService.selectedRestaurantId() || (this.restaurants()[0]?.id || 'default-restaurant-id');
+
+    if (this.bankModalMode() === 'payout') {
+      const payload: Payout = {
+        restaurantId: restId,
+        platform: this.bankPlatform,
+        amount: Number(this.bankAmount),
+        date: this.bankDate,
+        description: this.bankDescription || `${this.bankPlatform} Payout Credit`,
+        referenceNumber: this.bankReferenceNumber || undefined
+      };
+
+      if (this.bankEntryId) {
+        this.apiService.updatePayout(this.bankEntryId, payload).subscribe({
+          next: () => {
+            this.closeBankModal();
+            this.fetchDashboardData();
+          },
+          error: (err) => this.bankErrorMessage.set(err.error?.error || 'Failed to update payout.')
+        });
+      } else {
+        this.apiService.createPayout(payload).subscribe({
+          next: () => {
+            this.closeBankModal();
+            this.fetchDashboardData();
+          },
+          error: (err) => this.bankErrorMessage.set(err.error?.error || 'Failed to record payout.')
+        });
+      }
+    } else {
+      const payload: Partial<BankEntry> = {
+        restaurantId: restId,
+        type: this.bankModalMode() as any,
+        amount: Number(this.bankAmount),
+        date: this.bankDate,
+        source: this.bankSource || this.bankModalMode(),
+        description: this.bankDescription || (this.bankModalMode() === 'opening_balance' ? 'Opening Balance' : (this.bankModalMode() === 'deduction' ? 'Account Withdrawal' : 'Deposit')),
+        referenceNumber: this.bankReferenceNumber || undefined
+      };
+
+      if (this.bankEntryId) {
+        this.apiService.updateBankTransaction(this.bankEntryId, payload).subscribe({
+          next: () => {
+            this.closeBankModal();
+            this.fetchDashboardData();
+          },
+          error: (err) => this.bankErrorMessage.set(err.error?.error || 'Failed to update bank entry.')
+        });
+      } else {
+        this.apiService.createBankTransaction(payload).subscribe({
+          next: () => {
+            this.closeBankModal();
+            this.fetchDashboardData();
+          },
+          error: (err) => this.bankErrorMessage.set(err.error?.error || 'Failed to save bank entry.')
+        });
+      }
+    }
+  }
+
+  deleteBankLedgerItem(item: UnifiedBankLedgerItem) {
+    if (item.sourceType === 'upi_order') {
+      alert('UPI collections are auto-calculated from customer orders and cannot be deleted from the bank ledger.');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete this ${item.categoryLabel} entry of ₹${item.amount}?`)) return;
+
+    if (item.sourceType === 'swiggy_payout' || item.sourceType === 'zomato_payout') {
+      if (!item.id) return;
+      this.apiService.deletePayout(item.id).subscribe({
+        next: () => this.fetchDashboardData(),
+        error: (err) => console.error('Error deleting payout:', err)
+      });
+    } else {
+      if (!item.id) return;
+      this.apiService.deleteBankTransaction(item.id).subscribe({
+        next: () => this.fetchDashboardData(),
+        error: (err) => console.error('Error deleting bank transaction:', err)
+      });
+    }
   }
 
   clearDateFilter() {

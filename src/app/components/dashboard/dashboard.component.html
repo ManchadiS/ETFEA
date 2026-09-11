@@ -4,6 +4,22 @@
       <h1>Overview Dashboard</h1>
       <p class="subtitle">Real-time metrics, financial breakdowns, and branch operations tracker.</p>
     </div>
+
+    <!-- Main Module Tabs Switcher -->
+    <div class="dashboard-module-tabs">
+      <button class="module-tab-btn" [class.active]="activeMainTab() === 'overview'" (click)="activeMainTab.set('overview')">
+        <span class="tab-icon">📊</span>
+        <span>Business Overview</span>
+      </button>
+
+      <button class="module-tab-btn" [class.active]="activeMainTab() === 'bank'" (click)="activeMainTab.set('bank')">
+        <span class="tab-icon">🏦</span>
+        <span>Bank Balance & Treasury</span>
+        <span class="tab-badge" [ngClass]="liveCurrentBankBalance() >= 0 ? 'badge-positive' : 'badge-negative'">
+          ₹{{ liveCurrentBankBalance() | number:'1.0-0' }}
+        </span>
+      </button>
+    </div>
   </div>
 
   <!-- Loading State -->
@@ -48,10 +64,28 @@
       </div>
     </div>
 
-    <!-- Financial Metric Cards -->
-    <div class="metrics-grid">
-      <!-- Total Revenue Box -->
-      <div class="glass-panel metric-card revenue-card">
+    <!-- 1. BUSINESS OVERVIEW TAB CONTENT -->
+    <div *ngIf="activeMainTab() === 'overview'">
+      <!-- Financial Metric Cards -->
+      <div class="metrics-grid">
+        <!-- Current Bank Balance Box -->
+        <div class="glass-panel metric-card bank-kpi-card" (click)="activeMainTab.set('bank')" style="cursor: pointer;" title="View detailed Bank Balance & Treasury ledger">
+          <div class="metric-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"/>
+            </svg>
+          </div>
+          <div class="metric-info">
+            <span class="label">Current Bank Balance</span>
+            <h2 class="value" [style.color]="liveCurrentBankBalance() >= 0 ? '#10b981' : '#f43f5e'">
+              ₹{{ liveCurrentBankBalance() | number:'1.2-2' }}
+            </h2>
+            <span class="subtext highlight">Inflows: ₹{{ totalBankInflows() | number:'1.0-0' }} | Out: ₹{{ treasuryDeductionsTotal() | number:'1.0-0' }}</span>
+          </div>
+        </div>
+
+        <!-- Total Revenue Box -->
+        <div class="glass-panel metric-card revenue-card">
         <div class="metric-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="1" x2="12" y2="23"/>
@@ -375,6 +409,303 @@
         </div>
       </div>
     </div>
-  </ng-container>
+  </div>
+
+  <!-- 2. BANK BALANCE & TREASURY TAB CONTENT -->
+  <div *ngIf="activeMainTab() === 'bank'" class="bank-treasury-view animate-fade-in">
+    <!-- Live Bank Balance Hero Banner -->
+    <div class="glass-panel bank-hero-banner">
+      <div class="hero-left">
+        <div class="hero-tag">
+          <span class="pulse-dot"></span>
+          <span>Live Account Treasury</span>
+        </div>
+        <h1 class="hero-balance" [style.color]="liveCurrentBankBalance() >= 0 ? '#10b981' : '#f43f5e'">
+          ₹{{ liveCurrentBankBalance() | number:'1.2-2' }}
+        </h1>
+        <p class="hero-caption">
+          Opening: <strong>₹{{ openingBalanceTotal() | number:'1.0-0' }}</strong>
+          + Direct UPI: <strong>₹{{ treasuryUpiStats().amount | number:'1.0-0' }}</strong>
+          + Swiggy/Zomato: <strong>₹{{ (treasurySwiggyPayouts() + treasuryZomatoPayouts()) | number:'1.0-0' }}</strong>
+          - Deductions: <strong>₹{{ treasuryDeductionsTotal() | number:'1.0-0' }}</strong>
+          <span *ngIf="effectiveOpeningDate()" style="opacity: 0.85; margin-left: 8px;">(Calculated from {{ effectiveOpeningDate() }} onwards)</span>
+        </p>
+      </div>
+
+      <div class="hero-actions">
+        <button class="btn btn-primary" (click)="openSetOpeningBalanceModal()">
+          <span>💰</span> Set Opening Balance
+        </button>
+        <button class="btn btn-outline-warning" (click)="openAddPayoutModal('Swiggy')">
+          <span>🛵</span> + Swiggy Payout
+        </button>
+        <button class="btn btn-outline-danger" (click)="openAddPayoutModal('Zomato')">
+          <span>🔴</span> + Zomato Payout
+        </button>
+        <button class="btn btn-danger-action" (click)="openAddDeductionModal()">
+          <span>🔻</span> - Add Deduct Entry
+        </button>
+        <button class="btn btn-outline-secondary" (click)="openAddDepositModal()">
+          <span>💵</span> + Bank Deposit
+        </button>
+      </div>
+    </div>
+
+    <!-- 5 Breakdown Cards Row -->
+    <div class="metrics-grid" style="margin-top: 20px;">
+      <!-- Opening Balance -->
+      <div class="glass-panel metric-card">
+        <div class="metric-icon" style="background: rgba(59, 130, 246, 0.12); color: #3b82f6;">💰</div>
+        <div class="metric-info">
+          <span class="label">Opening / Base Funds</span>
+          <h3 class="value" style="color: #60a5fa;">₹{{ openingBalanceTotal() | number:'1.2-2' }}</h3>
+          <span class="subtext">{{ effectiveOpeningDate() ? 'Effective as of ' + effectiveOpeningDate() : 'Initial capital logged' }}</span>
+        </div>
+      </div>
+
+      <!-- Direct UPI Orders -->
+      <div class="glass-panel metric-card">
+        <div class="metric-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">📱</div>
+        <div class="metric-info">
+          <span class="label">Direct UPI Orders (+)</span>
+          <h3 class="value" style="color: #10b981;">₹{{ treasuryUpiStats().amount | number:'1.2-2' }}</h3>
+          <span class="subtext">From {{ treasuryUpiStats().count }} customer bills{{ effectiveOpeningDate() ? ' (from ' + effectiveOpeningDate() + ')' : '' }}</span>
+        </div>
+      </div>
+
+      <!-- Swiggy Payouts -->
+      <div class="glass-panel metric-card">
+        <div class="metric-icon" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b;">🛵</div>
+        <div class="metric-info">
+          <span class="label">Swiggy Settlements (+)</span>
+          <h3 class="value" style="color: #fbbf24;">₹{{ treasurySwiggyPayouts() | number:'1.2-2' }}</h3>
+          <span class="subtext">Credits{{ effectiveOpeningDate() ? ' from ' + effectiveOpeningDate() : '' }}</span>
+        </div>
+      </div>
+
+      <!-- Zomato Payouts -->
+      <div class="glass-panel metric-card">
+        <div class="metric-icon" style="background: rgba(239, 68, 68, 0.12); color: #ef4444;">🔴</div>
+        <div class="metric-info">
+          <span class="label">Zomato Settlements (+)</span>
+          <h3 class="value" style="color: #f87171;">₹{{ treasuryZomatoPayouts() | number:'1.2-2' }}</h3>
+          <span class="subtext">Credits{{ effectiveOpeningDate() ? ' from ' + effectiveOpeningDate() : '' }}</span>
+        </div>
+      </div>
+
+      <!-- Account Deductions -->
+      <div class="glass-panel metric-card">
+        <div class="metric-icon" style="background: rgba(244, 63, 94, 0.12); color: #f43f5e;">🔻</div>
+        <div class="metric-info">
+          <span class="label">Account Deductions (-)</span>
+          <h3 class="value" style="color: #f43f5e;">-₹{{ treasuryDeductionsTotal() | number:'1.2-2' }}</h3>
+          <span class="subtext">Money taken out{{ effectiveOpeningDate() ? ' from ' + effectiveOpeningDate() : '' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search & Segmented Filter Bar -->
+    <div class="filters-bar" style="margin-top: 24px;">
+      <div class="search-box">
+        <span class="search-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </span>
+        <input type="text" [ngModel]="bankLedgerSearch()" (ngModelChange)="bankLedgerSearch.set($event); bankCurrentPage.set(1)" placeholder="Search ledger by note, source, amount, or date..." />
+      </div>
+
+      <div class="filter-tabs">
+        <button class="filter-tab" [class.active]="bankLedgerFilter() === 'all'" (click)="bankLedgerFilter.set('all'); bankCurrentPage.set(1)">All Transactions</button>
+        <button class="filter-tab" [class.active]="bankLedgerFilter() === 'inflow'" (click)="bankLedgerFilter.set('inflow'); bankCurrentPage.set(1)">Inflows (+)</button>
+        <button class="filter-tab" [class.active]="bankLedgerFilter() === 'upi'" (click)="bankLedgerFilter.set('upi'); bankCurrentPage.set(1)">UPI Orders</button>
+        <button class="filter-tab" [class.active]="bankLedgerFilter() === 'payout'" (click)="bankLedgerFilter.set('payout'); bankCurrentPage.set(1)">Swiggy / Zomato</button>
+        <button class="filter-tab" [class.active]="bankLedgerFilter() === 'deduction'" (click)="bankLedgerFilter.set('deduction'); bankCurrentPage.set(1)">Deductions (-)</button>
+      </div>
+    </div>
+
+    <!-- Ledger Table -->
+    <div class="table-container glass-panel" style="margin-top: 16px;">
+      <table class="inventory-table" *ngIf="filteredBankLedger().length > 0; else noLedger">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Transaction Type</th>
+            <th>Description / Purpose</th>
+            <th>Reference #</th>
+            <th style="text-align: right;">Amount Impact</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of paginatedBankLedger()" class="table-row">
+            <td>
+              <span style="font-weight: 600; color: #fff;">{{ item.date }}</span>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="{
+                'badge-success': item.sourceType === 'opening_balance' || item.sourceType === 'deposit',
+                'badge-info': item.sourceType === 'upi_order',
+                'badge-warning': item.sourceType === 'swiggy_payout',
+                'badge-secondary': item.sourceType === 'zomato_payout',
+                'badge-danger': item.sourceType === 'deduction'
+              }">
+                {{ item.categoryLabel }}
+              </span>
+            </td>
+            <td>
+              <span style="color: rgba(255,255,255,0.85); font-size: 0.9rem;">{{ item.description }}</span>
+            </td>
+            <td>
+              <span class="threshold-text">{{ item.referenceNumber || '—' }}</span>
+            </td>
+            <td style="text-align: right; font-weight: 700; font-size: 0.95rem;" [ngClass]="item.isCredit ? 'text-success' : 'text-danger'">
+              {{ item.isCredit ? '+' : '-' }}₹{{ item.amount | number:'1.2-2' }}
+            </td>
+            <td style="text-align: right;">
+              <div class="actions-cell" style="justify-content: flex-end;">
+                <button *ngIf="item.sourceType !== 'upi_order'" class="btn-icon" (click)="openEditBankLedgerItem(item)" title="Edit entry">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </button>
+                <button *ngIf="item.sourceType !== 'upi_order' && hasDeleteAccess()" class="btn-icon btn-danger" (click)="deleteBankLedgerItem(item)" title="Delete entry">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                </button>
+                <span *ngIf="item.sourceType === 'upi_order'" style="font-size: 0.75rem; color: rgba(255,255,255,0.4);">Auto-synced</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #noLedger>
+        <div class="empty-state" style="padding: 40px 20px; text-align: center;">
+          <div style="font-size: 2.5rem; margin-bottom: 12px;">🏦</div>
+          <h3 style="color: #fff; margin-bottom: 8px;">No bank ledger entries found</h3>
+          <p style="color: rgba(255,255,255,0.5); max-width: 480px; margin: 0 auto 20px;">Record your initial opening balance, log daily Swiggy/Zomato payouts, or enter account deductions.</p>
+          <button class="btn btn-primary" (click)="openSetOpeningBalanceModal()">Set Opening Balance</button>
+        </div>
+      </ng-template>
+
+      <!-- Pagination Controls Bar (1 page 10) -->
+      <div class="pagination-bar" *ngIf="filteredBankLedger().length > 0">
+        <div class="pagination-info">
+          Showing <strong>{{ bankPageStartRecord() }}</strong> – <strong>{{ bankPageEndRecord() }}</strong> of <strong>{{ filteredBankLedger().length }}</strong> ledger entries
+        </div>
+        
+        <div class="pagination-actions">
+          <div class="page-size-selector">
+            <label>Per page:</label>
+            <select [ngModel]="bankPageSize()" (ngModelChange)="changeBankPageSize($event)">
+              <option [ngValue]="10">10</option>
+              <option [ngValue]="25">25</option>
+              <option [ngValue]="50">50</option>
+            </select>
+          </div>
+
+          <div class="pagination-nav">
+            <button 
+              type="button"
+              class="pagination-btn prev-btn" 
+              [disabled]="bankCurrentPage() === 1" 
+              (click)="prevBankPage()" 
+              title="Previous Page">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+              <span>Prev</span>
+            </button>
+
+            <div class="pagination-pages">
+              <ng-container *ngFor="let p of bankPaginationPages()">
+                <button 
+                  *ngIf="p !== '...'" 
+                  type="button"
+                  class="page-num-btn" 
+                  [class.active]="bankCurrentPage() === p"
+                  (click)="goToBankPage(p)">
+                  {{ p }}
+                </button>
+                <span *ngIf="p === '...'" class="page-ellipsis">...</span>
+              </ng-container>
+            </div>
+
+            <button 
+              type="button"
+              class="pagination-btn next-btn" 
+              [disabled]="bankCurrentPage() === bankTotalPages()" 
+              (click)="nextBankPage()" 
+              title="Next Page">
+              <span>Next</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<!-- Bank Entry Modal -->
+<div class="modal-backdrop" *ngIf="showBankModal()" (click)="closeBankModal()">
+  <div class="glass-panel modal-card animate-scale-up" (click)="$event.stopPropagation()" style="max-width: 520px;">
+    <div class="modal-header">
+      <h2>{{ bankModalTitle() }}</h2>
+      <button class="close-btn" (click)="closeBankModal()">✕</button>
+    </div>
+
+    <form (ngSubmit)="saveBankModal()" class="modal-body">
+      <div *ngIf="bankErrorMessage()" class="error-alert" style="margin-bottom: 16px;">
+        {{ bankErrorMessage() }}
+      </div>
+
+      <div class="form-group" *ngIf="bankModalMode() === 'payout'">
+        <label>Platform *</label>
+        <select [(ngModel)]="bankPlatform" name="bankPlatform" class="form-control" required>
+          <option value="Swiggy">Swiggy</option>
+          <option value="Zomato">Zomato</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Amount (₹) *</label>
+        <input type="number" [(ngModel)]="bankAmount" name="bankAmount" class="form-control" placeholder="e.g. 25000" min="0.01" step="0.01" required />
+      </div>
+
+      <div class="form-group">
+        <label>Transaction Date *</label>
+        <input type="date" [(ngModel)]="bankDate" name="bankDate" class="form-control" required />
+      </div>
+
+      <div class="form-group" *ngIf="bankModalMode() === 'deduction'">
+        <label>Deduction Category / Source</label>
+        <input type="text" [(ngModel)]="bankSource" name="bankSource" class="form-control" placeholder="e.g. Cash Withdrawal, Personal Draw, Vendor Payment" />
+      </div>
+
+      <div class="form-group">
+        <label>Description / Notes</label>
+        <textarea [(ngModel)]="bankDescription" name="bankDescription" class="form-control" rows="2" placeholder="e.g. Starting funds in bank or reason for withdrawal..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Reference # / UTR (Optional)</label>
+        <input type="text" [(ngModel)]="bankReferenceNumber" name="bankReferenceNumber" class="form-control" placeholder="e.g. UTR12345678, CHQ#8921" />
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+        <button type="button" class="btn btn-secondary" (click)="closeBankModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Transaction</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 </div>

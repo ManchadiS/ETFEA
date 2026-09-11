@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ApiService, Restaurant, FoodItem, Expense, Billing, InventoryItem, PurchaseBill } from '../../services/api.service';
+import { ApiService, Restaurant, FoodItem, Expense, Billing, InventoryItem, PurchaseBill, DailyInventoryReport } from '../../services/api.service';
 import { forkJoin } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 
@@ -54,7 +54,14 @@ export class ReportsComponent implements OnInit {
   endDate = signal<string>('');
 
   // Active sub-sidebar tab
-  reportTab = signal<'bills' | 'food_sales' | 'expenses' | 'inventory_expenses'>('bills');
+  reportTab = signal<'bills' | 'food_sales' | 'expenses' | 'inventory_expenses' | 'daily_inventory_consumption'>('bills');
+
+  // Daily Inventory Consumption State
+  dailyAuditReport = signal<DailyInventoryReport | null>(null);
+  dailyAuditDate = signal<string>(new Date().toISOString().split('T')[0]);
+  isDailyAuditLoading = signal<boolean>(false);
+  dailyAuditSearch = signal<string>('');
+  dailyAuditStatusFilter = signal<'All' | 'healthy' | 'low' | 'out'>('All');
 
   // Inventory Report Specific Controls
   selectedInventoryItemFilter = signal<string>('All');
@@ -568,8 +575,72 @@ export class ReportsComponent implements OnInit {
     });
   }
 
-  setReportTab(tab: 'bills' | 'food_sales' | 'expenses' | 'inventory_expenses') {
+  setReportTab(tab: 'bills' | 'food_sales' | 'expenses' | 'inventory_expenses' | 'daily_inventory_consumption') {
     this.reportTab.set(tab);
+    if (tab === 'daily_inventory_consumption') {
+      this.fetchDailyAuditReport();
+    }
+  }
+
+  fetchDailyAuditReport() {
+    const restId = this.apiService.selectedRestaurantId();
+    if (!restId) return;
+
+    this.isDailyAuditLoading.set(true);
+    this.apiService.getDailyInventoryReport(restId, this.dailyAuditDate()).subscribe({
+      next: (report) => {
+        this.dailyAuditReport.set(report);
+        this.isDailyAuditLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Error fetching daily audit report:', err);
+        this.isDailyAuditLoading.set(false);
+      }
+    });
+  }
+
+  onDailyAuditDateChange(date: string) {
+    this.dailyAuditDate.set(date);
+    this.fetchDailyAuditReport();
+  }
+
+  filteredDailyAuditItems() {
+    const report = this.dailyAuditReport();
+    if (!report || !report.items) return [];
+
+    const query = this.dailyAuditSearch().trim().toLowerCase();
+    const filter = this.dailyAuditStatusFilter();
+
+    return report.items.filter(item => {
+      const matchesSearch = !query || item.name.toLowerCase().includes(query);
+      if (!matchesSearch) return false;
+      if (filter !== 'All' && item.status !== filter) return false;
+      return true;
+    });
+  }
+
+  exportDailyInventoryToExcel() {
+    const report = this.dailyAuditReport();
+    if (!report || !report.items) return;
+
+    const headers = ['Supply Item', 'Opening Stock', 'Purchases (+)', 'Recipe Deductions (-)', 'Wastage (-)', 'Closing Stock', 'Unit', 'Status'];
+    const rows = report.items.map(i => [
+      i.name,
+      i.openingStock,
+      i.purchased,
+      i.deducted,
+      i.wasted,
+      i.closingStock,
+      i.unit,
+      i.status.toUpperCase()
+    ]);
+
+    this.generateExcelFile(
+      `Daily Inventory Consumption Report - ${report.date}`,
+      headers,
+      rows,
+      `Daily_Inventory_Consumption_${report.date}.xls`
+    );
   }
 
   getRestaurantName(id?: string): string {
