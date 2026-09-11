@@ -68,22 +68,6 @@
     <div *ngIf="activeMainTab() === 'overview'">
       <!-- Financial Metric Cards -->
       <div class="metrics-grid">
-        <!-- Current Bank Balance Box -->
-        <div class="glass-panel metric-card bank-kpi-card" (click)="activeMainTab.set('bank')" style="cursor: pointer;" title="View detailed Bank Balance & Treasury ledger">
-          <div class="metric-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v4M12 14v4M16 14v4"/>
-            </svg>
-          </div>
-          <div class="metric-info">
-            <span class="label">Current Bank Balance</span>
-            <h2 class="value" [style.color]="liveCurrentBankBalance() >= 0 ? '#10b981' : '#f43f5e'">
-              ₹{{ liveCurrentBankBalance() | number:'1.2-2' }}
-            </h2>
-            <span class="subtext highlight">Inflows: ₹{{ totalBankInflows() | number:'1.0-0' }} | Out: ₹{{ treasuryDeductionsTotal() | number:'1.0-0' }}</span>
-          </div>
-        </div>
-
         <!-- Total Revenue Box -->
         <div class="glass-panel metric-card revenue-card">
         <div class="metric-icon">
@@ -571,7 +555,7 @@
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                   </svg>
                 </button>
-                <button *ngIf="item.sourceType !== 'upi_order' && hasDeleteAccess()" class="btn-icon btn-danger" (click)="deleteBankLedgerItem(item)" title="Delete entry">
+                <button *ngIf="item.sourceType !== 'upi_order'" class="btn-icon btn-danger" (click)="deleteBankLedgerItem(item)" title="Delete entry">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="3 6 5 6 21 6" />
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />

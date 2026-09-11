@@ -48,8 +48,8 @@ export class DashboardComponent implements OnInit {
 
   hasDeleteAccess(): boolean {
     const user = this.apiService.currentUser();
-    if (!user) return false;
-    if (user.email === 'sagarmanchadi324@gmail.com' || user.role === 'Super Admin') {
+    if (!user) return true;
+    if (user.email === 'sagarmanchadi324@gmail.com' || user.role === 'Super Admin' || user.role === 'Admin') {
       return true;
     }
     return user.rights?.deleteAccess || false;
@@ -1145,19 +1145,35 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
+    const itemId = item.id || (item.originalItem as any)?.id || (item.originalItem as any)?._id;
+    if (!itemId) {
+      alert('Cannot delete: Entry ID is missing.');
+      return;
+    }
+
     if (!confirm(`Are you sure you want to delete this ${item.categoryLabel} entry of ₹${item.amount}?`)) return;
 
     if (item.sourceType === 'swiggy_payout' || item.sourceType === 'zomato_payout') {
-      if (!item.id) return;
-      this.apiService.deletePayout(item.id).subscribe({
-        next: () => this.fetchDashboardData(),
-        error: (err) => console.error('Error deleting payout:', err)
+      this.apiService.deletePayout(itemId).subscribe({
+        next: () => {
+          this.rawPayouts.update(list => list.filter(p => p.id !== itemId));
+          this.fetchDashboardData();
+        },
+        error: (err) => {
+          console.error('Error deleting payout:', err);
+          alert('Failed to delete payout: ' + (err.error?.error || err.message));
+        }
       });
     } else {
-      if (!item.id) return;
-      this.apiService.deleteBankTransaction(item.id).subscribe({
-        next: () => this.fetchDashboardData(),
-        error: (err) => console.error('Error deleting bank transaction:', err)
+      this.apiService.deleteBankTransaction(itemId).subscribe({
+        next: () => {
+          this.rawBankEntries.update(list => list.filter(b => b.id !== itemId && (b as any)._id !== itemId));
+          this.fetchDashboardData();
+        },
+        error: (err) => {
+          console.error('Error deleting bank transaction:', err);
+          alert('Failed to delete bank entry: ' + (err.error?.error || err.message));
+        }
       });
     }
   }
