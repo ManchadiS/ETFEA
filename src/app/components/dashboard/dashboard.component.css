@@ -133,6 +133,223 @@
   color: var(--info);
 }
 
+.wastage-card .metric-icon {
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.wastage-card {
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.wastage-card:hover {
+  border-color: rgba(245, 158, 11, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Wastage Analytics Section */
+.wastage-analytics-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.wastage-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1.2fr;
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .wastage-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.wastage-stat-card,
+.wastage-breakdown-card,
+.wastage-top-items-card {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.wastage-stat-card {
+  justify-content: space-between;
+  border-left: 4px solid #f59e0b;
+}
+
+.stat-card-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-card-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+}
+
+.stat-card-value {
+  line-height: 1.1;
+}
+
+.stat-card-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.stat-card-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 16px 0;
+}
+
+.stat-card-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stat-mini-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-mini-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.stat-mini-value {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.card-subtitle {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 14px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Reason list */
+.reason-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reason-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.reason-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.84rem;
+}
+
+.reason-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.reason-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.reason-amounts {
+  display: flex;
+  gap: 6px;
+  font-size: 0.82rem;
+}
+
+.reason-cost {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.reason-percent {
+  color: var(--text-muted);
+}
+
+.reason-progress-bar {
+  height: 6px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.reason-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* Top wasted items list */
+.top-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.top-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.015);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.top-item-row:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.top-item-name-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.top-item-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.top-item-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.top-item-loss {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
 /* Charts Grid Layout */
 .charts-grid {
   display: grid;

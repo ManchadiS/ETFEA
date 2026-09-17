@@ -48,7 +48,7 @@
               <rect x="14" y="14" width="7" height="7"></rect>
               <rect x="3" y="14" width="7" height="7"></rect>
             </svg>
-            <svg *ngIf="cat === 'Combos'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg *ngIf="cat === 'Combos' || cat === 'Combo'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
             </svg>
             <svg *ngIf="cat === 'Sandwiches'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -81,7 +81,7 @@
               <line x1="10" y1="9" x2="14" y2="9"></line>
             </svg>
             <!-- Fallback for other categories -->
-            <svg *ngIf="cat !== 'All' && cat !== 'Sandwiches' && cat !== 'Shawarma' && cat !== 'Sides' && cat !== 'Starters' && cat !== 'Main Course' && cat !== 'Mains' && cat !== 'Bread' && cat !== 'Desserts' && cat !== 'Beverages' && cat !== 'Drinks'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg *ngIf="cat !== 'All' && cat !== 'Combos' && cat !== 'Combo' && cat !== 'Sandwiches' && cat !== 'Shawarma' && cat !== 'Sides' && cat !== 'Starters' && cat !== 'Main Course' && cat !== 'Mains' && cat !== 'Bread' && cat !== 'Desserts' && cat !== 'Beverages' && cat !== 'Drinks'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
             </svg>
           </div>
@@ -269,7 +269,41 @@
 
     <!-- Dishes Catalog Grid section -->
     <div class="food-catalog-section">
-      <h3 class="food-section-header">{{ selectedCategory() }} Items</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px;">
+        <h3 class="food-section-header" style="margin: 0;">{{ selectedCategory() }} Items</h3>
+        
+        <!-- Dietary Filter: All, Veg, Non-Veg -->
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button 
+            type="button" 
+            [style.background]="selectedDietary() === 'all' ? 'var(--primary)' : 'rgba(255, 255, 255, 0.05)'"
+            [style.color]="selectedDietary() === 'all' ? '#fff' : 'var(--text-secondary)'"
+            (click)="selectedDietary.set('all')"
+            style="padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;">
+            All
+          </button>
+          <button 
+            type="button" 
+            [style.background]="selectedDietary() === 'veg' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)'"
+            [style.color]="selectedDietary() === 'veg' ? '#10b981' : 'var(--text-secondary)'"
+            [style.border-color]="selectedDietary() === 'veg' ? '#10b981' : 'var(--border-color)'"
+            (click)="selectedDietary.set('veg')"
+            style="padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--border-color); cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+            <span class="veg-badge" style="width: 12px; height: 12px; border-width: 1.5px; margin: 0; padding: 1px; display: inline-flex; align-items: center; justify-content: center;"><span class="veg-dot" style="width: 4px; height: 4px;"></span></span>
+            Veg
+          </button>
+          <button 
+            type="button" 
+            [style.background]="selectedDietary() === 'non-veg' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.05)'"
+            [style.color]="selectedDietary() === 'non-veg' ? '#ef4444' : 'var(--text-secondary)'"
+            [style.border-color]="selectedDietary() === 'non-veg' ? '#ef4444' : 'var(--border-color)'"
+            (click)="selectedDietary.set('non-veg')"
+            style="padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--border-color); cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+            <span class="nonveg-badge" style="width: 12px; height: 12px; border-width: 1.5px; margin: 0; padding: 1px; display: inline-flex; align-items: center; justify-content: center;"><span class="nonveg-dot" style="width: 4px; height: 4px;"></span></span>
+            Non-Veg
+          </button>
+        </div>
+      </div>
       
       <!-- Loading state -->
       <div *ngIf="isLoading()" style="text-align: center; padding: 60px 0; color: var(--text-muted);">
@@ -285,8 +319,8 @@
           <div class="food-details-column">
             <div>
               <!-- Veg/NonVeg Indicator Dot Box -->
-              <div class="veg-nonveg-badge" [ngClass]="isVeg(dish.name) ? 'veg-badge' : 'nonveg-badge'">
-                <div class="veg-nonveg-dot" [ngClass]="isVeg(dish.name) ? 'veg-dot' : 'nonveg-dot'"></div>
+              <div class="veg-nonveg-badge" [ngClass]="isVeg(dish) ? 'veg-badge' : 'nonveg-badge'">
+                <div class="veg-nonveg-dot" [ngClass]="isVeg(dish) ? 'veg-dot' : 'nonveg-dot'"></div>
               </div>
               <h4 class="food-title" [title]="dish.name">{{ dish.name }}</h4>
               <p class="food-description">{{ dish.description || 'Rich delicious flavors cooked freshly to order.' }}</p>

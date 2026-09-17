@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal, effect, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ApiService, Restaurant, FoodItem, Expense, Billing, Payout, BankEntry, BankSummary } from '../../services/api.service';
+import { ApiService, Restaurant, FoodItem, Expense, Billing, Payout, BankEntry, BankSummary, Wastage } from '../../services/api.service';
 import { forkJoin } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -62,6 +62,7 @@ export class DashboardComponent implements OnInit {
   rawExpenses = signal<Expense[]>([]);
   rawPayouts = signal<Payout[]>([]);
   rawBankEntries = signal<BankEntry[]>([]);
+  rawWastages = signal<Wastage[]>([]);
 
   isLoading = signal<boolean>(false);
 
@@ -141,6 +142,84 @@ export class DashboardComponent implements OnInit {
 
   zomatoPayouts = computed(() => {
     return this.payouts().filter(p => (p.platform || '').toLowerCase() === 'zomato').reduce((sum, p) => sum + (p.amount || 0), 0);
+  });
+
+  wastages = computed(() => {
+    const start = this.startDate();
+    const end = this.endDate();
+    const list = this.rawWastages();
+    if (!start && !end) return list;
+    return list.filter(w => {
+      const d = w.date;
+      if (!d) return false;
+      if (start && d < start) return false;
+      if (end && d > end) return false;
+      return true;
+    });
+  });
+
+  totalWastageLoss = computed(() => {
+    return this.wastages().reduce((sum, w) => sum + (w.amount || 0), 0);
+  });
+
+  totalWastageQty = computed(() => {
+    return this.wastages().reduce((sum, w) => sum + (w.quantity || 0), 0);
+  });
+
+  totalWastageCount = computed(() => {
+    return this.wastages().length;
+  });
+
+  wastageLossPercentage = computed(() => {
+    const rev = this.totalRevenue();
+    return rev > 0 ? (this.totalWastageLoss() / rev) * 100 : 0;
+  });
+
+  wastageByReason = computed(() => {
+    const map = new Map<string, { count: number; cost: number; qty: number }>();
+    const total = this.totalWastageLoss();
+    const colors: Record<string, string> = {
+      'Spoilage': '#f43f5e',
+      'Expired': '#ef4444',
+      'Damaged': '#f97316',
+      'Spill': '#eab308',
+      'Other': '#64748b'
+    };
+
+    this.wastages().forEach(w => {
+      const reason = w.reason || 'Other';
+      const current = map.get(reason) || { count: 0, cost: 0, qty: 0 };
+      current.count++;
+      current.cost += (w.amount || 0);
+      current.qty += (w.quantity || 0);
+      map.set(reason, current);
+    });
+
+    return Array.from(map.entries()).map(([reason, data]) => ({
+      reason,
+      ...data,
+      percentage: total > 0 ? (data.cost / total) * 100 : 0,
+      color: colors[reason] || '#94a3b8'
+    })).sort((a, b) => b.cost - a.cost);
+  });
+
+  topWastedItems = computed(() => {
+    const map = new Map<string, { name: string; quantity: number; cost: number; count: number }>();
+    this.wastages().forEach(w => {
+      const key = w.inventoryItemId || w.inventoryItemName;
+      const cur = map.get(key) || { name: w.inventoryItemName, quantity: 0, cost: 0, count: 0 };
+      cur.quantity += (w.quantity || 0);
+      cur.cost += (w.amount || 0);
+      cur.count++;
+      map.set(key, cur);
+    });
+    return Array.from(map.values()).sort((a, b) => b.cost - a.cost).slice(0, 5);
+  });
+
+  recentWastages = computed(() => {
+    return [...this.wastages()]
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+      .slice(0, 5);
   });
 
   // The latest opening balance entry establishes the baseline/go-live point.
@@ -719,7 +798,8 @@ export class DashboardComponent implements OnInit {
       bills: this.apiService.getBills(restId),
       expenses: this.apiService.getExpenses(restId),
       payouts: this.apiService.getPayouts(restId),
-      bankEntries: this.apiService.getBankTransactions(restId)
+      bankEntries: this.apiService.getBankTransactions(restId),
+      wastages: this.apiService.getWastages(restId)
     }).subscribe({
       next: (res) => {
         this.restaurants.set(res.restaurants);
@@ -728,6 +808,7 @@ export class DashboardComponent implements OnInit {
         this.rawExpenses.set(res.expenses);
         this.rawPayouts.set(res.payouts);
         this.rawBankEntries.set(res.bankEntries || []);
+        this.rawWastages.set(res.wastages || []);
         this.isLoading.set(false);
       },
       error: (err) => {

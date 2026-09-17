@@ -16,6 +16,8 @@ export interface FoodItem {
   description?: string;
   category?: string;
   active?: boolean;
+  isVeg?: boolean;
+  foodType?: 'veg' | 'non-veg';
 }
 
 export interface FoodOrderItem {

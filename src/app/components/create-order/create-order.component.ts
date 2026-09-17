@@ -198,6 +198,9 @@ export class CreateOrderComponent implements OnInit, OnDestroy {
   // Selected Category filter for menu
   selectedCategory = signal<string>('All');
 
+  // Dietary filter: 'all' | 'veg' | 'non-veg'
+  selectedDietary = signal<'all' | 'veg' | 'non-veg'>('all');
+
   // Search filter for dishes
   dishSearchQuery = signal<string>('');
 
@@ -240,14 +243,22 @@ export class CreateOrderComponent implements OnInit, OnDestroy {
     return ['All', ...Array.from(cats)];
   });
 
-  // Computed: Filtered dishes based on category and search query
+  // Computed: Filtered dishes based on category, dietary, and search query
   filteredDishes = computed(() => {
     const cat = this.selectedCategory();
+    const dietary = this.selectedDietary();
     const query = this.dishSearchQuery().toLowerCase().trim();
     let list = this.allDishes();
 
     if (cat !== 'All') {
       list = list.filter(d => d.category === cat);
+    }
+
+    if (dietary !== 'all') {
+      list = list.filter(d => {
+        const isVeg = this.isVeg(d);
+        return dietary === 'veg' ? isVeg : !isVeg;
+      });
     }
 
     if (query) {
@@ -835,8 +846,13 @@ export class CreateOrderComponent implements OnInit, OnDestroy {
     }
   }
 
-  isVeg(name: string): boolean {
-    const lower = name.toLowerCase();
+  isVeg(itemOrName: FoodItem | string): boolean {
+    if (typeof itemOrName === 'object' && itemOrName) {
+      if (itemOrName.isVeg !== undefined && itemOrName.isVeg !== null) return Boolean(itemOrName.isVeg);
+      if (itemOrName.foodType !== undefined && itemOrName.foodType !== null) return itemOrName.foodType === 'veg';
+      itemOrName = itemOrName.name || '';
+    }
+    const lower = (itemOrName || '').toLowerCase();
     if (lower.includes('chicken') || lower.includes('meat') || lower.includes('fish') || lower.includes('egg') || lower.includes('mutton') || lower.includes('alfredo') || lower.includes('drumstick') || lower.includes('shev puri') || lower.includes('sev puri')) {
       return false;
     }

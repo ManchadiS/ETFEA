@@ -32,8 +32,11 @@ export class MenuComponent implements OnInit {
   showModal = signal<boolean>(false);
   errorMessage = signal<string>('');
 
-  categories: string[] = ['All', 'Shawarma', 'Sides', 'Beverages', 'Starters', 'Main Course', 'Bread', 'Desserts'];
+  categories: string[] = ['All', 'Combo', 'Shawarma', 'Sandwiches', 'Sides', 'Beverages', 'Starters', 'Main Course', 'Bread', 'Desserts'];
   
+  // Dietary filter: 'all' | 'veg' | 'non-veg'
+  activeFoodType = signal<'all' | 'veg' | 'non-veg'>('all');
+
   isEditing = false;
   modalTitle = 'Add Food Item';
   
@@ -45,6 +48,7 @@ export class MenuComponent implements OnInit {
   description = '';
   restaurantId = '';
   active = true;
+  isVeg = true;
 
   constructor() {
     // Automatically refetch food items when active restaurant changes
@@ -81,17 +85,30 @@ export class MenuComponent implements OnInit {
     });
   }
 
+  isItemVeg(item: FoodItem): boolean {
+    if (item.isVeg !== undefined && item.isVeg !== null) return Boolean(item.isVeg);
+    if (item.foodType !== undefined && item.foodType !== null) return item.foodType === 'veg';
+    const name = (item.name || '').toLowerCase();
+    return !name.includes('chicken') && !name.includes('egg') && !name.includes('fish') && !name.includes('meat') && !name.includes('mutton') && !name.includes('prawn');
+  }
+
   filterItems() {
     const list = this.foodItems();
     const cat = this.activeCategory();
+    const type = this.activeFoodType();
     const query = this.searchQuery().trim().toLowerCase();
 
     const filtered = list.filter(item => {
       const matchesCategory = cat === 'All' || item.category === cat;
+      const isVeg = this.isItemVeg(item);
+      const matchesFoodType = type === 'all' || 
+        (type === 'veg' && isVeg) || 
+        (type === 'non-veg' && !isVeg);
       const matchesSearch = !query || 
         item.name.toLowerCase().includes(query) || 
+        (item.category && item.category.toLowerCase().includes(query)) ||
         (item.description && item.description.toLowerCase().includes(query));
-      return matchesCategory && matchesSearch;
+      return matchesCategory && matchesFoodType && matchesSearch;
     });
 
     this.filteredItems.set(filtered);
@@ -99,6 +116,11 @@ export class MenuComponent implements OnInit {
 
   selectCategory(cat: string) {
     this.activeCategory.set(cat);
+    this.filterItems();
+  }
+
+  selectFoodType(type: 'all' | 'veg' | 'non-veg') {
+    this.activeFoodType.set(type);
     this.filterItems();
   }
 
@@ -112,10 +134,11 @@ export class MenuComponent implements OnInit {
     this.currentId = '';
     this.name = '';
     this.price = null;
-    this.category = this.activeCategory() !== 'All' ? this.activeCategory() : 'Main Course';
+    this.category = this.activeCategory() !== 'All' ? this.activeCategory() : 'Shawarma';
     this.description = '';
     this.restaurantId = this.apiService.selectedRestaurantId(); // pre-select active restaurant if any
     this.active = true;
+    this.isVeg = true;
     this.errorMessage.set('');
     this.showModal.set(true);
   }
@@ -126,10 +149,11 @@ export class MenuComponent implements OnInit {
     this.currentId = item.id || '';
     this.name = item.name;
     this.price = item.price;
-    this.category = item.category || 'Main Course';
+    this.category = item.category || 'Shawarma';
     this.description = item.description || '';
     this.restaurantId = item.restaurantId || '';
     this.active = item.active !== false;
+    this.isVeg = this.isItemVeg(item);
     this.errorMessage.set('');
     this.showModal.set(true);
   }
@@ -150,7 +174,9 @@ export class MenuComponent implements OnInit {
       category: this.category,
       description: this.description.trim(),
       restaurantId: this.restaurantId,
-      active: this.active
+      active: this.active,
+      isVeg: this.isVeg,
+      foodType: this.isVeg ? 'veg' : 'non-veg'
     };
 
     this.isLoading.set(true);

@@ -25,6 +25,31 @@
       <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event); onSearch()" placeholder="Search dishes by name or description..." />
     </div>
 
+    <!-- Dietary Filter (All, Veg, Non-Veg) -->
+    <div class="dietary-filter-group">
+      <button 
+        type="button" 
+        class="dietary-btn" 
+        [class.active]="activeFoodType() === 'all'" 
+        (click)="selectFoodType('all')">
+        All Items
+      </button>
+      <button 
+        type="button" 
+        class="dietary-btn veg-btn" 
+        [class.active]="activeFoodType() === 'veg'" 
+        (click)="selectFoodType('veg')">
+        <span class="veg-badge-mini"><span class="veg-dot-mini"></span></span> Veg Only
+      </button>
+      <button 
+        type="button" 
+        class="dietary-btn nonveg-btn" 
+        [class.active]="activeFoodType() === 'non-veg'" 
+        (click)="selectFoodType('non-veg')">
+        <span class="nonveg-badge-mini"><span class="nonveg-dot-mini"></span></span> Non-Veg Only
+      </button>
+    </div>
+
     <!-- Category Tabs -->
     <div class="tabs-container">
       <button 
@@ -55,7 +80,17 @@
   <!-- Food Items Grid -->
   <div *ngIf="!isLoading() && filteredItems().length > 0" class="food-grid">
     <div *ngFor="let item of filteredItems()" class="glass-panel food-card">
-      <div class="food-category-badge">{{ item.category }}</div>
+      <div class="food-card-header">
+        <div class="veg-indicator-wrapper" [title]="isItemVeg(item) ? 'Vegetarian' : 'Non-Vegetarian'">
+          <div class="veg-nonveg-badge" [ngClass]="isItemVeg(item) ? 'veg-badge' : 'nonveg-badge'">
+            <div class="veg-nonveg-dot" [ngClass]="isItemVeg(item) ? 'veg-dot' : 'nonveg-dot'"></div>
+          </div>
+          <span class="dietary-label" [ngClass]="isItemVeg(item) ? 'text-veg' : 'text-nonveg'">
+            {{ isItemVeg(item) ? 'VEG' : 'NON-VEG' }}
+          </span>
+        </div>
+        <div class="food-category-badge">{{ item.category }}</div>
+      </div>
       <div class="food-info">
         <h3 class="food-name">{{ item.name }}</h3>
         <p class="food-desc">{{ item.description || 'No description provided.' }}</p>
@@ -113,7 +148,29 @@
         
         <div class="form-group">
           <label for="itemName">Food Item Name *</label>
-          <input type="text" id="itemName" [(ngModel)]="name" placeholder="e.g. Tandoori Roti, Chicken Kadhai" required />
+          <input type="text" id="itemName" [(ngModel)]="name" placeholder="e.g. Tandoori Roti, Chicken Kadhai, Tadka Combo" required />
+        </div>
+
+        <div class="form-group">
+          <label>Food Type (Dietary) *</label>
+          <div class="food-type-selector">
+            <button 
+              type="button" 
+              class="type-choice-btn veg-choice" 
+              [class.selected]="isVeg" 
+              (click)="isVeg = true">
+              <span class="veg-badge-mini"><span class="veg-dot-mini"></span></span>
+              <span>🟢 Pure Veg</span>
+            </button>
+            <button 
+              type="button" 
+              class="type-choice-btn nonveg-choice" 
+              [class.selected]="!isVeg" 
+              (click)="isVeg = false">
+              <span class="nonveg-badge-mini"><span class="nonveg-dot-mini"></span></span>
+              <span>🔴 Non-Veg</span>
+            </button>
+          </div>
         </div>
 
         <div class="form-row">
@@ -131,7 +188,7 @@
 
         <div class="form-group">
           <label for="itemDesc">Description</label>
-          <textarea id="itemDesc" [(ngModel)]="description" rows="3" placeholder="Brief description of ingredients or size..."></textarea>
+          <textarea id="itemDesc" [(ngModel)]="description" rows="3" placeholder="Brief description of ingredients, combo contents, or size..."></textarea>
         </div>
 
         <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 15px;">

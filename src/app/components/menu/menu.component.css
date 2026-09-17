@@ -55,6 +55,79 @@
   padding-left: 44px;
 }
 
+/* Dietary Preferences Filter */
+.dietary-filter-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dietary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dietary-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+.dietary-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.dietary-btn.veg-btn.active {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.dietary-btn.nonveg-btn.active {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.veg-badge-mini, .nonveg-badge-mini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid;
+  border-radius: 2px;
+  padding: 1px;
+}
+
+.veg-badge-mini { border-color: #10b981; }
+.nonveg-badge-mini { border-color: #ef4444; }
+
+.veg-dot-mini {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #10b981;
+}
+
+.nonveg-dot-mini {
+  width: 5px;
+  height: 5px;
+  background-color: #ef4444;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
 .tabs-container {
   display: flex;
   flex-wrap: wrap;
@@ -74,14 +147,68 @@
 .food-card {
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 22px;
   position: relative;
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
+.food-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.food-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.veg-indicator-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.veg-nonveg-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 2px solid;
+  border-radius: 3px;
+  padding: 2px;
+}
+
+.veg-badge { border-color: #10b981; }
+.nonveg-badge { border-color: #ef4444; }
+
+.veg-nonveg-dot {
+  width: 6px;
+  height: 6px;
+}
+
+.veg-dot {
+  background: #10b981;
+  border-radius: 50%;
+}
+
+.nonveg-dot {
+  background: #ef4444;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+.dietary-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.text-veg { color: #10b981; }
+.text-nonveg { color: #ef4444; }
+
 .food-category-badge {
-  position: absolute;
-  top: 16px;
-  right: 16px;
   background-color: var(--primary-light);
   color: var(--primary-hover);
   padding: 4px 10px;
@@ -91,7 +218,6 @@
 }
 
 .food-info {
-  margin-top: 12px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -102,7 +228,6 @@
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--text-primary);
-  max-width: 70%;
   line-height: 1.3;
 }
 
@@ -111,6 +236,46 @@
   color: var(--text-secondary);
   line-height: 1.5;
   margin-bottom: 20px;
+}
+
+/* Modal Food Type Selector */
+.food-type-selector {
+  display: flex;
+  gap: 12px;
+}
+
+.type-choice-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.type-choice-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.type-choice-btn.veg-choice.selected {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: #10b981;
+  color: #10b981;
+}
+
+.type-choice-btn.nonveg-choice.selected {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #ef4444;
 }
 
 .food-footer {
