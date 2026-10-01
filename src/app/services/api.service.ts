@@ -25,6 +25,8 @@ export interface FoodOrderItem {
   price: number;
   quantity: number;
   time?: string;
+  discount?: number;
+  discountType?: 'percent' | 'flat';
 }
 
 export interface Billing {
@@ -268,6 +270,8 @@ export interface OrderItem {
   name: string;
   price: number;
   quantity: number;
+  discount?: number;
+  discountType?: 'percent' | 'flat';
 }
 
 export interface Order {

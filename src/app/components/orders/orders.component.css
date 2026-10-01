@@ -1048,6 +1048,317 @@ select.form-control option {
   color: #0f172a;
 }
 
+/* Create Bill Modal Styling & Alignment */
+.create-bill-modal-content {
+  max-width: 860px !important;
+  width: 95% !important;
+  background: #181826 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7) !important;
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.create-bill-body {
+  padding: 16px 22px !important;
+  color: #fff !important;
+  overflow-y: auto !important;
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+.create-bill-table-wrap {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.create-bill-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.88rem;
+  table-layout: fixed;
+}
+
+.create-bill-table th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #1e1e30;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
+}
+
+.create-bill-table th.col-name,
+.create-bill-table td.col-name {
+  width: auto;
+  min-width: 180px;
+  text-align: left;
+  padding: 10px 14px;
+  vertical-align: middle;
+}
+
+.create-bill-table th.col-price,
+.create-bill-table td.col-price {
+  width: 110px;
+  text-align: center;
+  padding: 8px 6px;
+  vertical-align: middle;
+}
+
+.create-bill-table th.col-qty,
+.create-bill-table td.col-qty {
+  width: 95px;
+  text-align: center;
+  padding: 8px 6px;
+  vertical-align: middle;
+}
+
+.create-bill-table th.col-disc,
+.create-bill-table td.col-disc {
+  width: 180px;
+  text-align: center;
+  padding: 8px 8px;
+  vertical-align: middle;
+}
+
+.create-bill-table th.col-total,
+.create-bill-table td.col-total {
+  width: 125px;
+  text-align: right;
+  padding: 10px 14px;
+  vertical-align: middle;
+}
+
+.create-bill-table th.col-action,
+.create-bill-table td.col-action {
+  width: 44px;
+  text-align: center;
+  padding: 8px 4px;
+  vertical-align: middle;
+}
+
+.create-bill-table tbody tr {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.15s;
+}
+
+.create-bill-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.create-bill-table td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Chrome/Safari/Edge/Firefox spinner remover */
+.no-spin::-webkit-inner-spin-button,
+.no-spin::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.no-spin {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.price-input-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 4px 8px;
+  transition: border-color 0.15s;
+}
+.price-input-box:focus-within {
+  border-color: var(--primary-hover);
+  box-shadow: 0 0 0 2px rgba(242, 92, 5, 0.2);
+}
+.price-input-field {
+  width: 65px;
+  background: transparent;
+  border: none;
+  color: #fff;
+  text-align: right;
+  font-weight: 700;
+  font-size: 0.88rem;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.qty-pill-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 2px 4px;
+}
+.qty-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 0.15s;
+}
+.qty-btn:hover {
+  background: var(--primary);
+}
+.qty-value {
+  min-width: 20px;
+  text-align: center;
+  font-weight: 700;
+  color: #fff;
+  font-size: 0.88rem;
+}
+
+.item-disc-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.disc-input-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  border-radius: 6px;
+  padding: 3px 6px;
+  transition: border-color 0.15s;
+}
+.disc-input-box:focus-within {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+.disc-input-field {
+  width: 48px;
+  background: transparent;
+  border: none;
+  color: #f59e0b;
+  text-align: right;
+  font-weight: 700;
+  font-size: 0.88rem;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+.disc-type-toggle {
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #f59e0b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.disc-type-toggle:hover {
+  background: rgba(245, 158, 11, 0.35);
+}
+
+.disc-preset-chips {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+}
+.disc-chip {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.disc-chip:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+.disc-chip.active {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+}
+
+.delete-row-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  font-size: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  line-height: 1;
+  transition: all 0.15s;
+}
+.delete-row-btn:hover {
+  background: #ef4444;
+  color: #fff;
+  border-color: #ef4444;
+}
+
+.bill-payment-toggle-card {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text-secondary);
+  transition: all 0.15s;
+}
+.bill-payment-toggle-card.active {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  font-weight: 700;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-family: inherit;
+}
+
 /* Print CSS */
 @media print {
   body * {

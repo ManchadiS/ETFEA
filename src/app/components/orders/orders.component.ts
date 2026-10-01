@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, Order, OrderItem, FoodItem, Billing, Customer, Restaurant } from '../../services/api.service';
+import { ApiService, Order, OrderItem, FoodOrderItem, FoodItem, Billing, Customer, Restaurant } from '../../services/api.service';
 import { forkJoin } from 'rxjs';
 
 function getTodayDateString(): string {
@@ -236,18 +236,87 @@ export class OrdersComponent implements OnInit {
   billingCashAmount = signal<number>(0);
   billingUpiAmount = signal<number>(0);
 
-  get billingItemsTotal(): number {
-    return this.billingItems().reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  getItemDiscountAmount(item: OrderItem | FoodOrderItem): number {
+    const price = Number(item.price) || 0;
+    const qty = Number(item.quantity) || 1;
+    const baseTotal = price * qty;
+    const disc = Number(item.discount) || 0;
+    if (disc <= 0) return 0;
+    if (item.discountType === 'flat') {
+      return Math.min(baseTotal, Math.max(0, disc));
+    }
+    const pct = Math.min(100, Math.max(0, disc));
+    return Math.round((baseTotal * pct / 100) * 100) / 100;
   }
 
+  getItemNetTotal(item: OrderItem | FoodOrderItem): number {
+    const price = Number(item.price) || 0;
+    const qty = Number(item.quantity) || 1;
+    const baseTotal = price * qty;
+    return Math.max(0, baseTotal - this.getItemDiscountAmount(item));
+  }
+
+  // Base items sum before discounts
+  get billingBaseItemsTotal(): number {
+    return this.billingItems().reduce((sum, item) => sum + ((Number(item.price) || 0) * (Number(item.quantity) || 1)), 0);
+  }
+
+  // Total discount from item-wise discounts
+  get billingItemDiscountsTotal(): number {
+    return this.billingItems().reduce((sum, item) => sum + this.getItemDiscountAmount(item), 0);
+  }
+
+  // Subtotal of items after item-wise discounts
+  get billingItemsTotalAfterItemDiscounts(): number {
+    return Math.max(0, this.billingBaseItemsTotal - this.billingItemDiscountsTotal);
+  }
+
+  // Overall invoice discount amount
+  get billingInvoiceDiscountAmount(): number {
+    const discPct = Number(this.billingDiscount()) || 0;
+    if (discPct <= 0) return 0;
+    return Math.round((this.billingItemsTotalAfterItemDiscounts * discPct / 100) * 100) / 100;
+  }
+
+  // Final grand total payable
   get billingGrandTotal(): number {
-    return this.billingItemsTotal * (1 - this.billingDiscount() / 100);
+    return Math.max(0, this.billingItemsTotalAfterItemDiscounts - this.billingInvoiceDiscountAmount);
+  }
+
+  // Backwards compatibility getter
+  get billingItemsTotal(): number {
+    return this.billingBaseItemsTotal;
   }
 
   updateBillingItemPrice(index: number, newPrice: number) {
     const items = [...this.billingItems()];
     if (items[index]) {
       items[index].price = Math.max(0, Number(newPrice) || 0);
+      this.billingItems.set(items);
+    }
+  }
+
+  updateBillingItemDiscount(index: number, newDiscount: any) {
+    const items = [...this.billingItems()];
+    if (items[index]) {
+      items[index].discount = Math.max(0, Number(newDiscount) || 0);
+      this.billingItems.set(items);
+    }
+  }
+
+  toggleBillingItemDiscountType(index: number) {
+    const items = [...this.billingItems()];
+    if (items[index]) {
+      items[index].discountType = items[index].discountType === 'flat' ? 'percent' : 'flat';
+      this.billingItems.set(items);
+    }
+  }
+
+  setBillingItemPresetDiscount(index: number, percent: number) {
+    const items = [...this.billingItems()];
+    if (items[index]) {
+      items[index].discountType = 'percent';
+      items[index].discount = percent;
       this.billingItems.set(items);
     }
   }
@@ -681,7 +750,11 @@ export class OrdersComponent implements OnInit {
 
   openCreateBillModal(order: Order) {
     this.billingOrder.set(order);
-    this.billingItems.set((order.items || []).map(i => ({ ...i })));
+    this.billingItems.set((order.items || []).map(i => ({
+      ...i,
+      discount: i.discount || 0,
+      discountType: i.discountType || 'percent'
+    })));
     this.billingDiscount.set(0);
     this.billingPaymentMode.set(order.paymentMode || 'Cash');
     this.billingCashAmount.set(0);
