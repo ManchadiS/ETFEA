@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { gstAuthGuard } from './guards/gst-auth.guard';
 
 export const routes: Routes = [
   {
@@ -69,6 +70,11 @@ export const routes: Routes = [
   {
     path: 'reports',
     loadComponent: () => import('./components/reports/reports.component').then(m => m.ReportsComponent)
+  },
+  {
+    path: 'gst-filing',
+    canActivate: [gstAuthGuard],
+    loadComponent: () => import('./components/gst-filing/gst-filing.component').then(m => m.GstFilingComponent)
   },
   {
     path: '',

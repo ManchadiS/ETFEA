@@ -131,7 +131,15 @@ export class App implements OnInit, OnDestroy {
     this.apiService.selectedRestaurantId.set(id);
   }
 
+  isGstAuthorized(): boolean {
+    const user = this.currentUser();
+    return user?.email === 'sagarmanchadi324@gmail.com';
+  }
+
   hasSidebarAccess(tab: string): boolean {
+    if (tab === 'gst-filing') {
+      return this.isGstAuthorized();
+    }
     const user = this.currentUser();
     if (!user) return false;
     if (user.email === 'sagarmanchadi324@gmail.com' || user.role === 'Super Admin') {

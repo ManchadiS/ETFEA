@@ -1,0 +1,780 @@
+<div class="gst-container">
+  <!-- Security Warning if unauthorized user somehow accesses -->
+  <div *ngIf="!isAuthorized()" class="unauthorized-card">
+    <div class="unauth-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+    </div>
+    <h2>Confidential Section Restricted</h2>
+    <p>The GST 3B Filing Portal contains confidential financial statements and tax records. Access is strictly granted only to authorized administrator <strong>sagarmanchadi324@gmail.com</strong>.</p>
+    <a routerLink="/dashboard" class="btn btn-primary">Return to Dashboard</a>
+  </div>
+
+  <!-- Authorized View -->
+  <div *ngIf="isAuthorized()">
+    <!-- Top Header -->
+    <header class="gst-header">
+      <div class="header-left">
+        <div class="badge-tag">
+          <span class="lock-icon">🔒</span>
+          <span>Super Admin Access • Restricted to sagarmanchadi324@gmail.com</span>
+        </div>
+        <h1>GST 3B Filing Portal</h1>
+        <p class="header-subtitle">
+          Official GSTR-3B Computation, Output Tax Liability, Input Tax Credit (ITC) Reconciliation & CA Dossier
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <!-- 1-Click Copy for CA -->
+        <button class="btn btn-secondary" (click)="copyCaSummary()" [disabled]="!gstSummary()">
+          <span *ngIf="!isCopied()">📋 Copy CA Summary</span>
+          <span *ngIf="isCopied()" style="color: #34d399; font-weight: bold;">✅ Copied to Clipboard!</span>
+        </button>
+
+        <!-- CSV Export dropdown / buttons -->
+        <div class="export-group">
+          <button class="btn btn-primary" (click)="downloadCsv('summary')" [disabled]="!gstSummary()">
+            📥 Export GSTR-3B (CSV)
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Filters & Configuration Bar -->
+    <div class="filters-bar card">
+      <div class="filter-col">
+        <label>Restaurant Outlet</label>
+        <select [ngModel]="selectedRestaurantId()" (ngModelChange)="onRestaurantChange($event)">
+          <option *ngFor="let r of restaurants()" [value]="r.id">{{ r.name }}</option>
+        </select>
+      </div>
+
+      <div class="filter-col">
+        <label>Return Period (Month)</label>
+        <div class="month-selector">
+          <input type="month" [ngModel]="selectedMonth()" (ngModelChange)="onMonthChange($event)">
+          <button type="button" class="btn-micro" (click)="setQuickMonth(-1)">Prev Month</button>
+          <button type="button" class="btn-micro" (click)="setQuickMonth(0)">This Month</button>
+        </div>
+      </div>
+
+      <div class="filter-col">
+        <label>Restaurant GST Scheme</label>
+        <select [ngModel]="selectedScheme()" (ngModelChange)="onSchemeChange($event)">
+          <option value="restaurant_5_no_itc">5% Standard Restaurant (No ITC, Blocked u/s 17(5))</option>
+          <option value="standard_18_itc">18% Standard Rate (Full Eligible ITC Claimed)</option>
+        </select>
+      </div>
+
+      <div class="gst-id-pill" *ngIf="gstSummary()">
+        <span class="pill-label">GSTIN:</span>
+        <span class="pill-value">{{ gstSummary()?.gstin || 'Not Configured' }}</span>
+        <span class="pill-state">{{ gstSummary()?.periodLabel }}</span>
+      </div>
+    </div>
+
+    <!-- Alert Messages -->
+    <div class="alert alert-error" *ngIf="errorMessage()">
+      {{ errorMessage() }}
+    </div>
+    <div class="alert alert-success" *ngIf="successMessage()">
+      {{ successMessage() }}
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="isLoading()">
+      <div class="spinner"></div>
+      <p>Computing GST 3B balances, ITC reconciliation, and transaction registers...</p>
+    </div>
+
+    <!-- Main Content when Loaded -->
+    <div *ngIf="!isLoading() && gstSummary() as s">
+      <!-- Executive KPI Cards -->
+      <section class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Outward Taxable Value</span>
+            <span class="kpi-badge">Table 3.1(a)</span>
+          </div>
+          <div class="kpi-amount">₹{{ s.kpi.totalTaxableValue | number:'1.2-2' }}</div>
+          <div class="kpi-meta">Gross Sales: ₹{{ s.kpi.totalGrossSales | number:'1.2-2' }} ({{ s.kpi.totalInvoices }} Invoices)</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Output GST Collected</span>
+            <span class="kpi-badge">CGST + SGST</span>
+          </div>
+          <div class="kpi-amount text-primary">₹{{ s.kpi.totalOutputGst | number:'1.2-2' }}</div>
+          <div class="kpi-meta">
+            CGST (2.5%): ₹{{ s.table3_1.a_outward_taxable_supplies.centralTax | number:'1.2-2' }} |
+            SGST (2.5%): ₹{{ s.table3_1.a_outward_taxable_supplies.stateUtTax | number:'1.2-2' }}
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Inward Purchases & ITC</span>
+            <span class="kpi-badge" [class.badge-blocked]="s.scheme === 'restaurant_5_no_itc'">
+              {{ s.scheme === 'restaurant_5_no_itc' ? 'Table 4(D)(1) Blocked' : 'Table 4(A)(5) Eligible' }}
+            </span>
+          </div>
+          <div class="kpi-amount">₹{{ s.kpi.totalPurchaseGross | number:'1.2-2' }}</div>
+          <div class="kpi-meta">
+            <span *ngIf="s.scheme === 'restaurant_5_no_itc'">
+              Ineligible u/s 17(5): ₹{{ s.table4_itc.D_ineligible_itc._1_as_per_section_17_5.centralTax + s.table4_itc.D_ineligible_itc._1_as_per_section_17_5.stateUtTax | number:'1.2-2' }}
+            </span>
+            <span *ngIf="s.scheme === 'standard_18_itc'">
+              Eligible ITC: ₹{{ s.kpi.netItcClaimed | number:'1.2-2' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Net Cash Tax Highlight Card -->
+        <div class="kpi-card kpi-highlight">
+          <div class="kpi-header">
+            <span class="kpi-title">Net Tax to Pay in Cash</span>
+            <span class="kpi-badge badge-challan">Challan PMT-06</span>
+          </div>
+          <div class="kpi-amount highlight-amount">₹{{ s.table6_1_payment.totalCashDepositRequired | number:'1.2-2' }}</div>
+          <div class="kpi-meta highlight-meta">
+            Deposit to Electronic Cash Ledger by {{ s.filingDueDate }}
+          </div>
+        </div>
+      </section>
+
+      <!-- Navigation Tabs -->
+      <nav class="gst-tabs">
+        <button [class.active]="activeTab() === 'gstr3b'" (click)="activeTab.set('gstr3b')">
+          🏛️ GSTR-3B Official Tables
+        </button>
+        <button [class.active]="activeTab() === 'sales'" (click)="activeTab.set('sales')">
+          📋 Sales Register (GSTR-1) [{{ s.salesRegister.length }}]
+        </button>
+        <button [class.active]="activeTab() === 'purchases'" (click)="activeTab.set('purchases')">
+          📦 Purchase Register (GSTR-2B) [{{ s.purchaseRegister.length }}]
+        </button>
+        <button [class.active]="activeTab() === 'guide'" (click)="activeTab.set('guide')">
+          📖 CA Filing Guide & Portal Steps
+        </button>
+        <button [class.active]="activeTab() === 'settings'" (click)="activeTab.set('settings')">
+          ⚙️ GST Profile & Settings
+        </button>
+      </nav>
+
+      <!-- TAB 1: GSTR-3B OFFICIAL FORM -->
+      <div class="tab-content" *ngIf="activeTab() === 'gstr3b'">
+        <!-- Table 3.1 -->
+        <div class="table-section card">
+          <div class="table-section-header">
+            <div>
+              <h3>Table 3.1: Details of Outward Supplies and Inward Supplies Liable to Reverse Charge</h3>
+              <p class="section-desc">Report of outward food sales, taxes collected, and reverse charge liability</p>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="gst-data-table">
+              <thead>
+                <tr>
+                  <th style="width: 45%;">Nature of Supply</th>
+                  <th>Total Taxable Value (₹)</th>
+                  <th>Integrated Tax (₹)</th>
+                  <th>Central Tax (₹)</th>
+                  <th>State/UT Tax (₹)</th>
+                  <th>Cess (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="highlight-row">
+                  <td>
+                    <strong>(a) Outward taxable supplies</strong><br>
+                    <small class="text-muted">(Other than zero rated, nil rated and exempted - Dine-in, Takeaway & Direct Delivery)</small>
+                  </td>
+                  <td class="font-mono">₹{{ s.table3_1.a_outward_taxable_supplies.taxableValue | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono font-bold text-primary">₹{{ s.table3_1.a_outward_taxable_supplies.centralTax | number:'1.2-2' }}</td>
+                  <td class="font-mono font-bold text-primary">₹{{ s.table3_1.a_outward_taxable_supplies.stateUtTax | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+                <tr>
+                  <td>(b) Outward taxable supplies (zero rated / exports)</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">--</td>
+                  <td class="font-mono">--</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+                <tr>
+                  <td>(c) Other outward supplies (Nil rated, exempted)</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">--</td>
+                  <td class="font-mono">--</td>
+                  <td class="font-mono">--</td>
+                  <td class="font-mono">--</td>
+                </tr>
+                <tr>
+                  <td>(d) Inward supplies liable to reverse charge (RCM)</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+                <tr>
+                  <td>(e) Non-GST outward supplies (e.g. alcoholic beverages)</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">--</td>
+                  <td class="font-mono">--</td>
+                  <td class="font-mono">--</td>
+                  <td class="font-mono">--</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Table 3.1.1: E-Commerce Supplies -->
+        <div class="table-section card">
+          <div class="table-section-header">
+            <div>
+              <h3>Table 3.1.1: Details of Supplies Notified Under Section 9(5) of the CGST Act (E-Commerce Operators)</h3>
+              <p class="section-desc">Supplies delivered through Swiggy / Zomato where ECO is liable to pay tax</p>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="gst-data-table">
+              <thead>
+                <tr>
+                  <th style="width: 45%;">Nature of Supply</th>
+                  <th>Taxable Value (₹)</th>
+                  <th>Integrated Tax (₹)</th>
+                  <th>Central Tax (₹)</th>
+                  <th>State/UT Tax (₹)</th>
+                  <th>Cess (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <strong>(i) Taxable supplies on which Electronic Commerce Operator pays tax u/s 9(5)</strong><br>
+                    <small class="text-muted">(Swiggy / Zomato online orders: Tax is deposited by Swiggy/Zomato directly)</small>
+                  </td>
+                  <td class="font-mono">₹{{ s.table3_1_1.i_supplies_where_eco_pays_tax.taxableValue | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹{{ s.table3_1_1.i_supplies_where_eco_pays_tax.centralTax | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹{{ s.table3_1_1.i_supplies_where_eco_pays_tax.stateUtTax | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+                <tr>
+                  <td>(ii) Taxable supplies made by restaurant through ECO where ECO is not liable to pay tax</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Table 4: Input Tax Credit (ITC) -->
+        <div class="table-section card">
+          <div class="table-section-header">
+            <div>
+              <h3>Table 4: Eligible Input Tax Credit (ITC)</h3>
+              <p class="section-desc">
+                Breakdown of input credit on purchase bills and operational expenses.
+                <span *ngIf="s.scheme === 'restaurant_5_no_itc'" class="notice-tag">
+                  * Note: Standalone restaurants paying 5% GST cannot claim ITC; all inward tax is reported under 4(D)(1) as ineligible credit.
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="gst-data-table">
+              <thead>
+                <tr>
+                  <th style="width: 45%;">Details</th>
+                  <th>Integrated Tax (₹)</th>
+                  <th>Central Tax (₹)</th>
+                  <th>State/UT Tax (₹)</th>
+                  <th>Cess (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>(A) ITC Available (whether in full or part)</strong></td>
+                  <td colspan="4"></td>
+                </tr>
+                <tr>
+                  <td style="padding-left: 28px;">(1) Import of goods</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">--</td>
+                  <td class="font-mono">--</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+                <tr>
+                  <td style="padding-left: 28px;">(2) Import of services</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">--</td>
+                  <td class="font-mono">--</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+                <tr>
+                  <td style="padding-left: 28px;">(3) Inward supplies liable to reverse charge</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+                <tr>
+                  <td style="padding-left: 28px;">(4) Inward supplies from ISD</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+                <tr [class.highlight-row]="s.scheme === 'standard_18_itc'">
+                  <td style="padding-left: 28px;">
+                    <strong>(5) All other ITC</strong><br>
+                    <small class="text-muted">(Purchases of ingredients, packaging, equipment & services)</small>
+                  </td>
+                  <td class="font-mono">₹{{ s.table4_itc.A_itc_available._5_all_other_itc.integratedTax | number:'1.2-2' }}</td>
+                  <td class="font-mono font-bold">₹{{ s.table4_itc.A_itc_available._5_all_other_itc.centralTax | number:'1.2-2' }}</td>
+                  <td class="font-mono font-bold">₹{{ s.table4_itc.A_itc_available._5_all_other_itc.stateUtTax | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+                <tr>
+                  <td><strong>(B) ITC Reversed</strong> (as per rules 42 & 43 and others)</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+                <tr class="total-row">
+                  <td><strong>(C) Net ITC Available [(A) - (B)]</strong></td>
+                  <td class="font-mono">₹{{ s.table4_itc.C_net_itc_available.integratedTax | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹{{ s.table4_itc.C_net_itc_available.centralTax | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹{{ s.table4_itc.C_net_itc_available.stateUtTax | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+                <tr>
+                  <td><strong>(D) Other Details (Ineligible ITC)</strong></td>
+                  <td colspan="4"></td>
+                </tr>
+                <tr [class.highlight-row]="s.scheme === 'restaurant_5_no_itc'">
+                  <td style="padding-left: 28px;">
+                    <strong>(1) As per section 17(5)</strong><br>
+                    <small class="text-muted">(Mandatory reporting: Blocked purchase taxes for 5% restaurants)</small>
+                  </td>
+                  <td class="font-mono">₹{{ s.table4_itc.D_ineligible_itc._1_as_per_section_17_5.integratedTax | number:'1.2-2' }}</td>
+                  <td class="font-mono font-bold text-amber">₹{{ s.table4_itc.D_ineligible_itc._1_as_per_section_17_5.centralTax | number:'1.2-2' }}</td>
+                  <td class="font-mono font-bold text-amber">₹{{ s.table4_itc.D_ineligible_itc._1_as_per_section_17_5.stateUtTax | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Table 6.1: Payment of Tax -->
+        <div class="table-section card challan-box">
+          <div class="table-section-header">
+            <div>
+              <h3>Table 6.1: Payment of Tax & Electronic Cash Ledger Challan (PMT-06)</h3>
+              <p class="section-desc">Net tax payable in cash after adjusting eligible input credit</p>
+            </div>
+            <div class="challan-due-badge">
+              Due Date: {{ s.filingDueDate }}
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="gst-data-table">
+              <thead>
+                <tr>
+                  <th>Description</th>
+                  <th>Tax Payable (₹)</th>
+                  <th>Paid through ITC (₹)</th>
+                  <th>Tax to be Paid in Cash (₹)</th>
+                  <th>Interest (₹)</th>
+                  <th>Late Fee (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Integrated Tax (IGST)</strong></td>
+                  <td class="font-mono">₹{{ s.table6_1_payment.integratedTax.taxPayable | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹{{ s.table6_1_payment.integratedTax.paidThroughItc | number:'1.2-2' }}</td>
+                  <td class="font-mono font-bold">₹{{ s.table6_1_payment.integratedTax.taxPaidInCash | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+                <tr>
+                  <td><strong>Central Tax (CGST)</strong></td>
+                  <td class="font-mono">₹{{ s.table6_1_payment.centralTax.taxPayable | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹{{ s.table6_1_payment.centralTax.paidThroughItc | number:'1.2-2' }}</td>
+                  <td class="font-mono font-bold text-primary">₹{{ s.table6_1_payment.centralTax.taxPaidInCash | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+                <tr>
+                  <td><strong>State/UT Tax (SGST)</strong></td>
+                  <td class="font-mono">₹{{ s.table6_1_payment.stateUtTax.taxPayable | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹{{ s.table6_1_payment.stateUtTax.paidThroughItc | number:'1.2-2' }}</td>
+                  <td class="font-mono font-bold text-primary">₹{{ s.table6_1_payment.stateUtTax.taxPaidInCash | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+                <tr class="grand-total-row">
+                  <td><strong>TOTAL CHALLAN DEPOSIT REQUIRED</strong></td>
+                  <td class="font-mono">₹{{ s.kpi.totalOutputGst | number:'1.2-2' }}</td>
+                  <td class="font-mono">₹{{ s.kpi.netItcClaimed | number:'1.2-2' }}</td>
+                  <td class="font-mono font-bold text-emerald" style="font-size: 1.15rem;">
+                    ₹{{ s.table6_1_payment.totalCashDepositRequired | number:'1.2-2' }}
+                  </td>
+                  <td class="font-mono">₹0.00</td>
+                  <td class="font-mono">₹0.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- HSN Summary Table -->
+        <div class="table-section card">
+          <div class="table-section-header">
+            <div>
+              <h3>HSN / SAC Summary of Outward Supplies</h3>
+              <p class="section-desc">SAC Code 996331 - Food and Beverage Service by Restaurants</p>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="gst-data-table">
+              <thead>
+                <tr>
+                  <th>SAC Code</th>
+                  <th>Description</th>
+                  <th>UQC</th>
+                  <th>Total Invoices</th>
+                  <th>Total Value (₹)</th>
+                  <th>Taxable Value (₹)</th>
+                  <th>CGST 2.5% (₹)</th>
+                  <th>SGST 2.5% (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let hsn of s.hsnSummary">
+                  <td class="font-bold font-mono">{{ hsn.hsnCode }}</td>
+                  <td>{{ hsn.description }}</td>
+                  <td>{{ hsn.uqc }}</td>
+                  <td class="font-mono">{{ hsn.totalQuantity }}</td>
+                  <td class="font-mono">₹{{ hsn.totalValue | number:'1.2-2' }}</td>
+                  <td class="font-mono font-bold">₹{{ hsn.taxableValue | number:'1.2-2' }}</td>
+                  <td class="font-mono text-primary">₹{{ hsn.centralTax | number:'1.2-2' }}</td>
+                  <td class="font-mono text-primary">₹{{ hsn.stateUtTax | number:'1.2-2' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: SALES REGISTER (GSTR-1) -->
+      <div class="tab-content" *ngIf="activeTab() === 'sales'">
+        <div class="card">
+          <div class="register-header">
+            <div>
+              <h3>Monthly Outward Sales Register (GSTR-1 B2C / B2B)</h3>
+              <p class="section-desc">Invoice-by-invoice audit trail with SAC code, taxable amount, and GST components</p>
+            </div>
+            <div class="register-actions">
+              <input type="text" placeholder="Search invoice, mobile, date..." [ngModel]="salesSearchQuery()" (ngModelChange)="salesSearchQuery.set($event)" class="search-input">
+              <select [ngModel]="salesOrderTypeFilter()" (ngModelChange)="salesOrderTypeFilter.set($event)" class="filter-select">
+                <option value="all">All Order Types</option>
+                <option value="dinein">Dine-in</option>
+                <option value="takeaway">Takeaway</option>
+                <option value="delivery">Delivery / Online</option>
+              </select>
+              <button class="btn btn-secondary" (click)="downloadCsv('sales')">📥 Export CSV</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="gst-data-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Invoice No</th>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Payment</th>
+                  <th>Taxable (₹)</th>
+                  <th>CGST (₹)</th>
+                  <th>SGST (₹)</th>
+                  <th>Total GST (₹)</th>
+                  <th>Gross Bill (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of filteredSales()">
+                  <td>{{ item.slNo }}</td>
+                  <td class="font-mono font-bold">{{ item.invoiceNumber }}</td>
+                  <td>{{ item.date }}</td>
+                  <td>
+                    <span class="type-pill" [class.type-dinein]="item.orderType === 'dinein'" [class.type-takeaway]="item.orderType === 'takeaway'">
+                      {{ item.orderType | uppercase }}
+                    </span>
+                  </td>
+                  <td>{{ item.paymentMode }}</td>
+                  <td class="font-mono">₹{{ item.taxableAmount | number:'1.2-2' }}</td>
+                  <td class="font-mono text-primary">₹{{ item.cgstAmount | number:'1.2-2' }}</td>
+                  <td class="font-mono text-primary">₹{{ item.sgstAmount | number:'1.2-2' }}</td>
+                  <td class="font-mono font-bold">₹{{ item.totalGst | number:'1.2-2' }}</td>
+                  <td class="font-mono font-bold" style="color: #fff;">₹{{ item.grossAmount | number:'1.2-2' }}</td>
+                </tr>
+                <tr *ngIf="filteredSales().length === 0">
+                  <td colspan="10" class="text-center text-muted" style="padding: 32px;">
+                    No sales invoices found for this return period.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: PURCHASE REGISTER (GSTR-2B) -->
+      <div class="tab-content" *ngIf="activeTab() === 'purchases'">
+        <div class="card">
+          <div class="register-header">
+            <div>
+              <h3>Inward Supplies & Purchase Register (GSTR-2B)</h3>
+              <p class="section-desc">Audit register of vendor purchases, grocery, packaging, and commercial supplies</p>
+            </div>
+            <div class="register-actions">
+              <input type="text" placeholder="Search bill, supplier, GSTIN..." [ngModel]="purchaseSearchQuery()" (ngModelChange)="purchaseSearchQuery.set($event)" class="search-input">
+              <button class="btn btn-secondary" (click)="downloadCsv('purchases')">📥 Export CSV</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="gst-data-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Bill No</th>
+                  <th>Date</th>
+                  <th>Supplier Name</th>
+                  <th>Supplier GSTIN</th>
+                  <th>Taxable (₹)</th>
+                  <th>CGST (₹)</th>
+                  <th>SGST (₹)</th>
+                  <th>Total Tax (₹)</th>
+                  <th>Total Amount (₹)</th>
+                  <th>ITC Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of filteredPurchases()">
+                  <td>{{ item.slNo }}</td>
+                  <td class="font-mono font-bold">{{ item.billNumber }}</td>
+                  <td>{{ item.date }}</td>
+                  <td>{{ item.supplierName }}</td>
+                  <td class="font-mono">{{ item.supplierGstin }}</td>
+                  <td class="font-mono">₹{{ item.taxableAmount | number:'1.2-2' }}</td>
+                  <td class="font-mono text-primary">₹{{ item.cgst | number:'1.2-2' }}</td>
+                  <td class="font-mono text-primary">₹{{ item.sgst | number:'1.2-2' }}</td>
+                  <td class="font-mono font-bold">₹{{ item.totalTax | number:'1.2-2' }}</td>
+                  <td class="font-mono font-bold" style="color: #fff;">₹{{ item.totalAmount | number:'1.2-2' }}</td>
+                  <td>
+                    <span class="itc-pill" [class.itc-blocked]="item.itcEligibility.includes('Ineligible')">
+                      {{ item.itcEligibility }}
+                    </span>
+                  </td>
+                </tr>
+                <tr *ngIf="filteredPurchases().length === 0">
+                  <td colspan="11" class="text-center text-muted" style="padding: 32px;">
+                    No purchase bills recorded for this return period.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: CA FILING GUIDE & PORTAL WALKTHROUGH -->
+      <div class="tab-content" *ngIf="activeTab() === 'guide'">
+        <div class="card guide-card">
+          <div class="guide-header">
+            <h3>Chartered Accountant (CA) Step-by-Step GSTR-3B Filing Guide</h3>
+            <p class="section-desc">Instructions for filing GSTR-3B for Engineering Tadka on the GST Portal (gst.gov.in)</p>
+          </div>
+
+          <div class="steps-container">
+            <div class="step-item">
+              <div class="step-num">1</div>
+              <div class="step-body">
+                <h4>Login to GST Portal</h4>
+                <p>Navigate to <a href="https://services.gst.gov.in" target="_blank" class="link">services.gst.gov.in</a> and login using Engineering Tadka's portal credentials.</p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-num">2</div>
+              <div class="step-body">
+                <h4>Select Return Period</h4>
+                <p>Go to <strong>Services &gt; Returns &gt; Returns Dashboard</strong>. Select Financial Year (<strong>{{ s.year }}</strong>) and Return Filing Period (<strong>{{ s.periodLabel }}</strong>). Click <strong>SEARCH</strong>.</p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-num">3</div>
+              <div class="step-body">
+                <h4>Open Monthly Return GSTR-3B</h4>
+                <p>Click on <strong>PREPARE ONLINE</strong> under Monthly Return GSTR-3B. Ensure the questionnaire answers select "No" for Nil return.</p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-num">4</div>
+              <div class="step-body">
+                <h4>Fill Table 3.1: Tax on Outward and Reverse Charge Inward Supplies</h4>
+                <p>Click Table 3.1 tile. Under row <strong>(a) Outward taxable supplies (other than zero rated, nil rated and exempted)</strong>, enter:</p>
+                <div class="copy-box">
+                  <div><strong>Taxable Value:</strong> ₹{{ s.table3_1.a_outward_taxable_supplies.taxableValue.toFixed(2) }}</div>
+                  <div><strong>Central Tax (CGST):</strong> ₹{{ s.table3_1.a_outward_taxable_supplies.centralTax.toFixed(2) }}</div>
+                  <div><strong>State/UT Tax (SGST):</strong> ₹{{ s.table3_1.a_outward_taxable_supplies.stateUtTax.toFixed(2) }}</div>
+                  <div><strong>Integrated Tax:</strong> ₹0.00 | <strong>Cess:</strong> ₹0.00</div>
+                </div>
+                <p class="text-muted">Click <strong>CONFIRM</strong>.</p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-num">5</div>
+              <div class="step-body">
+                <h4>Fill Table 3.1.1: Supplies u/s 9(5) (Swiggy / Zomato ECO)</h4>
+                <p>If online delivery orders were fulfilled through Swiggy / Zomato, enter row <strong>(i) Taxable supplies on which ECO pays tax</strong>:</p>
+                <div class="copy-box">
+                  <div><strong>Taxable Value:</strong> ₹{{ s.table3_1_1.i_supplies_where_eco_pays_tax.taxableValue.toFixed(2) }}</div>
+                  <div><strong>CGST:</strong> ₹{{ s.table3_1_1.i_supplies_where_eco_pays_tax.centralTax.toFixed(2) }} | <strong>SGST:</strong> ₹{{ s.table3_1_1.i_supplies_where_eco_pays_tax.stateUtTax.toFixed(2) }}</div>
+                </div>
+                <p class="text-muted">Click <strong>CONFIRM</strong>.</p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-num">6</div>
+              <div class="step-body">
+                <h4>Fill Table 4: Eligible ITC</h4>
+                <p *ngIf="s.scheme === 'restaurant_5_no_itc'">
+                  For standalone restaurants under 5% rate, ITC is blocked under Section 17(5). Under <strong>Table 4(D)(1) As per section 17(5)</strong>, report the purchase taxes as ineligible credit:
+                </p>
+                <div class="copy-box">
+                  <div><strong>Central Tax (CGST):</strong> ₹{{ s.table4_itc.D_ineligible_itc._1_as_per_section_17_5.centralTax.toFixed(2) }}</div>
+                  <div><strong>State/UT Tax (SGST):</strong> ₹{{ s.table4_itc.D_ineligible_itc._1_as_per_section_17_5.stateUtTax.toFixed(2) }}</div>
+                </div>
+                <p class="text-muted">Click <strong>CONFIRM</strong>.</p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-num">7</div>
+              <div class="step-body">
+                <h4>Compute Liabilities & Pay Tax (Challan PMT-06)</h4>
+                <p>Click <strong>SAVE GSTR-3B</strong>, then click <strong>COMPUTE LIABILITIES</strong>. Once liabilities are computed, proceed to <strong>Payment of Tax</strong>.</p>
+                <div class="copy-box highlight-box">
+                  <div><strong>Net CGST Cash Required:</strong> ₹{{ s.table6_1_payment.centralTax.taxPaidInCash.toFixed(2) }}</div>
+                  <div><strong>Net SGST Cash Required:</strong> ₹{{ s.table6_1_payment.stateUtTax.taxPaidInCash.toFixed(2) }}</div>
+                  <div style="font-weight: bold; color: #10b981; font-size: 1.1rem; margin-top: 6px;">
+                    TOTAL CHALLAN AMOUNT TO DEPOSIT: ₹{{ s.table6_1_payment.totalCashDepositRequired.toFixed(2) }}
+                  </div>
+                </div>
+                <p>Click <strong>CREATE CHALLAN</strong> &gt; Select E-Payment (Net Banking / NEFT / RTGS) &gt; Complete Payment.</p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-num">8</div>
+              <div class="step-body">
+                <h4>Offset Liability & File Return</h4>
+                <p>After cash is credited in the Electronic Cash Ledger, click <strong>MAKE PAYMENT / OFFSET LIABILITY</strong>. Verify the OTP sent to Sagar Manchadi's registered mobile/email (EVC) or use DSC to complete filing!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: GST PROFILE & SETTINGS -->
+      <div class="tab-content" *ngIf="activeTab() === 'settings'">
+        <div class="card settings-card">
+          <div class="settings-header">
+            <h3>Restaurant GST Profile & Configuration</h3>
+            <p class="section-desc">Manage GSTIN, Legal entity name, State code, and filing schemes</p>
+          </div>
+
+          <form (ngSubmit)="saveGstSettings()" class="settings-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>GSTIN (15 Digits)</label>
+                <input type="text" [ngModel]="settingsGstin()" (ngModelChange)="settingsGstin.set($event)" name="gstin" placeholder="e.g. 27AADCE1234F1Z5" maxlength="15" class="font-mono">
+              </div>
+
+              <div class="form-group">
+                <label>Legal Business Name (as on GST Certificate)</label>
+                <input type="text" [ngModel]="settingsLegalName()" (ngModelChange)="settingsLegalName.set($event)" name="legalName" placeholder="e.g. Engineering Tadka Foods LLP">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Trade Name</label>
+                <input type="text" [ngModel]="settingsTradeName()" (ngModelChange)="settingsTradeName.set($event)" name="tradeName" placeholder="Engineering Tadka">
+              </div>
+
+              <div class="form-group">
+                <label>State & State Code</label>
+                <div class="dual-input">
+                  <input type="text" [ngModel]="settingsState()" (ngModelChange)="settingsState.set($event)" name="state" placeholder="State Name (e.g. Maharashtra)" style="flex: 2;">
+                  <input type="text" [ngModel]="settingsStateCode()" (ngModelChange)="settingsStateCode.set($event)" name="stateCode" placeholder="Code (27)" style="flex: 1;" class="font-mono">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Filing Frequency</label>
+                <select [ngModel]="settingsFilingFrequency()" (ngModelChange)="settingsFilingFrequency.set($event)" name="filingFrequency">
+                  <option value="monthly">Monthly (Due 20th of subsequent month)</option>
+                  <option value="quarterly">Quarterly (QRMP Scheme - Due 22nd/24th)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Authorized Admin Contact</label>
+                <input type="text" value="sagarmanchadi324@gmail.com" disabled class="input-disabled">
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" [disabled]="isSavingSettings()">
+                <span *ngIf="!isSavingSettings()">💾 Save GST Profile Settings</span>
+                <span *ngIf="isSavingSettings()">Saving...</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

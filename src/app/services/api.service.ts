@@ -6,6 +6,238 @@ export interface Restaurant {
   id?: string;
   name: string;
   address?: string;
+  gstin?: string;
+  legalName?: string;
+  tradeName?: string;
+  state?: string;
+  stateCode?: string;
+  filingFrequency?: string;
+  defaultGstScheme?: string;
+}
+
+export interface Gstr3bSummary {
+  gstin: string;
+  legalName: string;
+  tradeName: string;
+  year: string;
+  period: string;
+  periodLabel: string;
+  scheme: string;
+  filingDueDate: string;
+  table3_1: {
+    a_outward_taxable_supplies: {
+      title: string;
+      taxableValue: number;
+      integratedTax: number;
+      centralTax: number;
+      stateUtTax: number;
+      cess: number;
+    };
+    b_outward_zero_rated: {
+      title: string;
+      taxableValue: number;
+      integratedTax: number;
+      cess: number;
+    };
+    c_other_outward_nil_exempt: {
+      title: string;
+      taxableValue: number;
+    };
+    d_inward_reverse_charge: {
+      title: string;
+      taxableValue: number;
+      integratedTax: number;
+      centralTax: number;
+      stateUtTax: number;
+      cess: number;
+    };
+    e_non_gst_outward: {
+      title: string;
+      taxableValue: number;
+    };
+  };
+  table3_1_1: {
+    i_supplies_where_eco_pays_tax: {
+      title: string;
+      taxableValue: number;
+      integratedTax: number;
+      centralTax: number;
+      stateUtTax: number;
+      cess: number;
+    };
+    ii_supplies_by_restaurant_through_eco: {
+      title: string;
+      taxableValue: number;
+      integratedTax: number;
+      centralTax: number;
+      stateUtTax: number;
+      cess: number;
+    };
+  };
+  table4_itc: {
+    A_itc_available: {
+      title: string;
+      _5_all_other_itc: {
+        title: string;
+        integratedTax: number;
+        centralTax: number;
+        stateUtTax: number;
+        cess: number;
+      };
+    };
+    C_net_itc_available: {
+      title: string;
+      integratedTax: number;
+      centralTax: number;
+      stateUtTax: number;
+      cess: number;
+    };
+    D_ineligible_itc: {
+      title: string;
+      _1_as_per_section_17_5: {
+        title: string;
+        integratedTax: number;
+        centralTax: number;
+        stateUtTax: number;
+        cess: number;
+      };
+    };
+  };
+  table5_inward_supplies: {
+    from_composition_dealers_and_exempt: {
+      title: string;
+      interStateSupplies: number;
+      intraStateSupplies: number;
+    };
+    non_gst_supply: {
+      title: string;
+      interStateSupplies: number;
+      intraStateSupplies: number;
+    };
+  };
+  table6_1_payment: {
+    title: string;
+    integratedTax: {
+      taxPayable: number;
+      paidThroughItc: number;
+      taxPaidInCash: number;
+      interest: number;
+      lateFee: number;
+    };
+    centralTax: {
+      taxPayable: number;
+      paidThroughItc: number;
+      taxPaidInCash: number;
+      interest: number;
+      lateFee: number;
+    };
+    stateUtTax: {
+      taxPayable: number;
+      paidThroughItc: number;
+      taxPaidInCash: number;
+      interest: number;
+      lateFee: number;
+    };
+    cess: {
+      taxPayable: number;
+      paidThroughItc: number;
+      taxPaidInCash: number;
+      interest: number;
+      lateFee: number;
+    };
+    totalCashDepositRequired: number;
+  };
+  hsnSummary: Array<{
+    hsnCode: string;
+    description: string;
+    uqc: string;
+    totalQuantity: number;
+    totalValue: number;
+    taxableValue: number;
+    integratedTax: number;
+    centralTax: number;
+    stateUtTax: number;
+    cess: number;
+  }>;
+  kpi: {
+    totalInvoices: number;
+    totalGrossSales: number;
+    totalDiscounts: number;
+    totalTaxableValue: number;
+    totalOutputGst: number;
+    totalPurchaseInvoices: number;
+    totalPurchaseGross: number;
+    totalInwardGst: number;
+    netItcClaimed: number;
+    netCashChallanAmount: number;
+  };
+  paymentModes: Record<string, number>;
+  orderTypes: Record<string, number>;
+  dailyBreakdown: Array<{
+    date: string;
+    count: number;
+    taxable: number;
+    cgst: number;
+    sgst: number;
+    gross: number;
+  }>;
+  salesRegister: GstSalesRegisterItem[];
+  purchaseRegister: GstPurchaseRegisterItem[];
+}
+
+export interface GstSalesRegisterItem {
+  slNo: number;
+  id: string;
+  orderNumber: number;
+  invoiceNumber: string;
+  date: string;
+  customerMobile: string;
+  customerEmail: string;
+  customerGstin: string;
+  supplyType: string;
+  orderType: string;
+  isEco: boolean;
+  paymentMode: string;
+  taxableAmount: number;
+  gstRate: number;
+  cgstRate: number;
+  cgstAmount: number;
+  sgstRate: number;
+  sgstAmount: number;
+  igstRate: number;
+  igstAmount: number;
+  totalGst: number;
+  grossAmount: number;
+  hsnSacCode: string;
+}
+
+export interface GstPurchaseRegisterItem {
+  slNo: number;
+  id: string;
+  billNumber: string;
+  date: string;
+  supplierName: string;
+  supplierGstin: string;
+  itemsCount: number;
+  paymentMode: string;
+  taxableAmount: number;
+  cgst: number;
+  sgst: number;
+  igst: number;
+  totalTax: number;
+  totalAmount: number;
+  itcEligibility: string;
+}
+
+export interface GstSettingsPayload {
+  restaurantId?: string;
+  gstin: string;
+  legalName: string;
+  tradeName?: string;
+  state: string;
+  stateCode: string;
+  filingFrequency?: string;
+  defaultGstScheme?: string;
 }
 
 export interface FoodItem {
@@ -671,5 +903,52 @@ export class ApiService {
 
   deleteBankTransaction(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/bank-transactions/${id}`);
+  }
+
+  // GST FILING & GSTR-3B (Exclusively for sagarmanchadi324@gmail.com)
+  getGstSummary(params?: { restaurantId?: string; month?: string; fromDate?: string; toDate?: string; scheme?: string }): Observable<Gstr3bSummary> {
+    let httpParams = new HttpParams();
+    if (params?.restaurantId) httpParams = httpParams.set('restaurantId', params.restaurantId);
+    if (params?.month) httpParams = httpParams.set('month', params.month);
+    if (params?.fromDate) httpParams = httpParams.set('fromDate', params.fromDate);
+    if (params?.toDate) httpParams = httpParams.set('toDate', params.toDate);
+    if (params?.scheme) httpParams = httpParams.set('scheme', params.scheme);
+    return this.http.get<Gstr3bSummary>(`${this.baseUrl}/gst-filing/summary`, { params: httpParams });
+  }
+
+  getGstSalesRegister(params?: { restaurantId?: string; month?: string; fromDate?: string; toDate?: string; scheme?: string }): Observable<GstSalesRegisterItem[]> {
+    let httpParams = new HttpParams();
+    if (params?.restaurantId) httpParams = httpParams.set('restaurantId', params.restaurantId);
+    if (params?.month) httpParams = httpParams.set('month', params.month);
+    if (params?.fromDate) httpParams = httpParams.set('fromDate', params.fromDate);
+    if (params?.toDate) httpParams = httpParams.set('toDate', params.toDate);
+    if (params?.scheme) httpParams = httpParams.set('scheme', params.scheme);
+    return this.http.get<GstSalesRegisterItem[]>(`${this.baseUrl}/gst-filing/sales-register`, { params: httpParams });
+  }
+
+  getGstPurchaseRegister(params?: { restaurantId?: string; month?: string; fromDate?: string; toDate?: string; scheme?: string }): Observable<GstPurchaseRegisterItem[]> {
+    let httpParams = new HttpParams();
+    if (params?.restaurantId) httpParams = httpParams.set('restaurantId', params.restaurantId);
+    if (params?.month) httpParams = httpParams.set('month', params.month);
+    if (params?.fromDate) httpParams = httpParams.set('fromDate', params.fromDate);
+    if (params?.toDate) httpParams = httpParams.set('toDate', params.toDate);
+    if (params?.scheme) httpParams = httpParams.set('scheme', params.scheme);
+    return this.http.get<GstPurchaseRegisterItem[]>(`${this.baseUrl}/gst-filing/purchase-register`, { params: httpParams });
+  }
+
+  updateGstSettings(settings: GstSettingsPayload): Observable<any> {
+    return this.http.put(`${this.baseUrl}/gst-filing/settings`, settings);
+  }
+
+  downloadGstCsv(params?: { restaurantId?: string; month?: string; fromDate?: string; toDate?: string; scheme?: string; type?: 'summary' | 'sales' | 'purchases' }): Observable<Blob> {
+    let httpParams = new HttpParams();
+    if (params?.restaurantId) httpParams = httpParams.set('restaurantId', params.restaurantId);
+    if (params?.month) httpParams = httpParams.set('month', params.month);
+    if (params?.fromDate) httpParams = httpParams.set('fromDate', params.fromDate);
+    if (params?.toDate) httpParams = httpParams.set('toDate', params.toDate);
+    if (params?.scheme) httpParams = httpParams.set('scheme', params.scheme);
+    if (params?.type) httpParams = httpParams.set('type', params.type);
+    httpParams = httpParams.set('format', 'csv');
+    return this.http.get(`${this.baseUrl}/gst-filing/export`, { params: httpParams, responseType: 'blob' });
   }
 }
