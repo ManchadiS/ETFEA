@@ -541,7 +541,7 @@ export interface Customer {
 })
 export class ApiService {
   private http = inject(HttpClient);
-  private baseUrl = 'https://api.engineeringtadka.com/api/v1'; //prod url
+  private baseUrl = 'https://apidash.engineeringtadka.com/api/v1'; //prod url
   // private baseUrl = 'http://localhost:3000/api/v1';
 
   // Global active restaurant selection state
